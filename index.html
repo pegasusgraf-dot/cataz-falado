@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anunciador de Ofertas para Comércio</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 { margin-top: 0; color: var(--primary); text-align: center; }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #1d4ed8; }
+        .preview-box {
+            margin-top: 25px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+        }
+        .preview-box h3 { margin: 0 0 10px 0; font-size: 14px; color: #64748b; }
+        #textoGerado { font-size: 18px; font-weight: 500; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📢 Mega Oferta Express</h2>
+        
+        <div class="form-group">
+            <label for="produto">Nome do Produto:</label>
+            <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+        </div>
+
+        <div class="form-group">
+            <label for="precoOriginal">Preço Original (R$):</label>
+            <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+        </div>
+
+        <div class="form-group">
+            <label for="precoPromo">Preço Promocional (R$):</label>
+            <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
+        </div>
+
+        <button onclick="gerarEAnunciar()">Gerar e Falar Anúncio</button>
+
+        <div class="preview-box">
+            <h3>Texto do Anúncio:</h3>
+            <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
+        </div>
+    </div>
+
+    <script>
+        function gerarEAnunciar() {
+            const produto = document.getElementById('produto').value;
+            const precoOriginal = document.getElementById('precoOriginal').value;
+            const precoPromo = document.getElementById('precoPromo').value;
+
+            if (!produto || !precoOriginal || !precoPromo) {
+                alert('Por favor, preencha todos os campos!');
+                return;
+            }
+
+            // Formata valores para o padrão brasileiro
+            const pOrig = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const pProm = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            // Cria o texto comercial chamativo
+            const texto = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrig} por apenas ${pProm}. Aproveite agora no nosso comércio!`;
+
+            document.getElementById('textoGerado').innerText = texto;
+
+            // Executa a voz sintetizada do navegador
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Para falas anteriores
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'pt-BR';
+                utterance.rate = 1.0; // Velocidade da fala
+                utterance.pitch = 1.0; // Tom da voz
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('Seu navegador não suporta recurso de voz.');
+            }
+        }
+    </script>
+</body>
+</html>
