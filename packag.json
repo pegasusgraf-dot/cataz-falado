@@ -1,0 +1,9 @@
+{
+  "name": "anunciador-comercio",
+  "version": "1.0.0",
+  "description": "App gerador de anuncios com voz para comercio",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Build estatico concluido com sucesso'"
+  }
+}
