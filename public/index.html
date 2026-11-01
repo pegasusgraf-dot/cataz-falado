@@ -178,24 +178,6 @@
         margin-top: 12px;
       }
 
-      .history-item {
-        background: #fff;
-        border: 1px solid #cbd5e1;
-        padding: 12px;
-        border-radius: 10px;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: 0.2s;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .history-item:hover {
-        border-color: var(--primary);
-        background: #f0fdf4;
-      }
-
       .dashboard-main {
         padding: 40px;
         overflow-y: auto;
@@ -266,7 +248,7 @@
       <section class="dashboard-main">
         <h2 style="margin-top:0;">Painel de Controle</h2>
         <p class="muted">Bem-vindo ao sistema de anúncios comerciais da SyncStore.</p>
-        <div class="preview-box">
+        <div class="preview-box" style="margin-top: 24px; background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); border-left: 6px solid var(--primary); border-radius: 14px; padding: 20px;">
           <h3>Sistema Operacional Ativo</h3>
           <p>Utilize o menu lateral para gerenciar suas operações.</p>
         </div>
@@ -328,7 +310,6 @@
               msg.textContent = 'Usuário cadastrado com sucesso! Faça login.';
               modoCadastro = false;
               document.getElementById('auth-form').reset();
-              // Restaura a tela para login
               document.getElementById('auth-title').textContent = 'Acesse sua conta';
               document.getElementById('btn-submit').innerHTML = 'Entrar <span aria-hidden="true">↗</span>';
               document.getElementById('link-alternar').textContent = 'Primeiro acesso? Cadastrar Novo Usuário';
@@ -336,14 +317,12 @@
               msg.style.color = 'var(--success)';
               msg.textContent = 'Login efetuado com sucesso! Redirecionando...';
               
-              // Salva o usuário logado e troca de tela
               localStorage.setItem('usuarioLogado', JSON.stringify(dados.usuario));
               
               setTimeout(() => {
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
                 
-                // Se for master, mostra botão administrativo
                 if (dados.usuario.tipo === 'master') {
                   document.getElementById('bloco-master').classList.remove('hidden');
                 }
