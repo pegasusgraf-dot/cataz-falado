@@ -6,12 +6,15 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Conexão com o Banco Neon
+// Conexão com o Banco Neon otimizada para nuvem (SSL ajustado)
 const pool = new Pool({
     connectionString: 'postgresql://neondb_owner:npg_VRkNhKFvSr17@ep-noisy-fog-b4p6p3pc-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require',
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
-// Inicializar tabelas de forma segura
+// Criar tabelas e colunas de forma segura e síncrona para evitar falhas nas primeiras requisições
 async function inicializarBanco() {
     try {
         await pool.query(`
@@ -46,14 +49,24 @@ async function inicializarBanco() {
             console.log('Usuário master criado com sucesso! (master / 123456)');
         }
     } catch (err) {
-        console.error('Erro ao inicializar tabelas:', err);
+        console.error('Erro crítico ao inicializar tabelas:', err);
     }
 }
-inicializarBanco();
 
-// Rota de Login
+// Inicializa o banco antes de escutar as portas
+inicializarBanco().then(() => {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Servidor rodando na porta ${PORT}`);
+    });
+});
+
+// Rota de Login tratada
 app.post('/api/login', async (req, res) => {
     const { usuario, senha } = req.body;
+    if (!usuario || !senha) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Preencha usuário e senha.' });
+    }
     try {
         const resultado = await pool.query(
             'SELECT * FROM usuarios WHERE nome = $1 AND senha = $2',
@@ -69,14 +82,17 @@ app.post('/api/login', async (req, res) => {
             res.status(401).json({ sucesso: false, mensagem: 'Usuário ou senha incorretos.' });
         }
     } catch (error) {
-        console.error(error);
+        console.error('Erro na rota /api/login:', error);
         res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor.' });
     }
 });
 
-// Rota para cadastrar novo usuário (Sempre nasce como 'comum' e 'pendente' por segurança)
+// Rota para cadastrar novo usuário
 app.post('/api/usuarios', async (req, res) => {
     const { nome, senha } = req.body;
+    if (!nome || !senha) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Nome e senha são obrigatórios.' });
+    }
     try {
         const novo = await pool.query(
             'INSERT INTO usuarios (nome, senha, tipo, status) VALUES ($1, $2, $3, $4) RETURNING id, nome, tipo, status',
@@ -84,7 +100,7 @@ app.post('/api/usuarios', async (req, res) => {
         );
         res.json({ sucesso: true, usuario: novo.rows[0] });
     } catch (error) {
-        console.error(error);
+        console.error('Erro na rota /api/usuarios:', error);
         res.status(400).json({ sucesso: false, mensagem: 'Erro ao cadastrar. O nome de usuário já pode existir.' });
     }
 });
@@ -95,6 +111,7 @@ app.get('/api/usuarios', async (req, res) => {
         const lista = await pool.query('SELECT id, nome, tipo, status, created_at FROM usuarios ORDER BY id DESC');
         res.json({ sucesso: true, usuarios: lista.rows });
     } catch (error) {
+        console.error('Erro ao buscar usuários:', error);
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar usuários.' });
     }
 });
@@ -106,6 +123,7 @@ app.post('/api/usuarios/aprovar', async (req, res) => {
         await pool.query("UPDATE usuarios SET status = 'aprovado' WHERE nome = $1", [nome]);
         res.json({ sucesso: true });
     } catch (error) {
+        console.error('Erro ao aprovar usuário:', error);
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao aprovar usuário.' });
     }
 });
@@ -120,6 +138,7 @@ app.delete('/api/usuarios/:nome', async (req, res) => {
         await pool.query('DELETE FROM usuarios WHERE nome = $1', [nome]);
         res.json({ sucesso: true });
     } catch (error) {
+        console.error('Erro ao excluir usuário:', error);
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao excluir usuário.' });
     }
 });
@@ -134,7 +153,7 @@ app.post('/api/historico', async (req, res) => {
         );
         res.json({ sucesso: true, item: novo.rows[0] });
     } catch (error) {
-        console.error(error);
+        console.error('Erro ao salvar histórico:', error);
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar histórico.' });
     }
 });
@@ -144,11 +163,7 @@ app.get('/api/historico', async (req, res) => {
         const lista = await pool.query('SELECT * FROM historico_audios ORDER BY id DESC LIMIT 50');
         res.json({ sucesso: true, historico: lista.rows });
     } catch (error) {
+        console.error('Erro ao buscar histórico:', error);
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar histórico.' });
     }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
 });
