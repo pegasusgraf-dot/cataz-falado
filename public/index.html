@@ -13,13 +13,11 @@
             --primary-dark: #135c46;
             --primary-soft: #dff5ea;
             --primary-strong: #0c2d22;
-            --accent: #d9f3e7;
             --text: #12231d;
             --muted: #526762;
             --line: #dfeae5;
             --shadow: rgba(12, 45, 34, 0.12);
             --danger: #c62828;
-            --warning: #f59e0b;
             --success: #1f9d5e;
         }
 
@@ -125,9 +123,7 @@
             font-weight: 800;
         }
 
-        .brand-panel h1 span {
-            color: #d2f3df;
-        }
+        .brand-panel h1 span { color: #d2f3df; }
 
         .intro-note {
             margin: 18px 0 0;
@@ -214,9 +210,7 @@
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .field input::placeholder {
-            color: #7f8f8a;
-        }
+        .field input::placeholder { color: #7f8f8a; }
 
         .field input:focus,
         .field select:focus {
@@ -240,9 +234,7 @@
             gap: 8px;
         }
 
-        .checkbox input {
-            accent-color: var(--primary);
-        }
+        .checkbox input { accent-color: var(--primary); }
 
         .text-link {
             border: none;
@@ -301,9 +293,7 @@
         .secondary-btn:hover,
         .ghost-btn:hover,
         .danger-btn:hover,
-        .success-btn:hover {
-            transform: translateY(-1px);
-        }
+        .success-btn:hover { transform: translateY(-1px); }
 
         .message {
             min-height: 18px;
@@ -326,9 +316,7 @@
             font-size: 0.85rem;
         }
 
-        .demo-box strong {
-            color: var(--text);
-        }
+        .demo-box strong { color: var(--text); }
 
         .app-shell {
             display: none;
@@ -340,33 +328,100 @@
             box-shadow: 0 20px 60px rgba(15, 45, 35, 0.12);
         }
 
-        .app-shell.is-visible {
-            display: block;
+        .app-shell.is-visible { display: block; }
+
+        .app-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 760px;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #112d24 0%, #143d32 100%);
+            color: #eaf8f1;
+            padding: 22px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .sidebar-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            padding: 8px 10px;
+        }
+
+        .sidebar-brand .brand-mark {
+            width: 28px;
+            height: 28px;
+            font-size: 0.9rem;
+        }
+
+        .nav-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .nav-item {
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: rgba(234, 248, 241, 0.8);
+            text-align: left;
+            padding: 12px 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item.active {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
+
+        .nav-item:hover { background: rgba(255,255,255,0.05); }
+
+        .sidebar-footer {
+            margin-top: auto;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 12px;
+            color: rgba(234, 248, 241, 0.8);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .content {
+            background: #f8fbf9;
+            padding: 24px;
         }
 
         .topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px 24px;
+            padding: 10px 4px 18px;
             border-bottom: 1px solid var(--line);
-            background: #fff;
+            background: transparent;
         }
 
-        .brand-inline {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--text);
-            font-weight: 800;
-            text-decoration: none;
-            font-size: 1.1rem;
+        .top-title h1 {
+            margin: 0;
+            font-size: clamp(1.7rem, 2.2vw, 2.4rem);
+            letter-spacing: -0.05em;
         }
 
-        .brand-inline .brand-mark {
-            width: 30px;
-            height: 30px;
-            font-size: 0.9rem;
+        .subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.6;
         }
 
         .user-bar {
@@ -379,7 +434,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #f5faf7;
+            background: #fff;
             border: 1px solid var(--line);
             border-radius: 999px;
             padding: 9px 12px;
@@ -400,35 +455,12 @@
             font-size: 0.85rem;
         }
 
-        .workspace {
-            padding: 28px 22px 24px;
+        .screen {
+            margin-top: 22px;
+            display: none;
         }
 
-        .title-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 22px;
-        }
-
-        .title-row h1 {
-            margin: 0;
-            font-size: clamp(1.9rem, 3vw, 2.5rem);
-            letter-spacing: -0.05em;
-        }
-
-        .subtitle {
-            margin: 8px 0 0;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 22px;
-        }
+        .screen.active { display: block; }
 
         .panel {
             background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
@@ -437,14 +469,52 @@
             padding: 20px;
         }
 
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 22px;
+        }
+
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 18px;
         }
 
-        .form-grid .field.full {
-            grid-column: 1 / -1;
+        .form-grid .field.full { grid-column: 1 / -1; }
+
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: var(--text);
+            font-size: 0.96rem;
+        }
+
+        .field input,
+        .field textarea,
+        .field select {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1.5px solid var(--line);
+            font-size: 1rem;
+            background: #fff;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            font-family: inherit;
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .field input:focus,
+        .field textarea:focus,
+        .field select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(31, 122, 93, 0.10);
         }
 
         .button-row {
@@ -485,6 +555,35 @@
             font-weight: 600;
         }
 
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .kpi {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 16px 18px;
+        }
+
+        .kpi-label {
+            display: block;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .kpi strong {
+            font-size: 1.8rem;
+            letter-spacing: -0.05em;
+        }
+
         .user-list {
             margin-top: 20px;
             display: grid;
@@ -508,13 +607,8 @@
             gap: 4px;
         }
 
-        .user-meta strong {
-            font-size: 0.96rem;
-        }
-
-        .user-meta small {
-            color: var(--muted);
-        }
+        .user-meta strong { font-size: 0.96rem; }
+        .user-meta small { color: var(--muted); }
 
         .user-tag {
             display: inline-flex;
@@ -548,34 +642,17 @@
         }
 
         @media (max-width: 900px) {
-            .auth-shell {
-                grid-template-columns: 1fr;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+            .auth-shell { grid-template-columns: 1fr; }
+            .app-layout { grid-template-columns: 1fr; }
+            .sidebar { padding-bottom: 12px; }
+            .dashboard-grid, .kpis { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 480px) {
-            body {
-                padding: 18px;
-            }
-
-            .form-panel,
-            .brand-panel {
-                padding: 28px 22px;
-            }
-
-            .button-row,
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .topbar {
-                padding-left: 16px;
-                padding-right: 16px;
-            }
+            body { padding: 18px; }
+            .form-panel, .brand-panel { padding: 28px 22px; }
+            .button-row, .form-grid { grid-template-columns: 1fr; }
+            .topbar { padding-left: 0; padding-right: 0; }
         }
     </style>
 </head>
@@ -625,105 +702,144 @@
     </div>
 
     <div id="appScreen" class="app-shell">
-        <header class="topbar">
-            <a class="brand-inline" href="#" aria-label="SyncStore">
-                <span class="brand-mark">S</span>
-                <span>SyncStore</span>
-            </a>
-            <div class="user-bar">
-                <div class="user-pill"><span class="avatar" id="userAvatar">A</span><span id="userLabel">Administrador</span></div>
-                <button type="button" class="ghost-btn" id="logoutBtn">Sair</button>
-            </div>
-        </header>
-
-        <main class="workspace">
-            <div class="title-row">
-                <div>
-                    <h1>Gerenciar painel</h1>
-                    <p class="subtitle">Crie mensagens promocionais e gerencie quem acessa o sistema.</p>
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-brand"><span class="brand-mark">S</span><span>SyncStore</span></div>
+                <nav class="nav-list" aria-label="Menu lateral">
+                    <button type="button" class="nav-item active" data-screen="dashboard">Dashboard</button>
+                    <button type="button" class="nav-item" data-screen="anuncios">Anúncios</button>
+                    <button type="button" class="nav-item" data-screen="usuarios" id="menuUsuarios">Usuários</button>
+                    <button type="button" class="nav-item" data-screen="config">Configurações</button>
+                </nav>
+                <div class="sidebar-footer">
+                    <strong>Operação</strong><br>
+                    Agenda ativa e sincronizada.
                 </div>
-            </div>
+            </aside>
 
-            <div class="dashboard-grid">
-                <section class="panel">
-                    <div class="form-grid">
-                        <div class="field">
-                            <label for="produto">Nome do Produto</label>
-                            <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+            <main class="content">
+                <header class="topbar">
+                    <div class="top-title">
+                        <h1 id="pageTitle">Dashboard</h1>
+                        <p class="subtitle" id="pageSubtitle">Resumo da operação e ferramentas de gestão.</p>
+                    </div>
+                    <div class="user-bar">
+                        <div class="user-pill"><span class="avatar" id="userAvatar">A</span><span id="userLabel">Administrador</span></div>
+                        <button type="button" class="ghost-btn" id="logoutBtn">Sair</button>
+                    </div>
+                </header>
+
+                <section id="dashboardScreen" class="screen active">
+                    <div class="kpis">
+                        <div class="kpi">
+                            <span class="kpi-label">Reservas hoje</span>
+                            <strong>18</strong>
                         </div>
-
-                        <div class="field">
-                            <label for="precoOriginal">Preço Original (R$)</label>
-                            <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+                        <div class="kpi">
+                            <span class="kpi-label">Salas ativas</span>
+                            <strong>12</strong>
                         </div>
-
-                        <div class="field">
-                            <label for="precoPromo">Preço Promocional (R$)</label>
-                            <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
-                        </div>
-
-                        <div class="field">
-                            <label for="textoExtra">Texto Extra (opcional)</label>
-                            <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
+                        <div class="kpi">
+                            <span class="kpi-label">Veículos</span>
+                            <strong>9</strong>
                         </div>
                     </div>
 
-                    <div class="button-row">
-                        <button class="primary-btn" type="button" onclick="gerarEAnunciar()">Gerar anúncio</button>
-                        <button class="secondary-btn" type="button" onclick="ouvirUltimoTexto()">Ouvir</button>
+                    <div class="panel">
+                        <div class="title-row" style="margin-bottom: 0;">
+                            <div>
+                                <h2 style="margin: 0; font-size: 1.5rem;">Resumo da operação</h2>
+                                <p class="subtitle" style="margin-top: 8px;">Acompanhe o desempenho e mantenha a rotina organizada.</p>
+                            </div>
+                        </div>
                     </div>
-
-                    <button class="success-btn" type="button" onclick="copiarTexto()">Copiar anúncio</button>
-
-                    <div class="preview-box">
-                        <h3>Texto do anúncio</h3>
-                        <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
-                    </div>
-
-                    <div id="status" class="status" aria-live="polite"></div>
                 </section>
 
-                <aside class="panel">
-                    <div class="title-row" style="margin-bottom: 0;">
-                        <div>
-                            <h2 style="margin: 0; font-size: 1.4rem;">Usuários</h2>
-                            <p class="subtitle" style="margin-top: 4px;">Adicionar novos acessos ao sistema.</p>
+                <section id="anunciosScreen" class="screen">
+                    <div class="panel">
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="produto">Nome do Produto</label>
+                                <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+                            </div>
+
+                            <div class="field">
+                                <label for="precoOriginal">Preço Original (R$)</label>
+                                <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+                            </div>
+
+                            <div class="field">
+                                <label for="precoPromo">Preço Promocional (R$)</label>
+                                <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
+                            </div>
+
+                            <div class="field">
+                                <label for="textoExtra">Texto Extra (opcional)</label>
+                                <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
+                            </div>
                         </div>
+
+                        <div class="button-row">
+                            <button class="primary-btn" type="button" onclick="gerarEAnunciar()">Gerar anúncio</button>
+                            <button class="secondary-btn" type="button" onclick="ouvirUltimoTexto()">Ouvir</button>
+                        </div>
+
+                        <button class="success-btn" type="button" onclick="copiarTexto()">Copiar anúncio</button>
+
+                        <div class="preview-box">
+                            <h3>Texto do anúncio</h3>
+                            <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
+                        </div>
+
+                        <div id="status" class="status" aria-live="polite"></div>
                     </div>
+                </section>
 
-                    <form id="userForm" style="margin-top: 20px; display: grid; gap: 14px;">
-                        <div class="field">
-                            <label for="userName">Nome</label>
-                            <input id="userName" type="text" placeholder="Nome completo" required>
-                        </div>
+                <section id="usuariosScreen" class="screen">
+                    <div class="panel">
+                        <h2 style="margin-top: 0; font-size: 1.5rem;">Gerenciar usuários</h2>
 
-                        <div class="field">
-                            <label for="userEmail">E-mail</label>
-                            <input id="userEmail" type="email" placeholder="usuario@empresa.com" required>
-                        </div>
+                        <form id="userForm" style="margin-top: 20px; display: grid; gap: 14px;">
+                            <div class="field">
+                                <label for="userName">Nome</label>
+                                <input id="userName" type="text" placeholder="Nome completo" required>
+                            </div>
 
-                        <div class="field">
-                            <label for="userPassword">Senha</label>
-                            <input id="userPassword" type="password" placeholder="Mínimo de 6 caracteres" required>
-                        </div>
+                            <div class="field">
+                                <label for="userEmail">E-mail</label>
+                                <input id="userEmail" type="email" placeholder="usuario@empresa.com" required>
+                            </div>
 
-                        <div class="field">
-                            <label for="userRole">Tipo</label>
-                            <select id="userRole">
-                                <option value="user">Usuário</option>
-                                <option value="admin">Administrador</option>
-                            </select>
-                        </div>
+                            <div class="field">
+                                <label for="userPassword">Senha</label>
+                                <input id="userPassword" type="password" placeholder="Mínimo de 6 caracteres" required>
+                            </div>
 
-                        <button type="submit" class="primary-btn">Adicionar usuário</button>
-                        <div id="userMessage" class="message" aria-live="polite"></div>
-                    </form>
+                            <div class="field">
+                                <label for="userRole">Tipo</label>
+                                <select id="userRole">
+                                    <option value="user">Usuário</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
 
-                    <div class="muted-note">Usuários salvos no navegador neste dispositivo.</div>
-                    <div id="userList" class="user-list"></div>
-                </aside>
-            </div>
-        </main>
+                            <button type="submit" class="primary-btn">Adicionar usuário</button>
+                            <div id="userMessage" class="message" aria-live="polite"></div>
+                        </form>
+
+                        <div class="muted-note">Usuários salvos no navegador neste dispositivo.</div>
+                        <div id="userList" class="user-list"></div>
+                    </div>
+                </section>
+
+                <section id="configScreen" class="screen">
+                    <div class="panel">
+                        <h2 style="margin-top: 0; font-size: 1.5rem;">Configurações</h2>
+                        <p class="subtitle">Ajustes de organização, integrações e manutenção do sistema.</p>
+                    </div>
+                </section>
+            </main>
+        </div>
     </div>
 
     <script>
@@ -748,11 +864,56 @@
         const userForm = document.getElementById('userForm');
         const userList = document.getElementById('userList');
         const userMessage = document.getElementById('userMessage');
+        const menuUsuarios = document.getElementById('menuUsuarios');
+
+        const pageTitle = document.getElementById('pageTitle');
+        const pageSubtitle = document.getElementById('pageSubtitle');
+        const screens = {
+            dashboard: document.getElementById('dashboardScreen'),
+            anuncios: document.getElementById('anunciosScreen'),
+            usuarios: document.getElementById('usuariosScreen'),
+            config: document.getElementById('configScreen')
+        };
+
+        function setScreen(name) {
+            Object.entries(screens).forEach(([key, screen]) => {
+                screen.classList.toggle('active', key === name);
+            });
+
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.screen === name);
+            });
+
+            const labels = {
+                dashboard: ['Dashboard', 'Resumo da operação e ferramentas de gestão.'],
+                anuncios: ['Anúncios', 'Crie mensagens promocionais e copie em um clique.'],
+                usuarios: ['Usuários', 'Gerencie os acessos e permissões do sistema.'],
+                config: ['Configurações', 'Ajustes de organização e manutenção do sistema.']
+            };
+
+            const [title, subtitle] = labels[name] || labels.dashboard;
+            pageTitle.textContent = title;
+            pageSubtitle.textContent = subtitle;
+        }
+
+        document.querySelectorAll('.nav-item').forEach(button => {
+            button.addEventListener('click', () => setScreen(button.dataset.screen));
+        });
 
         function setMessage(element, text, type = '') {
             element.textContent = text;
             element.className = 'message';
             if (type) element.classList.add(type);
+        }
+
+        function getCurrentUser() {
+            const raw = localStorage.getItem(STORAGE_KEYS.CURRENT);
+            if (!raw) return null;
+            try {
+                return JSON.parse(raw);
+            } catch {
+                return null;
+            }
         }
 
         function getUsers() {
@@ -780,15 +941,38 @@
             return users.some(user => user.email.toLowerCase() === email.toLowerCase() && user.password === password);
         }
 
-        function getUserDisplayName(email) {
+        function getUserByEmail(email) {
             const users = getUsers();
-            const user = users.find(item => item.email.toLowerCase() === email.toLowerCase());
+            return users.find(item => item.email.toLowerCase() === email.toLowerCase()) || null;
+        }
+
+        function getUserDisplayName(email) {
+            const user = getUserByEmail(email);
             return user ? user.name : (email.split('@')[0] || 'Usuário');
         }
 
-        function getCurrentUser() {
-            const email = localStorage.getItem(STORAGE_KEYS.CURRENT);
-            return email || null;
+        function canManageUsers() {
+            const user = getCurrentUser();
+            return user && user.role === 'admin';
+        }
+
+        function applyPermissions() {
+            const user = getCurrentUser();
+            const isAdmin = !!(user && user.role === 'admin');
+
+            if (menuUsuarios) {
+                menuUsuarios.style.display = isAdmin ? 'block' : 'none';
+            }
+
+            if (userForm) {
+                userForm.style.display = isAdmin ? 'grid' : 'none';
+            }
+
+            if (!isAdmin) {
+                userList.innerHTML = '<div class="user-item"><div class="user-meta"><strong>Sem acesso</strong><small>Somente administradores podem criar e remover usuários.</small></div></div>';
+            } else {
+                renderUsers();
+            }
         }
 
         function renderUsers() {
@@ -833,12 +1017,15 @@
             appScreen.classList.remove('is-visible');
         }
 
-        function showAppScreen(email) {
+        function showAppScreen(user) {
             authScreen.style.display = 'none';
             appScreen.classList.add('is-visible');
-            userLabel.textContent = getUserDisplayName(email);
-            userAvatar.textContent = (getUserDisplayName(email) || 'A').charAt(0).toUpperCase();
-            renderUsers();
+
+            const currentName = user && user.name ? user.name : 'Administrador';
+            userLabel.textContent = currentName;
+            userAvatar.textContent = currentName.charAt(0).toUpperCase();
+            applyPermissions();
+            setScreen('dashboard');
         }
 
         loginForm.addEventListener('submit', function (event) {
@@ -857,9 +1044,16 @@
                 return;
             }
 
-            localStorage.setItem(STORAGE_KEYS.CURRENT, email);
+            const user = getUserByEmail(email);
+            localStorage.setItem(STORAGE_KEYS.CURRENT, JSON.stringify({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role || 'user'
+            }));
+
             setMessage(loginMessage, 'Login realizado com sucesso!', 'success');
-            showAppScreen(email);
+            showAppScreen(JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT)));
         });
 
         document.getElementById('logoutBtn').addEventListener('click', function () {
@@ -871,6 +1065,11 @@
 
         userForm.addEventListener('submit', function (event) {
             event.preventDefault();
+
+            if (!canManageUsers()) {
+                setMessage(userMessage, 'Você não tem permissão para criar usuários.', 'error');
+                return;
+            }
 
             const name = document.getElementById('userName').value.trim();
             const email = document.getElementById('userEmail').value.trim();
