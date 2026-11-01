@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#2563eb">
     <title>SyncStore | Gerador de Anúncios</title>
-    <meta name="description" content="Sistema profissional para criação e reprodução de anúncios comerciais e voz de loja.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,212 +18,46 @@
         --text: #0f172a;
         --muted: #475569;
         --success: #16a34a;
-        --success-dark: #15803d;
         --danger: #dc2626;
         --shadow: rgba(15, 23, 42, 0.12);
       }
 
       * { box-sizing: border-box; }
-
-      body, html {
-        margin: 0;
-        min-height: 100vh;
-        font-family: 'DM Sans', 'Segoe UI', Tahoma, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
-
+      body, html { margin: 0; min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
       .hidden { display: none !important; }
 
-      .auth-layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        min-height: 100vh;
-        width: 100%;
-      }
-
-      .auth-intro {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: #ffffff;
-        padding: 60px 48px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        font-size: 1.25rem;
-        font-family: 'Manrope', sans-serif;
-      }
-
-      .brand-mark {
-        background: var(--primary);
-        color: white;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-      }
-
+      .auth-layout { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; width: 100%; }
+      .auth-intro { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; padding: 60px 48px; display: flex; flex-direction: column; justify-content: space-between; }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; font-family: 'Manrope', sans-serif; }
+      .brand-mark { background: var(--primary); color: white; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
       .brand-period { color: var(--primary); }
-
-      .intro-copy h1 {
-        font-family: 'Manrope', sans-serif;
-        font-size: clamp(2.2rem, 4vw, 3.2rem);
-        line-height: 1.15;
-        margin: 20px 0;
-      }
-
+      .intro-copy h1 { font-family: 'Manrope', sans-serif; font-size: clamp(2.2rem, 4vw, 3.2rem); line-height: 1.15; margin: 20px 0; }
       .intro-copy h1 span { color: #60a5fa; }
       .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; }
-      .intro-note { color: #cbd5e1; font-size: 1.05rem; }
-      .intro-foot { font-size: 0.85rem; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
-      .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #22c55e; }
-
-      .auth-panel {
-        background: var(--card);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 40px;
-      }
-
-      .auth-box {
-        width: 100%;
-        max-width: 380px;
-      }
-
+      .auth-panel { background: var(--card); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; }
+      .auth-box { width: 100%; max-width: 380px; }
       .form-stack { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
       
-      label.field {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--text);
-      }
+      label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 0.9rem; color: var(--text); }
+      input, textarea { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 1rem; background: #fff; font-family: inherit; }
+      input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12); }
 
-      input, select, textarea {
-        width: 100%;
-        padding: 14px 16px;
-        border-radius: 12px;
-        border: 1.5px solid #cbd5e1;
-        font-size: 1rem;
-        background: #fff;
-        font-family: inherit;
-        transition: 0.2s;
-      }
-
-      input:focus, textarea:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
-      }
-
-      .button {
-        border: none;
-        border-radius: 12px;
-        padding: 12px 20px;
-        font-size: 0.95rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: 0.2s;
-        font-family: inherit;
-      }
-
-      .button-primary {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        color: white;
-        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
-      }
-
-      .button-primary:hover { transform: translateY(-1px); }
+      .button { border: none; border-radius: 12px; padding: 12px 20px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; }
+      .button-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25); }
       .button-wide { width: 100%; }
-
       .form-message { font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 10px; min-height: 20px; }
 
-      /* Layout do Dashboard Logado */
-      .app-layout {
-        display: grid;
-        grid-template-columns: 320px 1fr;
-        min-height: 100vh;
-        width: 100%;
-      }
-
-      .sidebar {
-        background: #f1f5f9;
-        border-right: 1px solid #e2e8f0;
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-      }
-
-      .history-list {
-        max-height: calc(100vh - 340px);
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 12px;
-      }
-
-      .history-item {
-        background: #fff;
-        border: 1px solid #cbd5e1;
-        padding: 12px;
-        border-radius: 10px;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: 0.2s;
-      }
-
-      .history-item:hover {
-        border-color: var(--primary);
-        background: #f0fdf4;
-      }
-
-      .dashboard-main {
-        padding: 40px;
-        overflow-y: auto;
-      }
-
-      .card-painel {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px var(--shadow);
-        margin-bottom: 24px;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 12px;
-        font-size: 0.9rem;
-      }
-
-      th, td {
-        padding: 10px 12px;
-        text-align: left;
-        border-bottom: 1px solid #e2e8f0;
-      }
-
+      .app-layout { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; width: 100%; }
+      .sidebar { background: #f1f5f9; border-right: 1px solid #e2e8f0; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; }
+      .history-list { max-height: calc(100vh - 340px); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+      .history-item { background: #fff; border: 1px solid #cbd5e1; padding: 12px; border-radius: 10px; font-size: 0.85rem; }
+      .dashboard-main { padding: 40px; overflow-y: auto; }
+      .card-painel { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px var(--shadow); margin-bottom: 24px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }
+      th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
       th { background: #f8fafc; font-weight: 600; }
 
-      @media (max-width: 768px) {
-        .auth-layout, .app-layout { grid-template-columns: 1fr; }
-        .auth-intro { display: none; }
-      }
+      @media (max-width: 768px) { .auth-layout, .app-layout { grid-template-columns: 1fr; } .auth-intro { display: none; } }
     </style>
   </head>
   <body>
@@ -238,7 +71,6 @@
           <h1>O anúncio certo,<br>na hora exata,<br><span>para vender mais.</span></h1>
           <p class="intro-note">Sistema inteligente de locução e gerenciamento de ofertas comerciais.</p>
         </div>
-        <div class="intro-foot"><span class="status-dot"></span> Sintetizador de voz pronto para uso</div>
       </section>
 
       <section class="auth-panel">
@@ -249,12 +81,6 @@
           <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">Entre para gerar e gerenciar suas locuções.</p>
       
           <form id="auth-form" class="form-stack" onsubmit="enviarFormularioAuth(event)">
-            <label class="field" id="label-tipo" hidden>Tipo de Conta
-              <select id="input-tipo">
-                <option value="comum">Operador Comum</option>
-                <option value="master">Administrador Master</option>
-              </select>
-            </label>
             <label class="field">Usuário<input id="input-usuario" required placeholder="Ex: master ou seu nome"></label>
             <label class="field">Senha<input id="input-senha" type="password" required placeholder="Sua senha"></label>
             <button class="button button-primary button-wide" type="submit" id="btn-submit-auth">Entrar ↗</button>
@@ -339,20 +165,17 @@
         const desc = document.getElementById('auth-description');
         const btn = document.getElementById('btn-submit-auth');
         const link = document.getElementById('link-alternar');
-        const labelTipo = document.getElementById('label-tipo');
 
         if (modoRegistro) {
           titulo.innerText = 'Solicitar Cadastro';
-          desc.innerText = 'Crie sua conta para aguardar liberação.';
+          desc.innerText = 'Crie sua conta para aguardar liberação do Administrador.';
           btn.innerText = 'Cadastrar ↗';
           link.innerText = 'Já tem uma conta? Entrar';
-          labelTipo.hidden = false;
         } else {
           titulo.innerText = 'Acesse sua conta';
           desc.innerText = 'Entre para gerar e gerenciar suas locuções.';
           btn.innerText = 'Entrar ↗';
           link.innerText = 'Primeiro acesso? Solicitar cadastro';
-          labelTipo.hidden = true;
         }
         document.getElementById('auth-message').innerText = '';
       }
@@ -361,7 +184,6 @@
         event.preventDefault();
         const usuario = document.getElementById('input-usuario').value.trim();
         const senha = document.getElementById('input-senha').value.trim();
-        const tipo = document.getElementById('input-tipo').value;
         const msgEl = document.getElementById('auth-message');
         msgEl.style.color = 'var(--text)';
         msgEl.innerText = 'Processando...';
@@ -371,13 +193,13 @@
             const res = await fetch('/api/usuarios', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ nome: usuario, senha, tipo })
+              body: JSON.stringify({ nome: usuario, senha })
             });
             const data = await res.json();
             if (data.sucesso) {
               msgEl.style.color = 'var(--success)';
-              msgEl.innerText = tipo === 'master' ? 'Cadastrado com sucesso! Faça login.' : 'Solicitação enviada! Aguarde aprovação do Master.';
-              setTimeout(() => alternarModoRegistro(event), 2000);
+              msgEl.innerText = 'Solicitação enviada com sucesso! Aguarde aprovação do Master.';
+              setTimeout(() => alternarModoRegistro(event), 2500);
             } else {
               msgEl.style.color = 'var(--danger)';
               msgEl.innerText = data.mensagem || 'Erro ao cadastrar.';
@@ -416,6 +238,8 @@
         if (usuarioAtual.tipo === 'master') {
           document.getElementById('bloco-master-menu').classList.remove('hidden');
           carregarUsuariosMaster();
+        } else {
+          document.getElementById('bloco-master-menu').classList.add('hidden');
         }
         carregarHistorico();
       }
