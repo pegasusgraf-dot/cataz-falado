@@ -20,6 +20,7 @@
         --success: #16a34a;
         --success-dark: #15803d;
         --danger: #dc2626;
+        --warning: #d97706;
         --shadow: rgba(15, 23, 42, 0.12);
       }
 
@@ -224,7 +225,7 @@
       .modal-card {
         background: #fff;
         width: 100%;
-        max-width: 520px;
+        max-width: 560px;
         border-radius: 20px;
         padding: 30px;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
@@ -236,10 +237,10 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 12px;
+        padding: 12px;
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
+        border-radius: 10px;
         margin-bottom: 8px;
         font-size: 0.9rem;
       }
@@ -252,7 +253,7 @@
   </head>
   <body>
 
-    <!-- TELA DE LOGIN -->
+    <!-- TELA DE LOGIN E CADASTRO -->
     <main id="auth-screen" class="auth-layout">
       <section class="auth-intro">
         <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
@@ -267,16 +268,21 @@
       <section class="auth-panel">
         <div class="auth-box">
           <div class="brand" style="color:var(--text)"><span class="brand-mark">A</span><span>anúncios<span class="brand-period">.</span></span></div>
-          <p class="eyebrow" style="margin-top: 15px;">PAINEL COMERCIAL</p>
-          <h2 style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
-          <p class="muted" style="color:var(--muted); font-size:0.95rem;">Entre para gerar e gerenciar suas locuções.</p>
+          <p class="eyebrow" id="auth-eyebrow" style="margin-top: 15px;">PAINEL COMERCIAL</p>
+          <h2 id="auth-title" style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
+          <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">Entre para gerar e gerenciar suas locuções.</p>
       
-          <form id="auth-form" class="form-stack" onsubmit="realizarLogin(event)">
-            <label class="field">Usuário / E-mail<input id="input-email" required placeholder="master"></label>
+          <form id="auth-form" class="form-stack" onsubmit="realizarLoginOuCadastro(event)">
+            <label class="field" id="nome-field" hidden>Nome completo / Loja<input id="input-nome" placeholder="Seu Nome"></label>
+            <label class="field">Usuário / E-mail<input id="input-email" required placeholder="master ou seu.usuario"></label>
             <label class="field">Senha<input id="input-senha" type="password" required placeholder="Sua senha"></label>
-            <button class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
+            <button class="button button-primary button-wide" type="submit" id="btn-submit">Entrar <span aria-hidden="true">↗</span></button>
             <p class="form-message" id="auth-message" role="status"></p>
           </form>
+
+          <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
+            <a href="#" onclick="alternarModoRegistro(event)" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">Primeiro acesso? Solicitar cadastro</a>
+          </div>
         </div>
       </section>
     </main>
@@ -295,7 +301,7 @@
 
         <div>
           <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
-            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;" onclick="abrirModalAdmin()">Gerenciar Usuários</button>
+            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;" onclick="abrirModalAdmin()">Gerenciar Contas & Aprovações</button>
           </div>
           <button class="button" style="width: 100%; background: #fee2e2; color: var(--danger); font-size: 0.85rem;" onclick="sairDaConta()">Sair da Conta</button>
         </div>
@@ -339,54 +345,91 @@
       </section>
     </main>
 
-    <!-- MODAL DE ADMINISTRAÇÃO DE USUÁRIOS (EXCLUSIVO MASTER) -->
+    <!-- MODAL DE ADMINISTRAÇÃO E VALIDAÇÃO DE CONTAS -->
     <div id="modalAdmin" class="modal-overlay hidden">
       <div class="modal-card">
         <h2 style="margin-top:0; font-family:'Manrope'; font-size: 1.4rem;">Administração de Contas</h2>
-        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Crie novos operadores ou remova acessos ao sistema.</p>
+        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Valide novos cadastros pendentes ou crie contas manualmente.</p>
 
-        <div style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 12px; font-size: 0.95rem;">Cadastrar Novo Usuário</h3>
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <input id="novoNome" placeholder="Nome completo / Loja">
-            <input id="novoEmail" placeholder="Nome de usuário para login (ex: operador2)">
-            <input id="novoSenha" type="password" placeholder="Senha de acesso">
-            <select id="novoTipo">
-              <option value="comum">Operador Comum (Apenas Anúncios)</option>
-              <option value="master">Administrador Master</option>
-            </select>
-            <button class="button button-primary" style="margin-top: 5px;" onclick="criarNovoUsuario()">Criar Conta</button>
+        <!-- Seção de Pendentes -->
+        <div style="background: #fffbeb; padding: 16px; border-radius: 12px; border: 1px solid #fef3c7; margin-bottom: 20px;">
+          <h3 style="margin: 0 0 10px; font-size: 0.95rem; color: var(--warning);">Cadastros Aguardando Aprovação</h3>
+          <div id="listaPendentesAdmin" style="max-height: 140px; overflow-y: auto;">
+            <span style="color: var(--muted); font-size: 0.85rem;">Nenhum cadastro pendente.</span>
           </div>
-          <p id="modalMsg" style="font-size: 0.85rem; font-weight: 600; margin-top: 8px; text-align: center;"></p>
         </div>
 
-        <h3 style="font-size: 0.95rem; margin-bottom: 10px;">Contas Cadastradas no Sistema</h3>
-        <div id="listaUsuariosAdmin" style="max-height: 180px; overflow-y: auto; margin-bottom: 20px;"></div>
+        <!-- Formulário de cadastro direto pelo master -->
+        <div style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+          <h3 style="margin: 0 0 10px; font-size: 0.95rem;">Cadastrar Novo Operador Diretamente</h3>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <input id="novoNome" placeholder="Nome do operador">
+            <input id="novoEmail" placeholder="Usuário / E-mail">
+            <input id="novoSenha" type="password" placeholder="Senha">
+            <button class="button button-primary" style="margin-top: 4px;" onclick="criarContaDiretaMaster()">Cadastrar e Aprovar Imediatamente</button>
+          </div>
+          <p id="modalMsg" style="font-size: 0.85rem; font-weight: 600; margin-top: 6px; text-align: center;"></p>
+        </div>
+
+        <h3 style="font-size: 0.95rem; margin-bottom: 10px;">Todas as Contas Ativas</h3>
+        <div id="listaUsuariosAtivos" style="max-height: 150px; overflow-y: auto; margin-bottom: 20px;"></div>
 
         <button class="button" style="width: 100%; background: #e2e8f0;" onclick="fecharModalAdmin()">Fechar Painel</button>
       </div>
     </div>
 
     <script>
+        let modoCadastro = false;
         let ultimoTexto = '';
         let ultimoTextoLeitura = '';
         let historicoAnuncios = JSON.parse(localStorage.getItem('historicoAnuncios')) || [];
 
+        // status: 'aprovado' ou 'pendente'
         let usuariosCadastrados = JSON.parse(localStorage.getItem('usuariosSync')) || [
-            { email: 'master', senha: '123456', nome: 'Administrador Master', tipo: 'master' }
+            { email: 'master', senha: '123456', nome: 'Administrador Master', tipo: 'master', status: 'aprovado' }
         ];
 
         let sessaoAtual = JSON.parse(localStorage.getItem('sessaoSync')) || null;
         if (sessaoAtual) entrarNoApp(sessaoAtual);
 
-        function realizarLogin(e) {
+        function alternarModoRegistro(e) {
+            e.preventDefault();
+            modoCadastro = !modoCadastro;
+            document.getElementById('nome-field').hidden = !modoCadastro;
+            document.getElementById('auth-eyebrow').textContent = modoCadastro ? 'SOLICITAR ACESSO' : 'PAINEL COMERCIAL';
+            document.getElementById('auth-title').textContent = modoCadastro ? 'Criar sua conta' : 'Acesse sua conta';
+            document.getElementById('btn-submit').textContent = modoCadastro ? 'Cadastrar e Aguardar Aprovação ↗' : 'Entrar ↗';
+            document.getElementById('link-alternar').textContent = modoCadastro ? 'Já tem conta aprovada? Faça login' : 'Primeiro acesso? Solicitar cadastro';
+        }
+
+        function realizarLoginOuCadastro(e) {
             e.preventDefault();
             const email = document.getElementById('input-email').value.trim();
             const senha = document.getElementById('input-senha').value.trim();
+            const nome = document.getElementById('input-nome').value.trim();
             const msg = document.getElementById('auth-message');
+
+            if (modoCadastro) {
+                if (!nome) { msg.style.color = 'var(--danger)'; msg.textContent = 'Informe o seu nome.'; return; }
+                if (usuariosCadastrados.some(u => u.email === email)) {
+                    msg.style.color = 'var(--danger)'; msg.textContent = 'Este e-mail/usuário já está cadastrado.';
+                    return;
+                }
+                usuariosCadastrados.push({ email, senha, nome, tipo: 'comum', status: 'pendente' });
+                localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
+                msg.style.color = 'var(--warning)';
+                msg.textContent = 'Cadastro realizado! Aguarde a aprovação do Administrador Master para entrar.';
+                document.getElementById('auth-form').reset();
+                return;
+            }
 
             const usuarioEncontrado = usuariosCadastrados.find(u => u.email === email && u.senha === senha);
             if (usuarioEncontrado) {
+                if (usuarioEncontrado.status === 'pendente') {
+                    msg.style.color = 'var(--warning)';
+                    msg.textContent = 'Sua conta está aguardando validação do Administrador Master.';
+                    return;
+                }
                 sessaoAtual = usuarioEncontrado;
                 localStorage.setItem('sessaoSync', JSON.stringify(sessaoAtual));
                 entrarNoApp(usuarioEncontrado);
@@ -411,10 +454,10 @@
             location.reload();
         }
 
-        // Funções do Painel Master
+        // Painel Administrativo Master
         function abrirModalAdmin() {
             document.getElementById('modalAdmin').classList.remove('hidden');
-            renderizarListaUsuariosAdmin();
+            renderizarListasAdmin();
         }
 
         function fecharModalAdmin() {
@@ -422,11 +465,24 @@
             document.getElementById('modalMsg').textContent = '';
         }
 
-        function criarNovoUsuario() {
+        function aprovarUsuario(email) {
+            usuariosCadastrados = usuariosCadastrados.map(u => u.email === email ? { ...u, status: 'aprovado' } : u);
+            localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
+            renderizarListasAdmin();
+        }
+
+        function rejeitarUsuario(email) {
+            if (confirm(`Deseja recusar e excluir o cadastro de ${email}?`)) {
+                usuariosCadastrados = usuariosCadastrados.filter(u => u.email !== email);
+                localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
+                renderizarListasAdmin();
+            }
+        }
+
+        function criarContaDiretaMaster() {
             const nome = document.getElementById('novoNome').value.trim();
             const email = document.getElementById('novoEmail').value.trim();
             const senha = document.getElementById('novoSenha').value.trim();
-            const tipo = document.getElementById('novoTipo').value;
             const msg = document.getElementById('modalMsg');
 
             if (!nome || !email || !senha) {
@@ -437,42 +493,47 @@
 
             if (usuariosCadastrados.some(u => u.email === email)) {
                 msg.style.color = 'var(--danger)';
-                msg.textContent = 'Este usuário já está cadastrado.';
+                msg.textContent = 'Este usuário já existe.';
                 return;
             }
 
-            usuariosCadastrados.push({ email, senha, nome, tipo });
+            usuariosCadastrados.push({ email, senha, nome, tipo: 'comum', status: 'aprovado' });
             localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
 
             msg.style.color = 'var(--success)';
-            msg.textContent = 'Conta criada com sucesso!';
+            msg.textContent = 'Operador cadastrado e aprovado com sucesso!';
             document.getElementById('novoNome').value = '';
             document.getElementById('novoEmail').value = '';
             document.getElementById('novoSenha').value = '';
-            renderizarListaUsuariosAdmin();
+            renderizarListasAdmin();
         }
 
-        function deletarUsuario(email) {
-            if (email === 'master') {
-                alert('Você não pode excluir a conta master principal.');
-                return;
-            }
-            if (confirm(`Deseja realmente excluir o acesso de ${email}?`)) {
-                usuariosCadastrados = usuariosCadastrados.filter(u => u.email !== email);
-                localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
-                renderizarListaUsuariosAdmin();
-            }
-        }
+        function renderizarListasAdmin() {
+            const containerPendentes = document.getElementById('listaPendentesAdmin');
+            const pendentes = usuariosCadastrados.filter(u => u.status === 'pendente');
 
-        function renderizarListaUsuariosAdmin() {
-            const container = document.getElementById('listaUsuariosAdmin');
-            container.innerHTML = usuariosCadastrados.map(u => `
+            if (pendentes.length === 0) {
+                containerPendentes.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum cadastro pendente.</span>';
+            } else {
+                containerPendentes.innerHTML = pendentes.map(u => `
+                    <div class="user-list-item" style="background: #fff;">
+                        <div><strong>${u.nome}</strong><br><small style="color:var(--muted);">${u.email}</small></div>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="button" style="padding: 6px 10px; background: var(--success); color: white; font-size: 0.75rem;" onclick="aprovarUsuario('${u.email}')">Aprovar</button>
+                            <button class="button" style="padding: 6px 10px; background: var(--danger); color: white; font-size: 0.75rem;" onclick="rejeitarUsuario('${u.email}')">Recusar</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const containerAtivos = document.getElementById('listaUsuariosAtivos');
+            containerAtivos.innerHTML = usuariosCadastrados.map(u => `
                 <div class="user-list-item">
                     <div>
                         <strong>${u.nome}</strong> (${u.email})<br>
-                        <span style="font-size: 0.75rem; color: var(--muted);">Cargo: <strong>${u.tipo.toUpperCase()}</strong></span>
+                        <span style="font-size: 0.75rem; color: var(--muted);">Cargo: <strong>${u.tipo.toUpperCase()}</strong> | Status: <strong style="color:var(--success)">Aprovado</strong></span>
                     </div>
-                    ${u.email !== 'master' ? `<button class="button" style="padding: 6px 10px; background: #fee2e2; color: var(--danger); font-size: 0.75rem;" onclick="deletarUsuario('${u.email}')">Excluir</button>` : '<span style="font-size: 0.75rem; color: var(--success); font-weight: bold;">Protegido</span>'}
+                    ${u.email !== 'master' ? `<button class="button" style="padding: 6px 10px; background: #fee2e2; color: var(--danger); font-size: 0.75rem;" onclick="rejeitarUsuario('${u.email}')">Excluir</button>` : '<span style="font-size: 0.75rem; color: var(--success); font-weight: bold;">Master</span>'}
                 </div>
             `).join('');
         }
