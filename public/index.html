@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
       :root {
         --primary: #2563eb;
@@ -20,7 +21,6 @@
         --success: #16a34a;
         --success-dark: #15803d;
         --danger: #dc2626;
-        --warning: #d97706;
         --shadow: rgba(15, 23, 42, 0.12);
       }
 
@@ -36,7 +36,6 @@
 
       .hidden { display: none !important; }
 
-      /* Estilo da Tela de Login */
       .auth-layout {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -113,7 +112,7 @@
         color: var(--text);
       }
 
-      input, select {
+      input, select, textarea {
         width: 100%;
         padding: 14px 16px;
         border-radius: 12px;
@@ -124,7 +123,7 @@
         transition: 0.2s;
       }
 
-      input:focus, select:focus {
+      input:focus, textarea:focus {
         outline: none;
         border-color: var(--primary);
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
@@ -133,8 +132,8 @@
       .button {
         border: none;
         border-radius: 12px;
-        padding: 14px 20px;
-        font-size: 1rem;
+        padding: 12px 20px;
+        font-size: 0.95rem;
         font-weight: 700;
         cursor: pointer;
         transition: 0.2s;
@@ -155,7 +154,7 @@
       /* Layout do Dashboard Logado */
       .app-layout {
         display: grid;
-        grid-template-columns: 300px 1fr;
+        grid-template-columns: 320px 1fr;
         min-height: 100vh;
         width: 100%;
       }
@@ -170,7 +169,7 @@
       }
 
       .history-list {
-        max-height: calc(100vh - 280px);
+        max-height: calc(100vh - 340px);
         overflow-y: auto;
         display: flex;
         flex-direction: column;
@@ -186,9 +185,6 @@
         font-size: 0.85rem;
         cursor: pointer;
         transition: 0.2s;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
       }
 
       .history-item:hover {
@@ -199,51 +195,31 @@
       .dashboard-main {
         padding: 40px;
         overflow-y: auto;
-        max-width: 900px;
       }
 
-      .preview-box {
-        margin-top: 24px;
-        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-        border-left: 6px solid var(--primary);
-        border-radius: 14px;
-        padding: 20px;
-      }
-
-      /* Modal de Gestão Master */
-      .modal-overlay {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(15, 23, 42, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        padding: 20px;
-      }
-
-      .modal-card {
-        background: #fff;
-        width: 100%;
-        max-width: 560px;
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        max-height: 90vh;
-        overflow-y: auto;
-      }
-
-      .user-list-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px;
-        background: #f8fafc;
+      .card-painel {
+        background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        margin-bottom: 8px;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px var(--shadow);
+        margin-bottom: 24px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
         font-size: 0.9rem;
       }
+
+      th, td {
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      th { background: #f8fafc; font-weight: 600; }
 
       @media (max-width: 768px) {
         .auth-layout, .app-layout { grid-template-columns: 1fr; }
@@ -267,16 +243,21 @@
 
       <section class="auth-panel">
         <div class="auth-box">
-          <div class="brand" style="color:var(--text)"><span class="brand-mark">A</span><span>anúncios<span class="brand-period">.</span></span></div>
+          <div class="brand" style="color:var(--text)"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
           <p class="eyebrow" id="auth-eyebrow" style="margin-top: 15px;">PAINEL COMERCIAL</p>
           <h2 id="auth-title" style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
           <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">Entre para gerar e gerenciar suas locuções.</p>
       
-          <form id="auth-form" class="form-stack" onsubmit="realizarLoginOuCadastro(event)">
-            <label class="field" id="nome-field" hidden>Nome completo / Loja<input id="input-nome" placeholder="Seu Nome"></label>
-            <label class="field">Usuário / E-mail<input id="input-email" required placeholder="master ou seu.usuario"></label>
+          <form id="auth-form" class="form-stack" onsubmit="enviarFormularioAuth(event)">
+            <label class="field" id="label-tipo" hidden>Tipo de Conta
+              <select id="input-tipo">
+                <option value="comum">Operador Comum</option>
+                <option value="master">Administrador Master</option>
+              </select>
+            </label>
+            <label class="field">Usuário<input id="input-usuario" required placeholder="Ex: master ou seu nome"></label>
             <label class="field">Senha<input id="input-senha" type="password" required placeholder="Sua senha"></label>
-            <button class="button button-primary button-wide" type="submit" id="btn-submit">Entrar <span aria-hidden="true">↗</span></button>
+            <button class="button button-primary button-wide" type="submit" id="btn-submit-auth">Entrar ↗</button>
             <p class="form-message" id="auth-message" role="status"></p>
           </form>
 
@@ -292,356 +273,262 @@
       <aside class="sidebar">
         <div>
           <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
-          <p class="eyebrow" style="margin-top: 15px;">HISTÓRICO DO DIA</p>
-          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">Clique para repetir o áudio:</div>
+          <p class="eyebrow" style="margin-top: 20px;">HISTÓRICO DE ANÚNCIOS</p>
+          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 6px;">Salvo no banco de dados:</div>
           <div id="listaHistorico" class="history-list">
             <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>
           </div>
         </div>
 
         <div>
-          <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
-            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;" onclick="abrirModalAdmin()">Gerenciar Contas & Aprovações</button>
+          <div id="bloco-master-menu" class="hidden" style="margin-bottom: 12px;">
+            <button class="button button-wide" style="background: #e2e8f0; font-size: 0.85rem;" onclick="alternarSecaoMaster()">Gerenciar Usuários</button>
           </div>
-          <button class="button" style="width: 100%; background: #fee2e2; color: var(--danger); font-size: 0.85rem;" onclick="sairDaConta()">Sair da Conta</button>
+          <div style="border-top: 1px solid #cbd5e1; padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span id="user-logado-label" style="font-size: 0.85rem; font-weight: 600;"></span>
+            <button class="button" style="background: #fee2e2; color: #dc2626; font-size: 0.75rem; padding: 6px 10px;" onclick="sairDaConta()">Sair</button>
+          </div>
         </div>
       </aside>
 
       <section class="dashboard-main">
-        <div class="brand" style="margin-bottom: 20px;"><span class="brand-mark">📢</span><span id="saudacao-usuario">Painel de Ofertas</span></div>
-        
-        <h1 style="font-family:'Manrope'; font-size: 2rem; margin: 0 0 8px;">Gerador de Locução</h1>
-        <p style="color: var(--muted); margin-bottom: 24px;">Preencha os dados do produto para criar o anúncio falado na hora.</p>
+        <!-- GERADOR DE ANÚNCIOS -->
+        <div id="secao-gerador" class="card-painel">
+          <h2 style="margin-top: 0; font-family: 'Manrope';">Gerador de Voz e Anúncios</h2>
+          <p class="muted" style="color: var(--muted); font-size: 0.9rem;">Crie o texto do seu anúncio comercial para reprodução.</p>
+          
+          <form class="form-stack" onsubmit="gerarAnuncio(event)">
+            <label class="field">Título do Anúncio<input id="anuncio-titulo" required placeholder="Ex: Oferta Relâmpago de Carnes"></label>
+            <label class="field">Texto Comercial / Locução<textarea id="anuncio-texto" rows="4" required placeholder="Ex: Atenção clientes, ofertas imperdíveis no setor de açougue hoje..."></textarea></label>
+            <button class="button button-primary" type="submit">Salvar e Registrar Anúncio</button>
+          </form>
+        </div>
 
-        <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
-          <label class="field">Nome do Produto
-            <input id="produto" placeholder="Ex: Arroz Tio João 5kg">
-          </label>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <label class="field">Preço Original (R$)
-              <input id="precoOriginal" type="number" step="0.01" placeholder="29.90">
-            </label>
-            <label class="field">Preço Promocional (R$)
-              <input id="precoPromo" type="number" step="0.01" placeholder="21.90">
-            </label>
+        <!-- PAINEL DE APROVAÇÃO DE USUÁRIOS (MASTER) -->
+        <div id="secao-master" class="card-painel hidden">
+          <h2 style="margin-top: 0; font-family: 'Manrope';">Painel do Administrador Master</h2>
+          <p class="muted" style="color: var(--muted); font-size: 0.9rem;">Aprove contas pendentes ou remova operadores do sistema.</p>
+          
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Tipo</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-usuarios-corpo">
+                <!-- Preenchido via JavaScript -->
+              </tbody>
+            </table>
           </div>
-          <label class="field">Texto Extra / Observação (opcional)
-            <input id="textoExtra" placeholder="Ex: Oferta válida só hoje na feira">
-          </label>
         </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;">
-          <button class="button button-primary" onclick="gerarEAnunciar()">Gerar e Reproduzir Voz</button>
-          <button class="button" style="background: #eef2ff; color: var(--primary);" onclick="ouvirUltimo()">Ouvir Novamente</button>
-        </div>
-        <button class="button" style="background: var(--success); color: white; width: 100%; margin-top: 12px;" onclick="copiarAnuncio()">Copiar Texto do Anúncio</button>
-
-        <div class="preview-box">
-          <p class="eyebrow" style="margin-bottom: 6px;">TEXTO GERADO PARA O ANÚNCIO</p>
-          <p id="textoGerado" style="margin: 0; font-size: 1.05rem; font-weight: 500; line-height: 1.5;">Preencha os campos acima para gerar...</p>
-        </div>
-
-        <p id="app-status" style="margin-top: 15px; font-weight: 600; font-size: 0.9rem; color: var(--muted);"></p>
       </section>
     </main>
 
-    <!-- MODAL DE ADMINISTRAÇÃO E VALIDAÇÃO DE CONTAS -->
-    <div id="modalAdmin" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h2 style="margin-top:0; font-family:'Manrope'; font-size: 1.4rem;">Administração de Contas</h2>
-        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Valide novos cadastros pendentes ou crie contas escolhendo o tipo de permissão.</p>
-
-        <!-- Seção de Pendentes -->
-        <div style="background: #fffbeb; padding: 16px; border-radius: 12px; border: 1px solid #fef3c7; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 10px; font-size: 0.95rem; color: var(--warning);">Cadastros Aguardando Aprovação</h3>
-          <div id="listaPendentesAdmin" style="max-height: 140px; overflow-y: auto;">
-            <span style="color: var(--muted); font-size: 0.85rem;">Nenhum cadastro pendente.</span>
-          </div>
-        </div>
-
-        <!-- Formulário de cadastro direto pelo master com escolha de perfil -->
-        <div style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 10px; font-size: 0.95rem;">Cadastrar Novo Usuário Diretamente</h3>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <input id="novoNome" placeholder="Nome do usuário / Loja">
-            <input id="novoEmail" placeholder="Usuário / E-mail de login">
-            <input id="novoSenha" type="password" placeholder="Senha">
-            <select id="novoTipo">
-              <option value="comum">Operador Comum (Apenas Anúncios)</option>
-              <option value="master">Administrador Master (Acesso Total)</option>
-            </select>
-            <button class="button button-primary" style="margin-top: 4px;" onclick="criarContaDiretaMaster()">Cadastrar e Aprovar Imediatamente</button>
-          </div>
-          <p id="modalMsg" style="font-size: 0.85rem; font-weight: 600; margin-top: 6px; text-align: center;"></p>
-        </div>
-
-        <h3 style="font-size: 0.95rem; margin-bottom: 10px;">Todas as Contas Ativas</h3>
-        <div id="listaUsuariosAtivos" style="max-height: 150px; overflow-y: auto; margin-bottom: 20px;"></div>
-
-        <button class="button" style="width: 100%; background: #e2e8f0;" onclick="fecharModalAdmin()">Fechar Painel</button>
-      </div>
-    </div>
-
     <script>
-        let modoCadastro = false;
-        let ultimoTexto = '';
-        let ultimoTextoLeitura = '';
-        let historicoAnuncios = JSON.parse(localStorage.getItem('historicoAnuncios')) || [];
+      let usuarioAtual = null;
+      let modoRegistro = false;
 
-        let usuariosCadastrados = JSON.parse(localStorage.getItem('usuariosSync')) || [
-            { email: 'master', senha: '123456', nome: 'Administrador Master', tipo: 'master', status: 'aprovado' }
-        ];
+      function alternarModoRegistro(e) {
+        e.preventDefault();
+        modoRegistro = !modoRegistro;
+        const titulo = document.getElementById('auth-title');
+        const desc = document.getElementById('auth-description');
+        const btn = document.getElementById('btn-submit-auth');
+        const link = document.getElementById('link-alternar');
+        const labelTipo = document.getElementById('label-tipo');
 
-        let sessaoAtual = JSON.parse(localStorage.getItem('sessaoSync')) || null;
-        if (sessaoAtual) entrarNoApp(sessaoAtual);
-
-        function alternarModoRegistro(e) {
-            e.preventDefault();
-            modoCadastro = !modoCadastro;
-            document.getElementById('nome-field').hidden = !modoCadastro;
-            document.getElementById('auth-eyebrow').textContent = modoCadastro ? 'SOLICITAR ACESSO' : 'PAINEL COMERCIAL';
-            document.getElementById('auth-title').textContent = modoCadastro ? 'Criar sua conta' : 'Acesse sua conta';
-            document.getElementById('btn-submit').textContent = modoCadastro ? 'Cadastrar e Aguardar Aprovação ↗' : 'Entrar ↗';
-            document.getElementById('link-alternar').textContent = modoCadastro ? 'Já tem conta aprovada? Faça login' : 'Primeiro acesso? Solicitar cadastro';
+        if (modoRegistro) {
+          titulo.innerText = 'Solicitar Cadastro';
+          desc.innerText = 'Crie sua conta para aguardar liberação.';
+          btn.innerText = 'Cadastrar ↗';
+          link.innerText = 'Já tem uma conta? Entrar';
+          labelTipo.hidden = false;
+        } else {
+          titulo.innerText = 'Acesse sua conta';
+          desc.innerText = 'Entre para gerar e gerenciar suas locuções.';
+          btn.innerText = 'Entrar ↗';
+          link.innerText = 'Primeiro acesso? Solicitar cadastro';
+          labelTipo.hidden = true;
         }
+        document.getElementById('auth-message').innerText = '';
+      }
 
-        function realizarLoginOuCadastro(e) {
-            e.preventDefault();
-            const email = document.getElementById('input-email').value.trim();
-            const senha = document.getElementById('input-senha').value.trim();
-            const nome = document.getElementById('input-nome').value.trim();
-            const msg = document.getElementById('auth-message');
+      async function enviarFormularioAuth(event) {
+        event.preventDefault();
+        const usuario = document.getElementById('input-usuario').value.trim();
+        const senha = document.getElementById('input-senha').value.trim();
+        const tipo = document.getElementById('input-tipo').value;
+        const msgEl = document.getElementById('auth-message');
+        msgEl.style.color = 'var(--text)';
+        msgEl.innerText = 'Processando...';
 
-            if (modoCadastro) {
-                if (!nome) { msg.style.color = 'var(--danger)'; msg.textContent = 'Informe o seu nome.'; return; }
-                if (usuariosCadastrados.some(u => u.email === email)) {
-                    msg.style.color = 'var(--danger)'; msg.textContent = 'Este e-mail/usuário já está cadastrado.';
-                    return;
-                }
-                usuariosCadastrados.push({ email, senha, nome, tipo: 'comum', status: 'pendente' });
-                localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
-                msg.style.color = 'var(--warning)';
-                msg.textContent = 'Cadastro realizado! Aguarde a aprovação do Administrador Master para entrar.';
-                document.getElementById('auth-form').reset();
-                return;
-            }
-
-            const usuarioEncontrado = usuariosCadastrados.find(u => u.email === email && u.senha === senha);
-            if (usuarioEncontrado) {
-                if (usuarioEncontrado.status === 'pendente') {
-                    msg.style.color = 'var(--warning)';
-                    msg.textContent = 'Sua conta está aguardando validação do Administrador Master.';
-                    return;
-                }
-                sessaoAtual = usuarioEncontrado;
-                localStorage.setItem('sessaoSync', JSON.stringify(sessaoAtual));
-                entrarNoApp(usuarioEncontrado);
+        if (modoRegistro) {
+          try {
+            const res = await fetch('/api/usuarios', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nome: usuario, senha, tipo })
+            });
+            const data = await res.json();
+            if (data.sucesso) {
+              msgEl.style.color = 'var(--success)';
+              msgEl.innerText = tipo === 'master' ? 'Cadastrado com sucesso! Faça login.' : 'Solicitação enviada! Aguarde aprovação do Master.';
+              setTimeout(() => alternarModoRegistro(event), 2000);
             } else {
-                msg.style.color = 'var(--danger)';
-                msg.textContent = 'Usuário ou senha incorretos.';
+              msgEl.style.color = 'var(--danger)';
+              msgEl.innerText = data.mensagem || 'Erro ao cadastrar.';
             }
-        }
-
-        function entrarNoApp(user) {
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('saudacao-usuario').textContent = `Olá, ${user.nome}`;
-            if (user.tipo === 'master') {
-                document.getElementById('bloco-master').classList.remove('hidden');
-            }
-            renderizarHistorico();
-        }
-
-        function sairDaConta() {
-            localStorage.removeItem('sessaoSync');
-            location.reload();
-        }
-
-        // Painel Administrativo Master
-        function abrirModalAdmin() {
-            document.getElementById('modalAdmin').classList.remove('hidden');
-            renderizarListasAdmin();
-        }
-
-        function fecharModalAdmin() {
-            document.getElementById('modalAdmin').classList.add('hidden');
-            document.getElementById('modalMsg').textContent = '';
-        }
-
-        function aprovarUsuario(email) {
-            usuariosCadastrados = usuariosCadastrados.map(u => u.email === email ? { ...u, status: 'aprovado' } : u);
-            localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
-            renderizarListasAdmin();
-        }
-
-        function rejeitarUsuario(email) {
-            if (confirm(`Deseja recusar e excluir o cadastro de ${email}?`)) {
-                usuariosCadastrados = usuariosCadastrados.filter(u => u.email !== email);
-                localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
-                renderizarListasAdmin();
-            }
-        }
-
-        function criarContaDiretaMaster() {
-            const nome = document.getElementById('novoNome').value.trim();
-            const email = document.getElementById('novoEmail').value.trim();
-            const senha = document.getElementById('novoSenha').value.trim();
-            const tipo = document.getElementById('novoTipo').value;
-            const msg = document.getElementById('modalMsg');
-
-            if (!nome || !email || !senha) {
-                msg.style.color = 'var(--danger)';
-                msg.textContent = 'Preencha todos os campos.';
-                return;
-            }
-
-            if (usuariosCadastrados.some(u => u.email === email)) {
-                msg.style.color = 'var(--danger)';
-                msg.textContent = 'Este usuário já existe.';
-                return;
-            }
-
-            usuariosCadastrados.push({ email, senha, nome, tipo, status: 'aprovado' });
-            localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
-
-            msg.style.color = 'var(--success)';
-            msg.textContent = 'Conta criada e aprovada com sucesso!';
-            document.getElementById('novoNome').value = '';
-            document.getElementById('novoEmail').value = '';
-            document.getElementById('novoSenha').value = '';
-            renderizarListasAdmin();
-        }
-
-        function renderizarListasAdmin() {
-            const containerPendentes = document.getElementById('listaPendentesAdmin');
-            const pendentes = usuariosCadastrados.filter(u => u.status === 'pendente');
-
-            if (pendentes.length === 0) {
-                containerPendentes.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum cadastro pendente.</span>';
+          } catch (err) {
+            msgEl.style.color = 'var(--danger)';
+            msgEl.innerText = 'Erro de conexão com o servidor.';
+          }
+        } else {
+          try {
+            const res = await fetch('/api/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ usuario, senha })
+            });
+            const data = await res.json();
+            if (data.sucesso) {
+              usuarioAtual = data.usuario;
+              entrarNoDashboard();
             } else {
-                containerPendentes.innerHTML = pendentes.map(u => `
-                    <div class="user-list-item" style="background: #fff;">
-                        <div><strong>${u.nome}</strong><br><small style="color:var(--muted);">${u.email}</small></div>
-                        <div style="display: flex; gap: 6px;">
-                            <button class="button" style="padding: 6px 10px; background: var(--success); color: white; font-size: 0.75rem;" onclick="aprovarUsuario('${u.email}')">Aprovar</button>
-                            <button class="button" style="padding: 6px 10px; background: var(--danger); color: white; font-size: 0.75rem;" onclick="rejeitarUsuario('${u.email}')">Recusar</button>
-                        </div>
-                    </div>
-                `).join('');
+              msgEl.style.color = 'var(--danger)';
+              msgEl.innerText = data.mensagem;
             }
-
-            const containerAtivos = document.getElementById('listaUsuariosAtivos');
-            containerAtivos.innerHTML = usuariosCadastrados.map(u => `
-                <div class="user-list-item">
-                    <div>
-                        <strong>${u.nome}</strong> (${u.email})<br>
-                        <span style="font-size: 0.75rem; color: var(--muted);">Cargo: <strong>${u.tipo.toUpperCase()}</strong> | Status: <strong style="color:var(--success)">Aprovado</strong></span>
-                    </div>
-                    ${u.email !== 'master' ? `<button class="button" style="padding: 6px 10px; background: #fee2e2; color: var(--danger); font-size: 0.75rem;" onclick="rejeitarUsuario('${u.email}')">Excluir</button>` : '<span style="font-size: 0.75rem; color: var(--success); font-weight: bold;">Master</span>'}
-                </div>
-            `).join('');
+          } catch (err) {
+            msgEl.style.color = 'var(--danger)';
+            msgEl.innerText = 'Erro de conexão com o servidor.';
+          }
         }
+      }
 
-        // Funções de Locução
-        function removerMoedaParaLeitura(valor) {
-            const numero = Number(valor);
-            if (!Number.isFinite(numero)) return '0';
-            const [inteiro, centavos] = numero.toFixed(2).split('.');
-            const partes = [];
-            if (Number(inteiro) > 0) partes.push(inteiro);
-            if (Number(centavos) > 0) partes.push(centavos);
-            return partes.join(' e ');
+      function entrarNoDashboard() {
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('app-screen').classList.remove('hidden');
+        document.getElementById('user-logado-label').innerText = `${usuarioAtual.nome} (${usuarioAtual.tipo})`;
+
+        if (usuarioAtual.tipo === 'master') {
+          document.getElementById('bloco-master-menu').classList.remove('hidden');
+          carregarUsuariosMaster();
         }
+        carregarHistorico();
+      }
 
-        function selecionarVozPTBR() {
-            const voices = window.speechSynthesis.getVoices();
-            return voices.find(v => v.lang && v.lang.toLowerCase().includes('pt')) || null;
+      function sairDaConta() {
+        usuarioAtual = null;
+        document.getElementById('app-screen').classList.add('hidden');
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('input-usuario').value = '';
+        document.getElementById('input-senha').value = '';
+        document.getElementById('auth-message').innerText = '';
+      }
+
+      async function gerarAnuncio(event) {
+        event.preventDefault();
+        const titulo = document.getElementById('anuncio-titulo').value;
+        const texto = document.getElementById('anuncio-texto').value;
+
+        try {
+          const res = await fetch('/api/historico', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario: usuarioAtual.nome, titulo, texto })
+          });
+          const data = await res.json();
+          if (data.sucesso) {
+            document.getElementById('anuncio-titulo').value = '';
+            document.getElementById('anuncio-texto').value = '';
+            carregarHistorico();
+          } else {
+            alert('Erro ao salvar anúncio no banco.');
+          }
+        } catch (err) {
+          console.error(err);
         }
+      }
 
-        function falarTexto(textoExibicao, textoLeitura) {
-            if (!('speechSynthesis' in window)) return;
-            const synth = window.speechSynthesis;
-            synth.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(textoLeitura);
-            utterance.lang = 'pt-BR';
-            utterance.rate = 0.9;
-            utterance.pitch = 1.08;
-
-            const voz = selecionarVozPTBR();
-            if (voz) utterance.voice = voz;
-
-            synth.speak(utterance);
-            document.getElementById('app-status').textContent = '🔊 Reproduzindo anúncio em voz alta...';
+      async function carregarHistorico() {
+        try {
+          const res = await fetch('/api/historico');
+          const data = await res.json();
+          const container = document.getElementById('listaHistorico');
+          
+          if (data.sucesso && data.historico.length > 0) {
+            container.innerHTML = '';
+            data.historico.forEach(item => {
+              const div = document.createElement('div');
+              div.className = 'history-item';
+              div.innerHTML = `<strong>${item.titulo}</strong><br><small style="color:var(--muted)">Por: ${item.usuario}</small>`;
+              container.appendChild(div);
+            });
+          } else {
+            container.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>';
+          }
+        } catch (err) {
+          console.error('Erro ao carregar histórico', err);
         }
+      }
 
-        function gerarEAnunciar() {
-            const produto = document.getElementById('produto').value.trim();
-            const precoOriginal = document.getElementById('precoOriginal').value.trim();
-            const precoPromo = document.getElementById('precoPromo').value.trim();
-            const textoExtra = document.getElementById('textoExtra').value.trim();
-
-            if (!produto || !precoOriginal || !precoPromo) {
-                alert('Preencha o nome do produto e os preços!');
-                return;
-            }
-
-            const pOrigDisplay = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const pPromDisplay = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const pOrigLeitura = removerMoedaParaLeitura(precoOriginal);
-            const pPromLeitura = removerMoedaParaLeitura(precoPromo);
-            const extra = textoExtra ? ` ${textoExtra}` : '';
-
-            const textoExibicao = `Atenção cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}.${extra} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
-            const textoLeitura = `Atenção cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}.${extra} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
-
-            ultimoTexto = textoExibicao;
-            ultimoTextoLeitura = textoLeitura;
-
-            document.getElementById('textoGerado').innerText = textoExibicao;
-            falarTexto(textoExibicao, textoLeitura);
-
-            const novoItem = { produto, textoExibicao, textoLeitura, hora: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) };
-            historicoAnuncios.unshift(novoItem);
-            if (historicoAnuncios.length > 20) historicoAnuncios.pop();
-            localStorage.setItem('historicoAnuncios', JSON.stringify(historicoAnuncios));
-            renderizarHistorico();
+      function alternarSecaoMaster() {
+        const secaoGerador = document.getElementById('secao-gerador');
+        const secaoMaster = document.getElementById('secao-master');
+        if (secaoMaster.classList.contains('hidden')) {
+          secaoMaster.classList.remove('hidden');
+          secaoGerador.classList.add('hidden');
+          carregarUsuariosMaster();
+        } else {
+          secaoMaster.classList.add('hidden');
+          secaoGerador.classList.remove('hidden');
         }
+      }
 
-        function repetirAnuncio(index) {
-            const item = historicoAnuncios[index];
-            if (item) {
-                ultimoTexto = item.textoExibicao;
-                ultimoTextoLeitura = item.textoLeitura;
-                document.getElementById('textoGerado').innerText = item.textoExibicao;
-                falarTexto(item.textoExibicao, item.textoLeitura);
-            }
+      async function carregarUsuariosMaster() {
+        try {
+          const res = await fetch('/api/usuarios');
+          const data = await res.json();
+          const corpo = document.getElementById('tabela-usuarios-corpo');
+          if (data.sucesso) {
+            corpo.innerHTML = '';
+            data.usuarios.forEach(u => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${u.nome}</td>
+                <td>${u.tipo}</td>
+                <td><span style="color:${u.status === 'aprovado' ? 'var(--success)' : 'orange'}; font-weight:600;">${u.status}</span></td>
+                <td>
+                  ${u.status === 'pendente' ? `<button class="button" style="background:var(--success); color:white; padding:4px 8px; font-size:0.75rem;" onclick="aprovarUsuario('${u.nome}')">Aprovar</button>` : ''}
+                  ${u.nome !== 'master' ? `<button class="button" style="background:#fee2e2; color:var(--danger); padding:4px 8px; font-size:0.75rem; margin-left:4px;" onclick="deletarUsuario('${u.nome}')">Excluir</button>` : ''}
+                </td>
+              `;
+              corpo.appendChild(tr);
+            });
+          }
+        } catch (err) {
+          console.error('Erro ao carregar usuários', err);
         }
+      }
 
-        function renderizarHistorico() {
-            const container = document.getElementById('listaHistorico');
-            if (historicoAnuncios.length === 0) {
-                container.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>';
-                return;
-            }
-            container.innerHTML = historicoAnuncios.map((item, index) => `
-                <div class="history-item" onclick="repetirAnuncio(${index})" title="Ouvir novamente">
-                    <div><strong>${item.produto}</strong><br><small style="color:var(--muted);">${item.hora}</small></div>
-                    <span style="color: var(--primary); font-weight: bold;">🔊</span>
-                </div>
-            `).join('');
-        }
+      async function aprovarUsuario(nome) {
+        await fetch('/api/usuarios/aprovar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome })
+        });
+        carregarUsuariosMaster();
+      }
 
-        function ouvirUltimo() {
-            if (ultimoTextoLeitura) falarTexto(ultimoTexto, ultimoTextoLeitura);
+      async function deletarUsuario(nome) {
+        if (confirm(`Deseja realmente excluir o usuário ${nome}?`)) {
+          await fetch(`/api/usuarios/${nome}`, { method: 'DELETE' });
+          carregarUsuariosMaster();
         }
-
-        async function copiarAnuncio() {
-            if (ultimoTexto) {
-                await navigator.clipboard.writeText(ultimoTexto);
-                document.getElementById('app-status').textContent = '✅ Texto copiado para a área de transferência!';
-            }
-        }
+      }
     </script>
   </body>
 </html>
