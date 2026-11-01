@@ -198,7 +198,7 @@
         </div>
 
         <div class="form-group">
-            <label for="precoPromo">Preço Promocional </label>
+            <label for="precoPromo">Preço Promocional (R$)</label>
             <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
         </div>
 
@@ -219,6 +219,12 @@
 
     <script>
         let ultimoTexto = '';
+
+        function formatarPrecoParaLeitura(valor) {
+            const numero = Number(valor);
+            const inteiro = Math.trunc(numero);
+            return `R$ ${inteiro.toLocaleString('pt-BR')}`;
+        }
 
         function selecionarVozPTBR() {
             const voices = window.speechSynthesis.getVoices();
@@ -269,14 +275,19 @@
                 return;
             }
 
-            const pOrig = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const pProm = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const pOrigDisplay = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const pPromDisplay = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            const texto = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrig} por apenas ${pProm}. Aproveite! Supermercados Ponto novo, Onde e gostoso Comprar`;
-            ultimoTexto = texto;
+            const pOrigLeitura = formatarPrecoParaLeitura(precoOriginal);
+            const pPromLeitura = formatarPrecoParaLeitura(precoPromo);
 
-            document.getElementById('textoGerado').innerText = texto;
-            falarTexto(texto);
+            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}. Aproveite agora no nosso comércio!`;
+            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}. Aproveite agora no nosso comércio!`;
+
+            ultimoTexto = textoExibicao;
+
+            document.getElementById('textoGerado').innerText = textoExibicao;
+            falarTexto(textoLeitura);
         }
 
         function ouvirUltimoTexto() {
@@ -284,7 +295,7 @@
                 mostrarStatus('Ainda não há anúncio para ouvir.');
                 return;
             }
-            falarTexto(ultimoTexto);
+            falarTexto(ultimoTexto.replace(/\$/g, 'reais').replace(/\./g, '').replace(/,/g, ''));
         }
 
         async function copiarTexto() {
