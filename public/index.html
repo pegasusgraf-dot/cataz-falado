@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <style>
       :root {
         --primary: #2563eb;
@@ -36,7 +35,7 @@
 
       .hidden { display: none !important; }
 
-      /* Estilo da Tela de Login (Mesmo padrão da sua referência) */
+      /* Estilo da Tela de Login */
       .auth-layout {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -266,4 +265,224 @@
 
         <div>
           <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
-            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;"
+            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;" onclick="painelMaster()">Gerenciar Usuários</button>
+          </div>
+          <button class="button" style="width: 100%; background: #fee2e2; color: var(--danger); font-size: 0.85rem;" onclick="sairDaConta()">Sair da Conta</button>
+        </div>
+      </aside>
+
+      <section class="dashboard-main">
+        <div class="brand" style="margin-bottom: 20px;"><span class="brand-mark">📢</span><span id="saudacao-usuario">Painel de Ofertas</span></div>
+        
+        <h1 style="font-family:'Manrope'; font-size: 2rem; margin: 0 0 8px;">Gerador de Locução</h1>
+        <p style="color: var(--muted); margin-bottom: 24px;">Preencha os dados do produto para criar o anúncio falado na hora.</p>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+          <label class="field">Nome do Produto
+            <input id="produto" placeholder="Ex: Arroz Tio João 5kg">
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <label class="field">Preço Original (R$)
+              <input id="precoOriginal" type="number" step="0.01" placeholder="29.90">
+            </label>
+            <label class="field">Preço Promocional (R$)
+              <input id="precoPromo" type="number" step="0.01" placeholder="21.90">
+            </label>
+          </div>
+          <label class="field">Texto Extra / Observação (opcional)
+            <input id="textoExtra" placeholder="Ex: Oferta válida só hoje na feira">
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;">
+          <button class="button button-primary" onclick="gerarEAnunciar()">Gerar e Reproduzir Voz</button>
+          <button class="button" style="background: #eef2ff; color: var(--primary);" onclick="ouvirUltimo()">Ouvir Novamente</button>
+        </div>
+        <button class="button" style="background: var(--success); color: white; width: 100%; margin-top: 12px;" onclick="copiarAnuncio()">Copiar Texto do Anúncio</button>
+
+        <div class="preview-box">
+          <p class="eyebrow" style="margin-bottom: 6px;">TEXTO GERADO PARA O ANÚNCIO</p>
+          <p id="textoGerado" style="margin: 0; font-size: 1.05rem; font-weight: 500; line-height: 1.5;">Preencha os campos acima para gerar...</p>
+        </div>
+
+        <p id="app-status" style="margin-top: 15px; font-weight: 600; font-size: 0.9rem; color: var(--muted);"></p>
+      </section>
+    </main>
+
+    <script>
+        let modoCadastro = false;
+        let ultimoTexto = '';
+        let ultimoTextoLeitura = '';
+        let historicoAnuncios = JSON.parse(localStorage.getItem('historicoAnuncios')) || [];
+
+        let usuariosCadastrados = JSON.parse(localStorage.getItem('usuariosSync')) || [
+            { email: 'master', senha: '123456', nome: 'Administrador Master', tipo: 'master' }
+        ];
+
+        let sessaoAtual = JSON.parse(localStorage.getItem('sessaoSync')) || null;
+        if (sessaoAtual) entrarNoApp(sessaoAtual);
+
+        function alternarModoRegistro(e) {
+            e.preventDefault();
+            modoCadastro = !modoCadastro;
+            document.getElementById('nome-field').hidden = !modoCadastro;
+            document.getElementById('auth-eyebrow').textContent = modoCadastro ? 'NOVO CADASTRO' : 'PAINEL COMERCIAL';
+            document.getElementById('auth-title').textContent = modoCadastro ? 'Criar sua conta' : 'Acesse sua conta';
+            document.getElementById('link-alternar').textContent = modoCadastro ? 'Já tem uma conta? Faça login' : 'Primeiro acesso? Cadastrar Administrador/Usuário';
+        }
+
+        function realizarLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('input-email').value.trim();
+            const senha = document.getElementById('input-senha').value.trim();
+            const nome = document.getElementById('input-nome').value.trim();
+            const msg = document.getElementById('auth-message');
+
+            if (modoCadastro) {
+                if (!nome) { msg.style.color = 'var(--danger)'; msg.textContent = 'Informe o nome.'; return; }
+                if (usuariosCadastrados.some(u => u.email === email)) {
+                    msg.style.color = 'var(--danger)'; msg.textContent = 'Este e-mail/usuário já existe.';
+                    return;
+                }
+                const novo = { email, senha, nome, tipo: email === 'master' ? 'master' : 'comum' };
+                usuariosCadastrados.push(novo);
+                localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
+                msg.style.color = 'var(--success)';
+                msg.textContent = 'Cadastrado com sucesso! Faça login.';
+                alternarModoRegistro(e);
+                return;
+            }
+
+            const usuarioEncontrado = usuariosCadastrados.find(u => u.email === email && u.senha === senha);
+            if (usuarioEncontrado) {
+                sessaoAtual = usuarioEncontrado;
+                localStorage.setItem('sessaoSync', JSON.stringify(sessaoAtual));
+                entrarNoApp(usuarioEncontrado);
+            } else {
+                msg.style.color = 'var(--danger)';
+                msg.textContent = 'E-mail ou senha incorretos.';
+            }
+        }
+
+        function entrarNoApp(user) {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('saudacao-usuario').textContent = `Olá, ${user.nome}`;
+            if (user.tipo === 'master') {
+                document.getElementById('bloco-master').classList.remove('hidden');
+            }
+            renderizarHistorico();
+        }
+
+        function sairDaConta() {
+            localStorage.removeItem('sessaoSync');
+            location.reload();
+        }
+
+        function painelMaster() {
+            const lista = usuariosCadastrados.map(u => `${u.nome} (${u.email}) - [${u.tipo}]`).join('\n');
+            alert(`=== USUÁRIOS CADASTRADOS ===\n\n${lista}\n\n(Para cadastrar novos, use a tela inicial de registro antes de logar ou crie uma conta nova).`);
+        }
+
+        function removerMoedaParaLeitura(valor) {
+            const numero = Number(valor);
+            if (!Number.isFinite(numero)) return '0';
+            const [inteiro, centavos] = numero.toFixed(2).split('.');
+            const partes = [];
+            if (Number(inteiro) > 0) partes.push(inteiro);
+            if (Number(centavos) > 0) partes.push(centavos);
+            return partes.join(' e ');
+        }
+
+        function selecionarVozPTBR() {
+            const voices = window.speechSynthesis.getVoices();
+            return voices.find(v => v.lang && v.lang.toLowerCase().includes('pt')) || null;
+        }
+
+        function falarTexto(textoExibicao, textoLeitura) {
+            if (!('speechSynthesis' in window)) return;
+            const synth = window.speechSynthesis;
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(textoLeitura);
+            utterance.lang = 'pt-BR';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.08;
+
+            const voz = selecionarVozPTBR();
+            if (voz) utterance.voice = voz;
+
+            synth.speak(utterance);
+            document.getElementById('app-status').textContent = '🔊 Reproduzindo anúncio em voz alta...';
+        }
+
+        function gerarEAnunciar() {
+            const produto = document.getElementById('produto').value.trim();
+            const precoOriginal = document.getElementById('precoOriginal').value.trim();
+            const precoPromo = document.getElementById('precoPromo').value.trim();
+            const textoExtra = document.getElementById('textoExtra').value.trim();
+
+            if (!produto || !precoOriginal || !precoPromo) {
+                alert('Preencha o nome do produto e os preços!');
+                return;
+            }
+
+            const pOrigDisplay = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const pPromDisplay = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const pOrigLeitura = removerMoedaParaLeitura(precoOriginal);
+            const pPromLeitura = removerMoedaParaLeitura(precoPromo);
+            const extra = textoExtra ? ` ${textoExtra}` : '';
+
+            const textoExibicao = `Atenção cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}.${extra} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
+            const textoLeitura = `Atenção cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}.${extra} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
+
+            ultimoTexto = textoExibicao;
+            ultimoTextoLeitura = textoLeitura;
+
+            document.getElementById('textoGerado').innerText = textoExibicao;
+            falarTexto(textoExibicao, textoLeitura);
+
+            const novoItem = { produto, textoExibicao, textoLeitura, hora: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) };
+            historicoAnuncios.unshift(novoItem);
+            if (historicoAnuncios.length > 20) historicoAnuncios.pop();
+            localStorage.setItem('historicoAnuncios', JSON.stringify(historicoAnuncios));
+            renderizarHistorico();
+        }
+
+        function repetirAnuncio(index) {
+            const item = historicoAnuncios[index];
+            if (item) {
+                ultimoTexto = item.textoExibicao;
+                ultimoTextoLeitura = item.textoLeitura;
+                document.getElementById('textoGerado').innerText = item.textoExibicao;
+                falarTexto(item.textoExibicao, item.textoLeitura);
+            }
+        }
+
+        function renderizarHistorico() {
+            const container = document.getElementById('listaHistorico');
+            if (historicoAnuncios.length === 0) {
+                container.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>';
+                return;
+            }
+            container.innerHTML = historicoAnuncios.map((item, index) => `
+                <div class="history-item" onclick="repetirAnuncio(${index})" title="Ouvir novamente">
+                    <div><strong>${item.produto}</strong><br><small style="color:var(--muted);">${item.hora}</small></div>
+                    <span style="color: var(--primary); font-weight: bold;">🔊</span>
+                </div>
+            `).join('');
+        }
+
+        function ouvirUltimo() {
+            if (ultimoTextoLeitura) falarTexto(ultimoTexto, ultimoTextoLeitura);
+        }
+
+        async function copiarAnuncio() {
+            if (ultimoTexto) {
+                await navigator.clipboard.writeText(ultimoTexto);
+                document.getElementById('app-status').textContent = '✅ Texto copiado para a área de transferência!';
+            }
+        }
+    </script>
+  </body>
+</html>
