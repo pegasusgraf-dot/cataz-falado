@@ -19,46 +19,201 @@
         --text: #0f172a;
         --muted: #475569;
         --success: #16a34a;
+        --success-dark: #15803d;
         --danger: #dc2626;
         --shadow: rgba(15, 23, 42, 0.12);
       }
 
       * { box-sizing: border-box; }
-      body, html { margin: 0; min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+
+      body, html {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'DM Sans', 'Segoe UI', Tahoma, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
       .hidden { display: none !important; }
 
-      .auth-layout { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; width: 100%; }
-      .auth-intro { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; padding: 60px 48px; display: flex; flex-direction: column; justify-content: space-between; }
-      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem; font-family: 'Manrope', sans-serif; }
-      .brand-mark { background: var(--primary); color: white; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+      /* Estilo da Tela de Login (Mesmo padrão da sua referência) */
+      .auth-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 100vh;
+        width: 100%;
+      }
+
+      .auth-intro {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #ffffff;
+        padding: 60px 48px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 1.25rem;
+        font-family: 'Manrope', sans-serif;
+      }
+
+      .brand-mark {
+        background: var(--primary);
+        color: white;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+      }
+
       .brand-period { color: var(--primary); }
-      .intro-copy h1 { font-family: 'Manrope', sans-serif; font-size: clamp(2.2rem, 4vw, 3.2rem); line-height: 1.15; margin: 20px 0; }
+
+      .intro-copy h1 {
+        font-family: 'Manrope', sans-serif;
+        font-size: clamp(2.2rem, 4vw, 3.2rem);
+        line-height: 1.15;
+        margin: 20px 0;
+      }
+
       .intro-copy h1 span { color: #60a5fa; }
       .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; }
-      .auth-panel { background: var(--card); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; }
-      .auth-box { width: 100%; max-width: 380px; }
+      .intro-note { color: #cbd5e1; font-size: 1.05rem; }
+      .intro-foot { font-size: 0.85rem; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
+      .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #22c55e; }
+
+      .auth-panel {
+        background: var(--card);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+      }
+
+      .auth-box {
+        width: 100%;
+        max-width: 380px;
+      }
+
       .form-stack { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
       
-      label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 0.9rem; color: var(--text); }
-      input, textarea { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid #cbd5e1; font-size: 1rem; background: #fff; font-family: inherit; }
-      input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12); }
+      label.field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text);
+      }
 
-      .button { border: none; border-radius: 12px; padding: 12px 20px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; }
-      .button-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25); }
+      input, select {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1.5px solid #cbd5e1;
+        font-size: 1rem;
+        background: #fff;
+        font-family: inherit;
+        transition: 0.2s;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      }
+
+      .button {
+        border: none;
+        border-radius: 12px;
+        padding: 14px 20px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s;
+        font-family: inherit;
+      }
+
+      .button-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+      }
+
+      .button-primary:hover { transform: translateY(-1px); }
       .button-wide { width: 100%; }
+
       .form-message { font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 10px; min-height: 20px; }
 
-      .app-layout { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; width: 100%; }
-      .sidebar { background: #f1f5f9; border-right: 1px solid #e2e8f0; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; }
-      .history-list { max-height: calc(100vh - 340px); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-      .history-item { background: #fff; border: 1px solid #cbd5e1; padding: 12px; border-radius: 10px; font-size: 0.85rem; }
-      .dashboard-main { padding: 40px; overflow-y: auto; }
-      .card-painel { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px var(--shadow); margin-bottom: 24px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }
-      th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-      th { background: #f8fafc; font-weight: 600; }
+      /* Layout do Dashboard Logado */
+      .app-layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        min-height: 100vh;
+        width: 100%;
+      }
 
-      @media (max-width: 768px) { .auth-layout, .app-layout { grid-template-columns: 1fr; } .auth-intro { display: none; } }
+      .sidebar {
+        background: #f1f5f9;
+        border-right: 1px solid #e2e8f0;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .history-list {
+        max-height: calc(100vh - 280px);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .history-item {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .history-item:hover {
+        border-color: var(--primary);
+        background: #f0fdf4;
+      }
+
+      .dashboard-main {
+        padding: 40px;
+        overflow-y: auto;
+        max-width: 900px;
+      }
+
+      .preview-box {
+        margin-top: 24px;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        border-left: 6px solid var(--primary);
+        border-radius: 14px;
+        padding: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .auth-layout, .app-layout { grid-template-columns: 1fr; }
+        .auth-intro { display: none; }
+      }
     </style>
   </head>
   <body>
@@ -72,24 +227,26 @@
           <h1>O anúncio certo,<br>na hora exata,<br><span>para vender mais.</span></h1>
           <p class="intro-note">Sistema inteligente de locução e gerenciamento de ofertas comerciais.</p>
         </div>
+        <div class="intro-foot"><span class="status-dot"></span> Sintetizador de voz pronto para uso</div>
       </section>
 
       <section class="auth-panel">
         <div class="auth-box">
-          <div class="brand" style="color:var(--text)"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
+          <div class="brand" style="color:var(--text)"><span class="brand-mark">A</span><span>anúncios<span class="brand-period">.</span></span></div>
           <p class="eyebrow" id="auth-eyebrow" style="margin-top: 15px;">PAINEL COMERCIAL</p>
           <h2 id="auth-title" style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
           <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">Entre para gerar e gerenciar suas locuções.</p>
       
-          <form id="auth-form" class="form-stack" onsubmit="enviarFormularioAuth(event)">
-            <label class="field">Usuário<input id="input-usuario" required placeholder="Ex: master ou seu nome"></label>
+          <form id="auth-form" class="form-stack" onsubmit="realizarLogin(event)">
+            <label class="field" id="nome-field" hidden>Nome completo<input id="input-nome" placeholder="Nome do operador"></label>
+            <label class="field">E-mail / Usuário<input id="input-email" required placeholder="master ou operador@loja.com"></label>
             <label class="field">Senha<input id="input-senha" type="password" required placeholder="Sua senha"></label>
-            <button class="button button-primary button-wide" type="submit" id="btn-submit-auth">Entrar ↗</button>
+            <button class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
             <p class="form-message" id="auth-message" role="status"></p>
           </form>
 
           <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
-            <a href="#" onclick="alternarModoRegistro(event)" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">Primeiro acesso? Solicitar cadastro</a>
+            <a href="#" onclick="alternarModoRegistro(event)" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">Primeiro acesso? Cadastrar Administrador/Usuário</a>
           </div>
         </div>
       </section>
@@ -100,260 +257,13 @@
       <aside class="sidebar">
         <div>
           <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
-          <p class="eyebrow" style="margin-top: 20px;">HISTÓRICO DE ANÚNCIOS</p>
-          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 6px;">Salvo no banco de dados:</div>
+          <p class="eyebrow" style="margin-top: 15px;">HISTÓRICO DO DIA</p>
+          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">Clique para repetir o áudio:</div>
           <div id="listaHistorico" class="history-list">
             <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>
           </div>
         </div>
 
         <div>
-          <div id="bloco-master-menu" class="hidden" style="margin-bottom: 12px;">
-            <button class="button button-wide" style="background: #e2e8f0; font-size: 0.85rem;" onclick="alternarSecaoMaster()">Gerenciar Usuários</button>
-          </div>
-          <div style="border-top: 1px solid #cbd5e1; padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
-            <span id="user-logado-label" style="font-size: 0.85rem; font-weight: 600;"></span>
-            <button class="button" style="background: #fee2e2; color: #dc2626; font-size: 0.75rem; padding: 6px 10px;" onclick="sairDaConta()">Sair</button>
-          </div>
-        </div>
-      </aside>
-
-      <section class="dashboard-main">
-        <!-- GERADOR DE ANÚNCIOS -->
-        <div id="secao-gerador" class="card-painel">
-          <h2 style="margin-top: 0; font-family: 'Manrope';">Gerador de Voz e Anúncios</h2>
-          <p class="muted" style="color: var(--muted); font-size: 0.9rem;">Crie o texto do seu anúncio comercial para reprodução.</p>
-          
-          <form class="form-stack" onsubmit="gerarAnuncio(event)">
-            <label class="field">Título do Anúncio<input id="anuncio-titulo" required placeholder="Ex: Oferta Relâmpago de Carnes"></label>
-            <label class="field">Texto Comercial / Locução<textarea id="anuncio-texto" rows="4" required placeholder="Ex: Atenção clientes, ofertas imperdíveis no setor de açougue hoje..."></textarea></label>
-            <button class="button button-primary" type="submit">Salvar e Registrar Anúncio</button>
-          </form>
-        </div>
-
-        <!-- PAINEL DE APROVAÇÃO DE USUÁRIOS (MASTER) -->
-        <div id="secao-master" class="card-painel hidden">
-          <h2 style="margin-top: 0; font-family: 'Manrope';">Painel do Administrador Master</h2>
-          <p class="muted" style="color: var(--muted); font-size: 0.9rem;">Aprove contas pendentes ou remova operadores do sistema.</p>
-          
-          <div style="overflow-x: auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>Usuário</th>
-                  <th>Tipo</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="tabela-usuarios-corpo">
-                <!-- Preenchido via JavaScript -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <script>
-      let usuarioAtual = null;
-      let modoRegistro = false;
-
-      function alternarModoRegistro(e) {
-        e.preventDefault();
-        modoRegistro = !modoRegistro;
-        const titulo = document.getElementById('auth-title');
-        const desc = document.getElementById('auth-description');
-        const btn = document.getElementById('btn-submit-auth');
-        const link = document.getElementById('link-alternar');
-
-        if (modoRegistro) {
-          titulo.innerText = 'Solicitar Cadastro';
-          desc.innerText = 'Crie sua conta para aguardar liberação do Administrador.';
-          btn.innerText = 'Cadastrar ↗';
-          link.innerText = 'Já tem uma conta? Entrar';
-        } else {
-          titulo.innerText = 'Acesse sua conta';
-          desc.innerText = 'Entre para gerar e gerenciar suas locuções.';
-          btn.innerText = 'Entrar ↗';
-          link.innerText = 'Primeiro acesso? Solicitar cadastro';
-        }
-        document.getElementById('auth-message').innerText = '';
-      }
-
-      async function enviarFormularioAuth(event) {
-        event.preventDefault();
-        const usuario = document.getElementById('input-usuario').value.trim();
-        const senha = document.getElementById('input-senha').value.trim();
-        const msgEl = document.getElementById('auth-message');
-        msgEl.style.color = 'var(--text)';
-        msgEl.innerText = 'Processando...';
-
-        if (modoRegistro) {
-          try {
-            const res = await fetch('/api/usuarios', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ nome: usuario, senha })
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-              msgEl.style.color = 'var(--success)';
-              msgEl.innerText = 'Solicitação enviada com sucesso! Aguarde aprovação do Master.';
-              setTimeout(() => alternarModoRegistro(event), 2500);
-            } else {
-              msgEl.style.color = 'var(--danger)';
-              msgEl.innerText = data.mensagem || 'Erro ao cadastrar.';
-            }
-          } catch (err) {
-            msgEl.style.color = 'var(--danger)';
-            msgEl.innerText = 'Erro de conexão com o servidor.';
-          }
-        } else {
-          try {
-            const res = await fetch('/api/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ usuario, senha })
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-              usuarioAtual = data.usuario;
-              entrarNoDashboard();
-            } else {
-              msgEl.style.color = 'var(--danger)';
-              msgEl.innerText = data.mensagem;
-            }
-          } catch (err) {
-            msgEl.style.color = 'var(--danger)';
-            msgEl.innerText = 'Erro de conexão com o servidor.';
-          }
-        }
-      }
-
-      function entrarNoDashboard() {
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('app-screen').classList.remove('hidden');
-        document.getElementById('user-logado-label').innerText = `${usuarioAtual.nome} (${usuarioAtual.tipo})`;
-
-        if (usuarioAtual.tipo === 'master') {
-          document.getElementById('bloco-master-menu').classList.remove('hidden');
-          carregarUsuariosMaster();
-        } else {
-          document.getElementById('bloco-master-menu').classList.add('hidden');
-        }
-        carregarHistorico();
-      }
-
-      function sairDaConta() {
-        usuarioAtual = null;
-        document.getElementById('app-screen').classList.add('hidden');
-        document.getElementById('auth-screen').classList.remove('hidden');
-        document.getElementById('input-usuario').value = '';
-        document.getElementById('input-senha').value = '';
-        document.getElementById('auth-message').innerText = '';
-      }
-
-      async function gerarAnuncio(event) {
-        event.preventDefault();
-        const titulo = document.getElementById('anuncio-titulo').value;
-        const texto = document.getElementById('anuncio-texto').value;
-
-        try {
-          const res = await fetch('/api/historico', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ usuario: usuarioAtual.nome, titulo, texto })
-          });
-          const data = await res.json();
-          if (data.sucesso) {
-            document.getElementById('anuncio-titulo').value = '';
-            document.getElementById('anuncio-texto').value = '';
-            carregarHistorico();
-          } else {
-            alert('Erro ao salvar anúncio no banco.');
-          }
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      async function carregarHistorico() {
-        try {
-          const res = await fetch('/api/historico');
-          const data = await res.json();
-          const container = document.getElementById('listaHistorico');
-          
-          if (data.sucesso && data.historico.length > 0) {
-            container.innerHTML = '';
-            data.historico.forEach(item => {
-              const div = document.createElement('div');
-              div.className = 'history-item';
-              div.innerHTML = `<strong>${item.titulo}</strong><br><small style="color:var(--muted)">Por: ${item.usuario}</small>`;
-              container.appendChild(div);
-            });
-          } else {
-            container.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>';
-          }
-        } catch (err) {
-          console.error('Erro ao carregar histórico', err);
-        }
-      }
-
-      function alternarSecaoMaster() {
-        const secaoGerador = document.getElementById('secao-gerador');
-        const secaoMaster = document.getElementById('secao-master');
-        if (secaoMaster.classList.contains('hidden')) {
-          secaoMaster.classList.remove('hidden');
-          secaoGerador.classList.add('hidden');
-          carregarUsuariosMaster();
-        } else {
-          secaoMaster.classList.add('hidden');
-          secaoGerador.classList.remove('hidden');
-        }
-      }
-
-      async function carregarUsuariosMaster() {
-        try {
-          const res = await fetch('/api/usuarios');
-          const data = await res.json();
-          const corpo = document.getElementById('tabela-usuarios-corpo');
-          if (data.sucesso) {
-            corpo.innerHTML = '';
-            data.usuarios.forEach(u => {
-              const tr = document.createElement('tr');
-              tr.innerHTML = `
-                <td>${u.nome}</td>
-                <td>${u.tipo}</td>
-                <td><span style="color:${u.status === 'aprovado' ? 'var(--success)' : 'orange'}; font-weight:600;">${u.status}</span></td>
-                <td>
-                  ${u.status === 'pendente' ? `<button class="button" style="background:var(--success); color:white; padding:4px 8px; font-size:0.75rem;" onclick="aprovarUsuario('${u.nome}')">Aprovar</button>` : ''}
-                  ${u.nome !== 'master' ? `<button class="button" style="background:#fee2e2; color:var(--danger); padding:4px 8px; font-size:0.75rem; margin-left:4px;" onclick="deletarUsuario('${u.nome}')">Excluir</button>` : ''}
-                </td>
-              `;
-              corpo.appendChild(tr);
-            });
-          }
-        } catch (err) {
-          console.error('Erro ao carregar usuários', err);
-        }
-      }
-
-      async function aprovarUsuario(nome) {
-        await fetch('/api/usuarios/aprovar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome })
-        });
-        carregarUsuariosMaster();
-      }
-
-      async function deletarUsuario(nome) {
-        if (confirm(`Deseja realmente excluir o usuário ${nome}?`)) {
-          await fetch(`/api/usuarios/${nome}`, { method: 'DELETE' });
-          carregarUsuariosMaster();
-        }
-      }
-    </script>
-  </body>
-</html>
+          <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
+            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;"
