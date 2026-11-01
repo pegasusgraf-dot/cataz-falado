@@ -349,7 +349,7 @@
     <div id="modalAdmin" class="modal-overlay hidden">
       <div class="modal-card">
         <h2 style="margin-top:0; font-family:'Manrope'; font-size: 1.4rem;">Administração de Contas</h2>
-        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Valide novos cadastros pendentes ou crie contas manualmente.</p>
+        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 20px;">Valide novos cadastros pendentes ou crie contas escolhendo o tipo de permissão.</p>
 
         <!-- Seção de Pendentes -->
         <div style="background: #fffbeb; padding: 16px; border-radius: 12px; border: 1px solid #fef3c7; margin-bottom: 20px;">
@@ -359,13 +359,17 @@
           </div>
         </div>
 
-        <!-- Formulário de cadastro direto pelo master -->
+        <!-- Formulário de cadastro direto pelo master com escolha de perfil -->
         <div style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 10px; font-size: 0.95rem;">Cadastrar Novo Operador Diretamente</h3>
+          <h3 style="margin: 0 0 10px; font-size: 0.95rem;">Cadastrar Novo Usuário Diretamente</h3>
           <div style="display: flex; flex-direction: column; gap: 8px;">
-            <input id="novoNome" placeholder="Nome do operador">
-            <input id="novoEmail" placeholder="Usuário / E-mail">
+            <input id="novoNome" placeholder="Nome do usuário / Loja">
+            <input id="novoEmail" placeholder="Usuário / E-mail de login">
             <input id="novoSenha" type="password" placeholder="Senha">
+            <select id="novoTipo">
+              <option value="comum">Operador Comum (Apenas Anúncios)</option>
+              <option value="master">Administrador Master (Acesso Total)</option>
+            </select>
             <button class="button button-primary" style="margin-top: 4px;" onclick="criarContaDiretaMaster()">Cadastrar e Aprovar Imediatamente</button>
           </div>
           <p id="modalMsg" style="font-size: 0.85rem; font-weight: 600; margin-top: 6px; text-align: center;"></p>
@@ -384,7 +388,6 @@
         let ultimoTextoLeitura = '';
         let historicoAnuncios = JSON.parse(localStorage.getItem('historicoAnuncios')) || [];
 
-        // status: 'aprovado' ou 'pendente'
         let usuariosCadastrados = JSON.parse(localStorage.getItem('usuariosSync')) || [
             { email: 'master', senha: '123456', nome: 'Administrador Master', tipo: 'master', status: 'aprovado' }
         ];
@@ -483,6 +486,7 @@
             const nome = document.getElementById('novoNome').value.trim();
             const email = document.getElementById('novoEmail').value.trim();
             const senha = document.getElementById('novoSenha').value.trim();
+            const tipo = document.getElementById('novoTipo').value;
             const msg = document.getElementById('modalMsg');
 
             if (!nome || !email || !senha) {
@@ -497,11 +501,11 @@
                 return;
             }
 
-            usuariosCadastrados.push({ email, senha, nome, tipo: 'comum', status: 'aprovado' });
+            usuariosCadastrados.push({ email, senha, nome, tipo, status: 'aprovado' });
             localStorage.setItem('usuariosSync', JSON.stringify(usuariosCadastrados));
 
             msg.style.color = 'var(--success)';
-            msg.textContent = 'Operador cadastrado e aprovado com sucesso!';
+            msg.textContent = 'Conta criada e aprovada com sucesso!';
             document.getElementById('novoNome').value = '';
             document.getElementById('novoEmail').value = '';
             document.getElementById('novoSenha').value = '';
