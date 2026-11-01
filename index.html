@@ -7,75 +7,127 @@
     <style>
         :root {
             --primary: #2563eb;
+            --secondary: #1d4ed8;
             --bg: #f8fafc;
             --card: #ffffff;
             --text: #1e293b;
+            --muted: #64748b;
+            --shadow: rgba(15, 23, 42, 0.12);
         }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
+            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
             color: var(--text);
             margin: 0;
-            padding: 20px;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            padding: 24px;
         }
+
         .container {
             background: var(--card);
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 30px 28px;
+            border-radius: 20px;
+            box-shadow: 0 18px 50px var(--shadow);
             width: 100%;
-            max-width: 500px;
+            max-width: 560px;
         }
-        h2 { margin-top: 0; color: var(--primary); text-align: center; }
+
+        h2 {
+            margin: 0 0 24px;
+            color: var(--primary);
+            text-align: center;
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
+
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--text);
         }
+
         input {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            padding: 14px 16px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 12px;
             font-size: 16px;
-            box-sizing: border-box;
+            background: #fff;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
         button {
             width: 100%;
-            padding: 14px;
-            background-color: var(--primary);
+            padding: 16px 18px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
         }
-        button:hover { background-color: #1d4ed8; }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(37, 99, 235, 0.32);
+        }
+
         .preview-box {
-            margin-top: 25px;
-            background: #f1f5f9;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 5px solid var(--primary);
+            margin-top: 24px;
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+            padding: 18px 16px;
+            border-radius: 12px;
+            border-left: 6px solid var(--primary);
         }
-        .preview-box h3 { margin: 0 0 10px 0; font-size: 14px; color: #64748b; }
-        #textoGerado { font-size: 18px; font-weight: 500; line-height: 1.4; }
+
+        .preview-box h3 {
+            margin: 0 0 10px;
+            font-size: 0.9rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        #textoGerado {
+            margin: 0;
+            font-size: 1.15rem;
+            line-height: 1.55;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 24px 18px;
+            }
+        }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h2>📢 Mega Oferta Express</h2>
-        
+
         <div class="form-group">
             <label for="produto">Nome do Produto:</label>
             <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
@@ -91,45 +143,74 @@
             <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
         </div>
 
-        <button onclick="gerarEAnunciar()">Gerar e Falar Anúncio</button>
+        <button onclick="gerarEAnunciar()">Gerar e falar anúncio</button>
 
         <div class="preview-box">
-            <h3>Texto do Anúncio:</h3>
+            <h3>Texto do anúncio:</h3>
             <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
         </div>
     </div>
 
     <script>
+        function selecionarVozPTBR() {
+            const voices = window.speechSynthesis.getVoices();
+            return voices.find(voice =>
+                voice.lang && (
+                    voice.lang.toLowerCase().includes('pt-br') ||
+                    voice.lang.toLowerCase().includes('pt')
+                )
+            ) || null;
+        }
+
+        function falarTexto(texto) {
+            if (!('speechSynthesis' in window)) {
+                alert('Seu navegador não suporta reprodução de voz.');
+                return;
+            }
+
+            const synth = window.speechSynthesis;
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'pt-BR';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+            utterance.volume = 1;
+
+            const vozPTBR = selecionarVozPTBR();
+            if (vozPTBR) {
+                utterance.voice = vozPTBR;
+            }
+
+            synth.speak(utterance);
+        }
+
         function gerarEAnunciar() {
-            const produto = document.getElementById('produto').value;
-            const precoOriginal = document.getElementById('precoOriginal').value;
-            const precoPromo = document.getElementById('precoPromo').value;
+            const produto = document.getElementById('produto').value.trim();
+            const precoOriginal = document.getElementById('precoOriginal').value.trim();
+            const precoPromo = document.getElementById('precoPromo').value.trim();
 
             if (!produto || !precoOriginal || !precoPromo) {
                 alert('Por favor, preencha todos os campos!');
                 return;
             }
 
-            // Formata valores para o padrão brasileiro
             const pOrig = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const pProm = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            // Cria o texto comercial chamativo
             const texto = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrig} por apenas ${pProm}. Aproveite agora no nosso comércio!`;
 
             document.getElementById('textoGerado').innerText = texto;
+            falarTexto(texto);
+        }
 
-            // Executa a voz sintetizada do navegador
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Para falas anteriores
-                const utterance = new SpeechSynthesisUtterance(texto);
-                utterance.lang = 'pt-BR';
-                utterance.rate = 1.0; // Velocidade da fala
-                utterance.pitch = 1.0; // Tom da voz
-                window.speechSynthesis.speak(utterance);
-            } else {
-                alert('Seu navegador não suporta recurso de voz.');
-            }
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                const voz = selecionarVozPTBR();
+                if (voz) {
+                    console.log('Voz PT-BR disponível:', voz.name);
+                }
+            };
         }
     </script>
 </body>
