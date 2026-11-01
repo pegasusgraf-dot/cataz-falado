@@ -1,4 +1,17 @@
-// Criar tabela de histórico de áudios/anúncios automaticamente se não existir
+const express = require('express');
+const { Pool } = require('pg');
+const path = require('path');
+
+const app = express();
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Conexão com o Banco Neon
+const pool = new Pool({
+    connectionString: 'postgresql://neondb_owner:npg_VRkNhKFvSr17@ep-noisy-fog-b4p6p3pc-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require',
+});
+
+// Criar tabelas e colunas automaticamente se não existirem
 async function inicializarBanco() {
     try {
         await pool.query(`
@@ -12,6 +25,7 @@ async function inicializarBanco() {
             );
         `);
         
+        // Garante que colunas novas existam caso a tabela já tenha sido criada antes
         await pool.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'aprovado';");
 
         // Tabela para salvar o histórico de anúncios/áudios gerados
@@ -39,9 +53,83 @@ async function inicializarBanco() {
 }
 inicializarBanco();
 
+// Rota de Login com validação de status pendente
+app.post('/api/login', async (req, res) => {
+    const { usuario, senha } = req.body;
+    try {
+        const resultado = await pool.query(
+            'SELECT * FROM usuarios WHERE nome = $1 AND senha = $2',
+            [usuario, senha]
+        );
+        if (resultado.rows.length > 0) {
+            const user = resultado.rows[0];
+            if (user.status === 'pendente') {
+                return res.status(403).json({ sucesso: false, mensagem: 'Sua conta está aguardando aprovação do Administrador Master.' });
+            }
+            res.json({ sucesso: true, usuario: user });
+        } else {
+            res.status(401).json({ sucesso: false, mensagem: 'Usuário ou senha incorretos.' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor.' });
+    }
+});
+
+// Rota para cadastrar / solicitar novo usuário (Pendente por padrão)
+app.post('/api/usuarios', async (req, res) => {
+    const { nome, senha, tipo } = req.body;
+    try {
+        const statusInicial = (tipo === 'master') ? 'aprovado' : 'pendente';
+        const novo = await pool.query(
+            'INSERT INTO usuarios (nome, senha, tipo, status) VALUES ($1, $2, $3, $4) RETURNING id, nome, tipo, status',
+            [nome, senha, tipo || 'comum', statusInicial]
+        );
+        res.json({ sucesso: true, usuario: novo.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ sucesso: false, mensagem: 'Erro ao cadastrar. O nome de usuário já pode existir.' });
+    }
+});
+
+// Rota para listar usuários
+app.get('/api/usuarios', async (req, res) => {
+    try {
+        const lista = await pool.query('SELECT id, nome, tipo, status, created_at FROM usuarios ORDER BY id DESC');
+        res.json({ sucesso: true, usuarios: lista.rows });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar usuários.' });
+    }
+});
+
+// Rota para Aprovar usuário pendente
+app.post('/api/usuarios/aprovar', async (req, res) => {
+    const { nome } = req.body;
+    try {
+        await pool.query("UPDATE usuarios SET status = 'aprovado' WHERE nome = $1", [nome]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, mensagem: 'Erro ao aprovar usuário.' });
+    }
+});
+
+// Rota para Deletar / Recusar usuário
+app.delete('/api/usuarios/:nome', async (req, res) => {
+    const { nome } = req.params;
+    if (nome === 'master') {
+        return res.status(400).json({ sucesso: false, mensagem: 'Não é permitido excluir o usuário master.' });
+    }
+    try {
+        await pool.query('DELETE FROM usuarios WHERE nome = $1', [nome]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, mensagem: 'Erro ao excluir usuário.' });
+    }
+});
+
 // --- ROTAS DE HISTÓRICO DE ÁUDIOS ---
 
-// Salvar um novo áudio gerado no histórico
+// Salvar novo áudio/anúncio gerado
 app.post('/api/historico', async (req, res) => {
     const { usuario, titulo, texto } = req.body;
     try {
@@ -56,7 +144,7 @@ app.post('/api/historico', async (req, res) => {
     }
 });
 
-// Listar histórico de áudios
+// Listar histórico de áudios salvos
 app.get('/api/historico', async (req, res) => {
     try {
         const lista = await pool.query('SELECT * FROM historico_audios ORDER BY id DESC LIMIT 50');
@@ -64,4 +152,9 @@ app.get('/api/historico', async (req, res) => {
     } catch (error) {
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar histórico.' });
     }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
