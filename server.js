@@ -30,55 +30,64 @@ async function inicializarBanco() {
             await pool.query(
                 "INSERT INTO usuarios (nome, senha, tipo) VALUES ('master', '123456', 'master')"
             );
-            console.log('Usuário master criado com sucesso! (master / 123456)');
+            console.log('✅ Usuário master criado com sucesso! (master / 123456)');
         } else {
-            console.log('Usuário master já existe no banco.');
+            console.log('ℹ️ Usuário master já existe no banco.');
         }
     } catch (err) {
-        console.error('Erro ao inicializar tabelas:', err);
+        console.error('❌ Erro ao inicializar tabelas:', err);
     }
 }
 
 // Inicializa o banco ao subir o servidor
 inicializarBanco();
 
-// Rota de Login (ajustada para aceitar tanto 'usuario' quanto 'nome' do front-end)
+// Rota de Login (compatível com 'usuario', 'nome' ou 'login' vindo do front-end)
 app.post('/api/login', async (req, res) => {
-    const nomeUsuario = req.body.usuario || req.body.nome;
+    console.log('--- NOVA TENTATIVA DE LOGIN ---');
+    console.log('Dados recebidos no req.body:', req.body);
+
+    const nomeUsuario = req.body.usuario || req.body.nome || req.body.login;
     const { senha } = req.body;
 
     if (!nomeUsuario || !senha) {
+        console.log('❌ Falha: Usuário ou senha não informados.');
         return res.status(400).json({ sucesso: false, mensagem: 'Informe o usuário e a senha.' });
     }
 
     try {
         const resultado = await pool.query(
             'SELECT * FROM usuarios WHERE nome = $1 AND senha = $2',
-            [nomeUsuario.trim(), senha]
+            [String(nomeUsuario).trim(), String(senha).trim()]
         );
         
         if (resultado.rows.length > 0) {
+            console.log(`✅ Login bem-sucedido para o usuário: "${nomeUsuario}"`);
             res.json({ sucesso: true, usuario: resultado.rows[0] });
         } else {
+            console.log(`❌ Falha: Credenciais inválidas para o usuário: "${nomeUsuario}"`);
             res.status(401).json({ sucesso: false, mensagem: 'Usuário ou senha incorretos.' });
         }
     } catch (error) {
-        console.error('Erro no login:', error);
+        console.error('❌ Erro interno no servidor durante o login:', error);
         res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor.' });
     }
 });
 
-// Rota para cadastrar novo usuário (Apenas Master)
+// Rota para cadastrar novo usuário
 app.post('/api/usuarios', async (req, res) => {
-    const { nome, senha, tipo } = req.body;
+    const nomeUsuario = req.body.usuario || req.body.nome;
+    const { senha, tipo } = req.body;
+
     try {
         const novo = await pool.query(
             'INSERT INTO usuarios (nome, senha, tipo) VALUES ($1, $2, $3) RETURNING id, nome, tipo',
-            [nome.trim(), senha, tipo || 'comum']
+            [String(nomeUsuario).trim(), String(senha).trim(), tipo || 'comum']
         );
+        console.log(`✅ Usuário cadastrado com sucesso: ${nomeUsuario}`);
         res.json({ sucesso: true, usuario: novo.rows[0] });
     } catch (error) {
-        console.error('Erro ao cadastrar usuário:', error);
+        console.error('❌ Erro ao cadastrar usuário:', error);
         res.status(400).json({ sucesso: false, mensagem: 'Erro ao cadastrar. O nome de usuário já pode existir.' });
     }
 });
@@ -89,12 +98,12 @@ app.get('/api/usuarios', async (req, res) => {
         const lista = await pool.query('SELECT id, nome, tipo, created_at FROM usuarios ORDER BY id DESC');
         res.json({ sucesso: true, usuarios: lista.rows });
     } catch (error) {
-        console.error('Erro ao buscar usuários:', error);
+        console.error('❌ Erro ao buscar usuários:', error);
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar usuários.' });
     }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
