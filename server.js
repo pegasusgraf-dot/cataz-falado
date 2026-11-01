@@ -11,7 +11,7 @@ const pool = new Pool({
     connectionString: 'postgresql://neondb_owner:npg_VRkNhKFvSr17@ep-noisy-fog-b4p6p3pc-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require',
 });
 
-// Criar tabelas e colunas automaticamente se não existirem
+// Inicializar tabelas de forma segura
 async function inicializarBanco() {
     try {
         await pool.query(`
@@ -25,10 +25,8 @@ async function inicializarBanco() {
             );
         `);
         
-        // Garante que colunas novas existam caso a tabela já tenha sido criada antes
         await pool.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'aprovado';");
 
-        // Tabela para salvar o histórico de anúncios/áudios gerados
         await pool.query(`
             CREATE TABLE IF NOT EXISTS historico_audios (
                 id SERIAL PRIMARY KEY,
@@ -43,7 +41,7 @@ async function inicializarBanco() {
         const checkMaster = await pool.query("SELECT * FROM usuarios WHERE nome = 'master'");
         if (checkMaster.rows.length === 0) {
             await pool.query(
-                "INSERT INTO usuarios (nome, senha, tipo, status) VALUES ('master', '123456', 'master', 'aprovado')",
+                "INSERT INTO usuarios (nome, senha, tipo, status) VALUES ('master', '123456', 'master', 'aprovado')"
             );
             console.log('Usuário master criado com sucesso! (master / 123456)');
         }
@@ -53,7 +51,7 @@ async function inicializarBanco() {
 }
 inicializarBanco();
 
-// Rota de Login com validação de status pendente
+// Rota de Login
 app.post('/api/login', async (req, res) => {
     const { usuario, senha } = req.body;
     try {
@@ -76,14 +74,13 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Rota para cadastrar / solicitar novo usuário (Pendente por padrão)
+// Rota para cadastrar novo usuário (Sempre nasce como 'comum' e 'pendente' por segurança)
 app.post('/api/usuarios', async (req, res) => {
-    const { nome, senha, tipo } = req.body;
+    const { nome, senha } = req.body;
     try {
-        const statusInicial = (tipo === 'master') ? 'aprovado' : 'pendente';
         const novo = await pool.query(
             'INSERT INTO usuarios (nome, senha, tipo, status) VALUES ($1, $2, $3, $4) RETURNING id, nome, tipo, status',
-            [nome, senha, tipo || 'comum', statusInicial]
+            [nome, senha, 'comum', 'pendente']
         );
         res.json({ sucesso: true, usuario: novo.rows[0] });
     } catch (error) {
@@ -102,7 +99,7 @@ app.get('/api/usuarios', async (req, res) => {
     }
 });
 
-// Rota para Aprovar usuário pendente
+// Rota para Aprovar usuário
 app.post('/api/usuarios/aprovar', async (req, res) => {
     const { nome } = req.body;
     try {
@@ -113,7 +110,7 @@ app.post('/api/usuarios/aprovar', async (req, res) => {
     }
 });
 
-// Rota para Deletar / Recusar usuário
+// Rota para Deletar usuário
 app.delete('/api/usuarios/:nome', async (req, res) => {
     const { nome } = req.params;
     if (nome === 'master') {
@@ -127,9 +124,7 @@ app.delete('/api/usuarios/:nome', async (req, res) => {
     }
 });
 
-// --- ROTAS DE HISTÓRICO DE ÁUDIOS ---
-
-// Salvar novo áudio/anúncio gerado
+// Rotas de Histórico de Áudios
 app.post('/api/historico', async (req, res) => {
     const { usuario, titulo, texto } = req.body;
     try {
@@ -144,7 +139,6 @@ app.post('/api/historico', async (req, res) => {
     }
 });
 
-// Listar histórico de áudios salvos
 app.get('/api/historico', async (req, res) => {
     try {
         const lista = await pool.query('SELECT * FROM historico_audios ORDER BY id DESC LIMIT 50');
