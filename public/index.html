@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loja Oferta SyncStore</title>
+    <title>SyncStore | Login</title>
     <style>
         :root {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
-            --bg: #f8fafc;
+            --primary-soft: #dbeafe;
+            --bg: #f4f7fb;
             --card: #ffffff;
             --text: #0f172a;
             --muted: #475569;
             --success: #16a34a;
             --success-dark: #15803d;
             --shadow: rgba(15, 23, 42, 0.12);
+            --danger: #dc2626;
+            --line: #dfe7f1;
         }
 
         * { box-sizing: border-box; }
@@ -23,7 +26,7 @@
             margin: 0;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+            background: linear-gradient(135deg, #edf5ff 0%, #f8fafc 100%);
             color: var(--text);
             display: flex;
             align-items: center;
@@ -31,82 +34,192 @@
             padding: 24px;
         }
 
-        .container {
-            width: 100%;
-            max-width: 620px;
+        .auth-shell {
+            width: min(100%, 980px);
+            min-height: 640px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
             background: var(--card);
-            border-radius: 24px;
-            box-shadow: 0 18px 50px var(--shadow);
-            padding: 28px 26px;
             border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 18px 50px var(--shadow);
         }
 
-        .brand {
-            text-align: center;
-            margin-bottom: 22px;
+        .brand-panel {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #2563eb 100%);
+            padding: 40px 38px;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .brand-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(255,255,255,0.18), transparent 38%);
+            pointer-events: none;
+        }
+
+        .brand-content {
+            position: relative;
+            z-index: 1;
         }
 
         .tag {
             display: inline-block;
-            background: #dbeafe;
-            color: var(--primary);
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #e0ecff;
             font-weight: 700;
             padding: 8px 12px;
             border-radius: 999px;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            margin-bottom: 10px;
+            margin-bottom: 24px;
         }
 
-        h1 {
+        .brand-panel h1 {
             margin: 0;
-            font-size: clamp(2rem, 4vw, 2.8rem);
-            color: var(--text);
+            font-size: clamp(2.3rem, 4vw, 3.5rem);
+            line-height: 1.05;
+            letter-spacing: -0.04em;
         }
 
-        .subtitle {
-            margin-top: 10px;
-            color: var(--muted);
-            font-size: 0.96rem;
+        .brand-panel p {
+            margin: 18px 0 0;
+            max-width: 420px;
+            color: rgba(255,255,255,0.82);
+            font-size: 1.04rem;
+            line-height: 1.7;
         }
 
-        .form-group {
-            margin-top: 20px;
+        .brand-features {
+            list-style: none;
+            padding: 0;
+            margin: 26px 0 0;
+            display: grid;
+            gap: 12px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 700;
-            color: var(--text);
-            font-size: 0.96rem;
+        .brand-features li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(255,255,255,0.88);
+            font-weight: 600;
         }
 
-        input {
+        .brand-features li::before {
+            content: "✓";
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.14);
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .form-panel {
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+        }
+
+        .login-box {
             width: 100%;
+            max-width: 380px;
+        }
+
+        .login-box h2 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: -0.04em;
+        }
+
+        .login-box .subtext {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.98rem;
+            line-height: 1.6;
+        }
+
+        .login-form {
+            margin-top: 26px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field label {
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .field input {
+            width: 100%;
+            border: 1.5px solid var(--line);
             padding: 14px 16px;
             border-radius: 12px;
-            border: 1.5px solid #dbe3ef;
             font-size: 1rem;
             background: #fff;
             transition: 0.2s ease;
         }
 
-        input:focus {
+        .field input:focus {
             outline: none;
-            border: 1.5px solid var(--primary);
+            border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
         }
 
-        .button-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 18px;
+        .login-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 0.9rem;
         }
 
-        button {
+        .checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox input {
+            accent-color: var(--primary);
+        }
+
+        .text-link {
+            color: var(--primary);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            padding: 0;
+        }
+
+        .primary-btn,
+        .secondary-btn,
+        .success-btn,
+        .ghost-btn {
             border: none;
             border-radius: 12px;
             padding: 15px 16px;
@@ -122,14 +235,205 @@
             box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
         }
 
-        .primary-btn:hover {
+        .primary-btn:hover,
+        .secondary-btn:hover,
+        .success-btn:hover,
+        .ghost-btn:hover {
             transform: translateY(-1px);
         }
 
-        .secondary-btn {
+        .ghost-btn {
             background: #eef2ff;
             color: var(--primary);
             border: 1px solid rgba(37, 99, 235, 0.15);
+        }
+
+        .message {
+            margin-top: 8px;
+            min-height: 18px;
+            font-size: 0.92rem;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .message.error {
+            color: var(--danger);
+        }
+
+        .message.success {
+            color: var(--success-dark);
+        }
+
+        .demo-box {
+            margin-top: 20px;
+            border: 1px dashed rgba(37, 99, 235, 0.3);
+            background: #f8fbff;
+            color: var(--muted);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .demo-box strong {
+            color: var(--text);
+        }
+
+        .app-shell {
+            display: none;
+            width: min(100%, 1100px);
+            background: rgba(255,255,255,0.95);
+            border-radius: 28px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 0 18px 50px var(--shadow);
+            overflow: hidden;
+        }
+
+        .app-shell.is-visible {
+            display: block;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 18px 24px;
+            border-bottom: 1px solid #edf2f7;
+            background: #fff;
+        }
+
+        .brand-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .brand-mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+        }
+
+        .user-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8fafc;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 10px 12px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b4d00;
+            font-weight: 800;
+            font-size: 0.85rem;
+        }
+
+        .workspace {
+            padding: 28px 24px 24px;
+        }
+
+        .title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .title-row h1 {
+            margin: 0;
+            font-size: clamp(1.8rem, 3vw, 2.4rem);
+            letter-spacing: -0.04em;
+        }
+
+        .subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 0.96rem;
+        }
+
+        .panel {
+            background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+            border: 1px solid #edf2f7;
+            border-radius: 22px;
+            padding: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .form-grid .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: var(--text);
+            font-size: 0.96rem;
+        }
+
+        .field input,
+        .field textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1.5px solid var(--line);
+            font-size: 1rem;
+            background: #fff;
+            transition: 0.2s ease;
+            font-family: inherit;
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .field input:focus,
+        .field textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        .button-row {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
         }
 
         .success-btn {
@@ -172,59 +476,215 @@
             font-weight: 600;
         }
 
-        @media (max-width: 480px) {
-            .button-row {
+        @media (max-width: 820px) {
+            .auth-shell {
                 grid-template-columns: 1fr;
+            }
+
+            .brand-panel {
+                min-height: 260px;
+            }
+
+            .button-row,
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 18px;
+            }
+
+            .topbar,
+            .workspace {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .title-row {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="brand">
-            <div class="tag">Oferta do Dia</div>
-            <h1>Loja Oferta Premium</h1>
-            <div class="subtitle">Promoções irresistíveis para você aproveitar agora</div>
-        </div>
+    <div id="authScreen" class="auth-shell">
+        <section class="brand-panel">
+            <div class="brand-content">
+                <div class="tag">Acesso seguro</div>
+                <h1>Seu painel<br>de anúncios</h1>
+                <p>Gerencie campanhas, crie ofertas e publique mensagens em poucos segundos com uma experiência simples e profissional.</p>
+                <ul class="brand-features">
+                    <li>Cadastro rápido</li>
+                    <li>Criação de ofertas</li>
+                    <li>Texto pronto para copiar</li>
+                </ul>
+            </div>
+        </section>
 
-        <div class="form-group">
-            <label for="produto">Nome do Produto</label>
-            <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
-        </div>
+        <section class="form-panel">
+            <div class="login-box">
+                <h2>Entrar</h2>
+                <p class="subtext">Acesse sua conta para continuar no painel de oferta.</p>
 
-        <div class="form-group">
-            <label for="precoOriginal">Preço Original (R$)</label>
-            <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
-        </div>
+                <form id="loginForm" class="login-form" novalidate>
+                    <div class="field">
+                        <label for="email">E-mail</label>
+                        <input id="email" name="email" type="email" placeholder="seu@email.com" autocomplete="email" required>
+                    </div>
 
-        <div class="form-group">
-            <label for="precoPromo">Preço Promocional (R$)</label>
-            <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
-        </div>
+                    <div class="field">
+                        <label for="password">Senha</label>
+                        <input id="password" name="password" type="password" placeholder="Digite sua senha" autocomplete="current-password" required>
+                    </div>
 
-        <div class="form-group">
-            <label for="textoExtra">Texto Extra (opcional)</label>
-            <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
-        </div>
+                    <div class="login-options">
+                        <label class="checkbox"><input type="checkbox"> Lembrar-me</label>
+                        <button type="button" class="text-link">Esqueci a senha</button>
+                    </div>
 
-        <div class="button-row">
-            <button class="primary-btn" onclick="gerarEAnunciar()">Gerar anúncio</button>
-            <button class="secondary-btn" onclick="ouvirUltimoTexto()">Ouvir</button>
-        </div>
+                    <button type="submit" class="primary-btn">Entrar</button>
+                    <div id="loginMessage" class="message" aria-live="polite"></div>
+                </form>
 
-        <button class="success-btn" onclick="copiarTexto()">Copiar anúncio</button>
+                <div class="demo-box">
+                    <strong>Demo:</strong> e-mail: admin@demo.com<br>
+                    senha: 123456
+                </div>
+            </div>
+        </section>
+    </div>
 
-        <div class="preview-box">
-            <h3>Texto do anúncio</h3>
-            <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
-        </div>
+    <div id="appScreen" class="app-shell">
+        <header class="topbar">
+            <a class="brand-inline" href="#" aria-label="Loja Oferta Premium">
+                <span class="brand-mark">L</span>
+                <span>Loja Oferta Premium</span>
+            </a>
+            <div class="user-bar">
+                <div class="user-pill"><span class="avatar" id="userAvatar">A</span><span id="userLabel">Administrador</span></div>
+                <button type="button" class="ghost-btn" id="logoutBtn">Sair</button>
+            </div>
+        </header>
 
-        <div id="status" class="status" aria-live="polite"></div>
+        <main class="workspace">
+            <div class="title-row">
+                <div>
+                    <h1>Gerar anúncio</h1>
+                    <p class="subtitle">Crie mensagens promocionais e copie em um clique.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="produto">Nome do Produto</label>
+                        <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+                    </div>
+
+                    <div class="field">
+                        <label for="precoOriginal">Preço Original (R$)</label>
+                        <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+                    </div>
+
+                    <div class="field">
+                        <label for="precoPromo">Preço Promocional (R$)</label>
+                        <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
+                    </div>
+
+                    <div class="field">
+                        <label for="textoExtra">Texto Extra (opcional)</label>
+                        <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button class="primary-btn" type="button" onclick="gerarEAnunciar()">Gerar anúncio</button>
+                    <button class="secondary-btn" type="button" onclick="ouvirUltimoTexto()">Ouvir</button>
+                </div>
+
+                <button class="success-btn" type="button" onclick="copiarTexto()">Copiar anúncio</button>
+
+                <div class="preview-box">
+                    <h3>Texto do anúncio</h3>
+                    <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
+                </div>
+
+                <div id="status" class="status" aria-live="polite"></div>
+            </div>
+        </main>
     </div>
 
     <script>
         let ultimoTexto = '';
         let ultimoTextoLeitura = '';
+
+        const authScreen = document.getElementById('authScreen');
+        const appScreen = document.getElementById('appScreen');
+        const loginForm = document.getElementById('loginForm');
+        const loginMessage = document.getElementById('loginMessage');
+        const userLabel = document.getElementById('userLabel');
+        const userAvatar = document.getElementById('userAvatar');
+
+        function setMessage(element, text, type = '') {
+            element.textContent = text;
+            element.className = 'message';
+            if (type) element.classList.add(type);
+        }
+
+        function getUserDisplayName(email) {
+            const localPart = email.split('@')[0] || 'Usuário';
+            return localPart.charAt(0).toUpperCase() + localPart.slice(1);
+        }
+
+        function showLoginScreen() {
+            authScreen.style.display = 'grid';
+            appScreen.classList.remove('is-visible');
+        }
+
+        function showAppScreen(email) {
+            authScreen.style.display = 'none';
+            appScreen.classList.add('is-visible');
+            userLabel.textContent = getUserDisplayName(email);
+            userAvatar.textContent = (email || 'A').charAt(0).toUpperCase();
+        }
+
+        loginForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) {
+                setMessage(loginMessage, 'Preencha e-mail e senha para continuar.', 'error');
+                return;
+            }
+
+            const isValid = email === 'admin@demo.com' && password === '123456';
+
+            if (!isValid) {
+                setMessage(loginMessage, 'Credenciais inválidas. Use o demo abaixo.', 'error');
+                return;
+            }
+
+            setMessage(loginMessage, 'Login realizado com sucesso!', 'success');
+            localStorage.setItem('lojaOfertaAuth', email);
+            showAppScreen(email);
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', function () {
+            localStorage.removeItem('lojaOfertaAuth');
+            loginForm.reset();
+            setMessage(loginMessage, '', '');
+            showLoginScreen();
+        });
+
+        const savedUser = localStorage.getItem('lojaOfertaAuth');
+        if (savedUser) {
+            showAppScreen(savedUser);
+        }
 
         function formatarPrecoParaLeitura(valor) {
             const numero = Number(valor);
@@ -239,13 +699,8 @@
             const [inteiro, centavos] = numero.toFixed(2).split('.');
             const partes = [];
 
-            if (Number(inteiro) > 0) {
-                partes.push(inteiro);
-            }
-
-            if (Number(centavos) > 0) {
-                partes.push(centavos);
-            }
+            if (Number(inteiro) > 0) partes.push(inteiro);
+            if (Number(centavos) > 0) partes.push(centavos);
 
             return partes.join(' e ');
         }
@@ -307,8 +762,8 @@
             const textoExtraDisplay = textoExtra ? ` ${textoExtra}` : '';
             const textoExtraLeitura = textoExtra ? ` ${textoExtra}` : '';
 
-            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}.${textoExtraDisplay} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
-            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}.${textoExtraLeitura} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
+            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}.${textoExtraDisplay} Aproveite! Supermercados Ponto Novo!`;
+            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}.${textoExtraLeitura} Aproveite! Supermercados Ponto Novo!`;
 
             ultimoTexto = textoExibicao;
             ultimoTextoLeitura = textoLeitura;
