@@ -1,17 +1,4 @@
-const express = require('express');
-const { Pool } = require('pg');
-const path = require('path');
-
-const app = express();
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Conexão com o Banco Neon
-const pool = new Pool({
-    connectionString: 'postgresql://neondb_owner:npg_VRkNhKFvSr17@ep-noisy-fog-b4p6p3pc-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require',
-});
-
-// Criar tabelas e colunas automaticamente se não existirem
+// Criar tabela de histórico de áudios/anúncios automaticamente se não existir
 async function inicializarBanco() {
     try {
         await pool.query(`
@@ -25,8 +12,18 @@ async function inicializarBanco() {
             );
         `);
         
-        // Garante que colunas novas existam caso a tabela já tenha sido criada antes
         await pool.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'aprovado';");
+
+        // Tabela para salvar o histórico de anúncios/áudios gerados
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS historico_audios (
+                id SERIAL PRIMARY KEY,
+                usuario VARCHAR(100) NOT NULL,
+                titulo TEXT NOT NULL,
+                texto TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
 
         // Criar usuário master padrão (master / 123456) caso não exista nenhum
         const checkMaster = await pool.query("SELECT * FROM usuarios WHERE nome = 'master'");
@@ -42,82 +39,29 @@ async function inicializarBanco() {
 }
 inicializarBanco();
 
-// Rota de Login com validação de status pendente
-app.post('/api/login', async (req, res) => {
-    const { usuario, senha } = req.body;
-    try {
-        const resultado = await pool.query(
-            'SELECT * FROM usuarios WHERE nome = $1 AND senha = $2',
-            [usuario, senha]
-        );
-        if (resultado.rows.length > 0) {
-            const user = resultado.rows[0];
-            if (user.status === 'pendente') {
-                return res.status(403).json({ sucesso: false, mensagem: 'Sua conta está aguardando aprovação do Administrador Master.' });
-            }
-            res.json({ sucesso: true, usuario: user });
-        } else {
-            res.status(401).json({ sucesso: false, mensagem: 'Usuário ou senha incorretos.' });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor.' });
-    }
-});
+// --- ROTAS DE HISTÓRICO DE ÁUDIOS ---
 
-// Rota para cadastrar / solicitar novo usuário (Pendente por padrão)
-app.post('/api/usuarios', async (req, res) => {
-    const { nome, senha, tipo } = req.body;
+// Salvar um novo áudio gerado no histórico
+app.post('/api/historico', async (req, res) => {
+    const { usuario, titulo, texto } = req.body;
     try {
-        // Se o cadastro for feito pelo Master, já nasce aprovado; senão, pendente
-        const statusInicial = (tipo === 'master') ? 'aprovado' : 'pendente';
         const novo = await pool.query(
-            'INSERT INTO usuarios (nome, senha, tipo, status) VALUES ($1, $2, $3, $4) RETURNING id, nome, tipo, status',
-            [nome, senha, tipo || 'comum', statusInicial]
+            'INSERT INTO historico_audios (usuario, titulo, texto) VALUES ($1, $2, $3) RETURNING *',
+            [usuario, titulo, texto]
         );
-        res.json({ sucesso: true, usuario: novo.rows[0] });
+        res.json({ sucesso: true, item: novo.rows[0] });
     } catch (error) {
         console.error(error);
-        res.status(400).json({ sucesso: false, mensagem: 'Erro ao cadastrar. O nome de usuário já pode existir.' });
+        res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar histórico.' });
     }
 });
 
-// Rota para listar usuários
-app.get('/api/usuarios', async (req, res) => {
+// Listar histórico de áudios
+app.get('/api/historico', async (req, res) => {
     try {
-        const lista = await pool.query('SELECT id, nome, tipo, status, created_at FROM usuarios ORDER BY id DESC');
-        res.json({ sucesso: true, usuarios: lista.rows });
+        const lista = await pool.query('SELECT * FROM historico_audios ORDER BY id DESC LIMIT 50');
+        res.json({ sucesso: true, historico: lista.rows });
     } catch (error) {
-        res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar usuários.' });
+        res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar histórico.' });
     }
-});
-
-// Rota para Aprovar usuário pendente
-app.post('/api/usuarios/aprovar', async (req, res) => {
-    const { nome } = req.body;
-    try {
-        await pool.query("UPDATE usuarios SET status = 'aprovado' WHERE nome = $1", [nome]);
-        res.json({ sucesso: true });
-    } catch (error) {
-        res.status(500).json({ sucesso: false, mensagem: 'Erro ao aprovar usuário.' });
-    }
-});
-
-// Rota para Deletar / Recusar usuário
-app.delete('/api/usuarios/:nome', async (req, res) => {
-    const { nome } = req.params;
-    if (nome === 'master') {
-        return res.status(400).json({ sucesso: false, mensagem: 'Não é permitido excluir o usuário master.' });
-    }
-    try {
-        await pool.query('DELETE FROM usuarios WHERE nome = $1', [nome]);
-        res.json({ sucesso: true });
-    } catch (error) {
-        res.status(500).json({ sucesso: false, mensagem: 'Erro ao excluir usuário.' });
-    }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
 });
