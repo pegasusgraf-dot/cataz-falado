@@ -1,325 +1,269 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loja Oferta Premium</title>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#2563eb">
+    <title>SyncStore | Gerador de Anúncios</title>
+    <meta name="description" content="Sistema profissional para criação e reprodução de anúncios comerciais e voz de loja.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #0f172a;
-            --muted: #475569;
-            --success: #16a34a;
-            --success-dark: #15803d;
-            --shadow: rgba(15, 23, 42, 0.12);
-        }
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --success: #16a34a;
+        --success-dark: #15803d;
+        --danger: #dc2626;
+        --shadow: rgba(15, 23, 42, 0.12);
+      }
 
-        * { box-sizing: border-box; }
+      * { box-sizing: border-box; }
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
+      body, html {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'DM Sans', 'Segoe UI', Tahoma, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
 
-        .container {
-            width: 100%;
-            max-width: 620px;
-            background: var(--card);
-            border-radius: 24px;
-            box-shadow: 0 18px 50px var(--shadow);
-            padding: 28px 26px;
-            border: 1px solid rgba(148, 163, 184, 0.18);
-        }
+      .hidden { display: none !important; }
 
-        .brand {
-            text-align: center;
-            margin-bottom: 22px;
-        }
+      /* Estilo da Tela de Login (Mesmo padrão da sua referência) */
+      .auth-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 100vh;
+        width: 100%;
+      }
 
-        .tag {
-            display: inline-block;
-            background: #dbeafe;
-            color: var(--primary);
-            font-weight: 700;
-            padding: 8px 12px;
-            border-radius: 999px;
-            font-size: 0.78rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
+      .auth-intro {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #ffffff;
+        padding: 60px 48px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
 
-        h1 {
-            margin: 0;
-            font-size: clamp(2rem, 4vw, 2.8rem);
-            color: var(--text);
-        }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 1.25rem;
+        font-family: 'Manrope', sans-serif;
+      }
 
-        .subtitle {
-            margin-top: 10px;
-            color: var(--muted);
-            font-size: 0.96rem;
-        }
+      .brand-mark {
+        background: var(--primary);
+        color: white;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+      }
 
-        .form-group {
-            margin-top: 20px;
-        }
+      .brand-period { color: var(--primary); }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 700;
-            color: var(--text);
-            font-size: 0.96rem;
-        }
+      .intro-copy h1 {
+        font-family: 'Manrope', sans-serif;
+        font-size: clamp(2.2rem, 4vw, 3.2rem);
+        line-height: 1.15;
+        margin: 20px 0;
+      }
 
-        input {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1.5px solid #dbe3ef;
-            font-size: 1rem;
-            background: #fff;
-            transition: 0.2s ease;
-        }
+      .intro-copy h1 span { color: #60a5fa; }
+      .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; }
+      .intro-note { color: #cbd5e1; font-size: 1.05rem; }
+      .intro-foot { font-size: 0.85rem; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
+      .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #22c55e; }
 
-        input:focus {
-            outline: none;
-            border: 1.5px solid var(--primary);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
-        }
+      .auth-panel {
+        background: var(--card);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+      }
 
-        .button-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 18px;
-        }
+      .auth-box {
+        width: 100%;
+        max-width: 380px;
+      }
 
-        button {
-            border: none;
-            border-radius: 12px;
-            padding: 15px 16px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s ease;
-        }
+      .form-stack { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+      
+      label.field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text);
+      }
 
-        .primary-btn {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
-        }
+      input, select {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1.5px solid #cbd5e1;
+        font-size: 1rem;
+        background: #fff;
+        font-family: inherit;
+        transition: 0.2s;
+      }
 
-        .primary-btn:hover {
-            transform: translateY(-1px);
-        }
+      input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      }
 
-        .secondary-btn {
-            background: #eef2ff;
-            color: var(--primary);
-            border: 1px solid rgba(37, 99, 235, 0.15);
-        }
+      .button {
+        border: none;
+        border-radius: 12px;
+        padding: 14px 20px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s;
+        font-family: inherit;
+      }
 
-        .success-btn {
-            width: 100%;
-            margin-top: 12px;
-            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
-            color: white;
-            box-shadow: 0 12px 26px rgba(22, 163, 74, 0.2);
-        }
+      .button-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+      }
 
-        .preview-box {
-            margin-top: 22px;
-            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-            border-left: 6px solid var(--primary);
-            border-radius: 16px;
-            padding: 18px 16px;
-        }
+      .button-primary:hover { transform: translateY(-1px); }
+      .button-wide { width: 100%; }
 
-        .preview-box h3 {
-            margin: 0 0 12px;
-            color: var(--muted);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
+      .form-message { font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 10px; min-height: 20px; }
 
-        #textoGerado {
-            margin: 0;
-            font-size: 1.08rem;
-            line-height: 1.6;
-            font-weight: 500;
-            color: var(--text);
-        }
+      /* Layout do Dashboard Logado */
+      .app-layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        min-height: 100vh;
+        width: 100%;
+      }
 
-        .status {
-            margin-top: 14px;
-            min-height: 24px;
-            font-size: 0.9rem;
-            color: var(--muted);
-            font-weight: 600;
-        }
+      .sidebar {
+        background: #f1f5f9;
+        border-right: 1px solid #e2e8f0;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
 
-        @media (max-width: 480px) {
-            .button-row {
-                grid-template-columns: 1fr;
-            }
-        }
+      .history-list {
+        max-height: calc(100vh - 280px);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .history-item {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .history-item:hover {
+        border-color: var(--primary);
+        background: #f0fdf4;
+      }
+
+      .dashboard-main {
+        padding: 40px;
+        overflow-y: auto;
+        max-width: 900px;
+      }
+
+      .preview-box {
+        margin-top: 24px;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        border-left: 6px solid var(--primary);
+        border-radius: 14px;
+        padding: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .auth-layout, .app-layout { grid-template-columns: 1fr; }
+        .auth-intro { display: none; }
+      }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="brand">
-            <div class="tag">Oferta do Dia</div>
-            <h1>Loja Oferta Premium</h1>
-            <div class="subtitle">Promoções irresistíveis para você aproveitar agora</div>
+  </head>
+  <body>
+
+    <!-- TELA DE LOGIN E CADASTRO -->
+    <main id="auth-screen" class="auth-layout">
+      <section class="auth-intro">
+        <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
+        <div class="intro-copy">
+          <p class="eyebrow">VOZ E OFERTAS EM TEMPO REAL</p>
+          <h1>O anúncio certo,<br>na hora exata,<br><span>para vender mais.</span></h1>
+          <p class="intro-note">Sistema inteligente de locução e gerenciamento de ofertas comerciais.</p>
+        </div>
+        <div class="intro-foot"><span class="status-dot"></span> Sintetizador de voz pronto para uso</div>
+      </section>
+
+      <section class="auth-panel">
+        <div class="auth-box">
+          <div class="brand" style="color:var(--text)"><span class="brand-mark">A</span><span>anúncios<span class="brand-period">.</span></span></div>
+          <p class="eyebrow" id="auth-eyebrow" style="margin-top: 15px;">PAINEL COMERCIAL</p>
+          <h2 id="auth-title" style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
+          <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">Entre para gerar e gerenciar suas locuções.</p>
+      
+          <form id="auth-form" class="form-stack" onsubmit="realizarLogin(event)">
+            <label class="field" id="nome-field" hidden>Nome completo<input id="input-nome" placeholder="Nome do operador"></label>
+            <label class="field">E-mail / Usuário<input id="input-email" required placeholder="master ou operador@loja.com"></label>
+            <label class="field">Senha<input id="input-senha" type="password" required placeholder="Sua senha"></label>
+            <button class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
+            <p class="form-message" id="auth-message" role="status"></p>
+          </form>
+
+          <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
+            <a href="#" onclick="alternarModoRegistro(event)" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">Primeiro acesso? Cadastrar Administrador/Usuário</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- TELA DO PAINEL PRINCIPAL (DASHBOARD) -->
+    <main id="app-screen" class="app-layout hidden">
+      <aside class="sidebar">
+        <div>
+          <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
+          <p class="eyebrow" style="margin-top: 15px;">HISTÓRICO DO DIA</p>
+          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">Clique para repetir o áudio:</div>
+          <div id="listaHistorico" class="history-list">
+            <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>
+          </div>
         </div>
 
-        <div class="form-group">
-            <label for="produto">Nome do Produto</label>
-            <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
-        </div>
-
-        <div class="form-group">
-            <label for="precoOriginal">Preço Original (R$)</label>
-            <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
-        </div>
-
-        <div class="form-group">
-            <label for="precoPromo">Preço Promocional (R$)</label>
-            <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
-        </div>
-
-        <div class="button-row">
-            <button class="primary-btn" onclick="gerarEAnunciar()">Gerar anúncio</button>
-            <button class="secondary-btn" onclick="ouvirUltimoTexto()">Ouvir</button>
-        </div>
-
-        <button class="success-btn" onclick="copiarTexto()">Copiar anúncio</button>
-
-        <div class="preview-box">
-            <h3>Texto do anúncio</h3>
-            <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
-        </div>
-
-        <div id="status" class="status" aria-live="polite"></div>
-    </div>
-
-    <script>
-        let ultimoTexto = '';
-
-        function formatarPrecoParaLeitura(valor) {
-            const numero = Number(valor);
-            const inteiro = Math.trunc(numero);
-            return `R$ ${inteiro.toLocaleString('pt-BR')}`;
-        }
-
-        function selecionarVozPTBR() {
-            const voices = window.speechSynthesis.getVoices();
-            return voices.find(voice =>
-                voice.lang && (
-                    voice.lang.toLowerCase().includes('pt-br') ||
-                    voice.lang.toLowerCase().includes('pt')
-                )
-            ) || null;
-        }
-
-        function mostrarStatus(mensagem) {
-            document.getElementById('status').textContent = mensagem;
-        }
-
-        function falarTexto(texto) {
-            if (!('speechSynthesis' in window)) {
-                mostrarStatus('Seu navegador não suporta reprodução de voz.');
-                return;
-            }
-
-            const synth = window.speechSynthesis;
-            synth.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(texto);
-            utterance.lang = 'pt-BR';
-            utterance.rate = 0.9;
-            utterance.pitch = 1.08;
-            utterance.volume = 1;
-
-            const vozPTBR = selecionarVozPTBR();
-            if (vozPTBR) {
-                utterance.voice = vozPTBR;
-            }
-
-            synth.speak(utterance);
-            mostrarStatus('Anúncio em reprodução...');
-        }
-
-        function gerarEAnunciar() {
-            const produto = document.getElementById('produto').value.trim();
-            const precoOriginal = document.getElementById('precoOriginal').value.trim();
-            const precoPromo = document.getElementById('precoPromo').value.trim();
-
-            if (!produto || !precoOriginal || !precoPromo) {
-                mostrarStatus('Preencha todos os campos para continuar.');
-                alert('Preencha todos os campos!');
-                return;
-            }
-
-            const pOrigDisplay = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const pPromDisplay = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-            const pOrigLeitura = formatarPrecoParaLeitura(precoOriginal);
-            const pPromLeitura = formatarPrecoParaLeitura(precoPromo);
-
-            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}. Aproveite agora no nosso comércio!`;
-            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}. Aproveite agora no nosso comércio!`;
-
-            ultimoTexto = textoExibicao;
-
-            document.getElementById('textoGerado').innerText = textoExibicao;
-            falarTexto(textoLeitura);
-        }
-
-        function ouvirUltimoTexto() {
-            if (!ultimoTexto) {
-                mostrarStatus('Ainda não há anúncio para ouvir.');
-                return;
-            }
-            falarTexto(ultimoTexto.replace(/\$/g, 'reais').replace(/\./g, '').replace(/,/g, ''));
-        }
-
-        async function copiarTexto() {
-            if (!ultimoTexto) {
-                mostrarStatus('Ainda não há anúncio para copiar.');
-                return;
-            }
-
-            try {
-                await navigator.clipboard.writeText(ultimoTexto);
-                mostrarStatus('Anúncio copiado com sucesso!');
-            } catch (error) {
-                mostrarStatus('Não foi possível copiar automaticamente.');
-            }
-        }
-
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = () => {
-                const voz = selecionarVozPTBR();
-                if (voz) {
-                    mostrarStatus('Voz em português pronta para uso.');
-                }
-            };
-        }
-    </script>
-</body>
-</html>
+        <div>
+          <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
+            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;"
