@@ -6,7 +6,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Conexão com o Banco Neon otimizada para nuvem (SSL ajustado)
+// Conexão com o Banco Neon
 const pool = new Pool({
     connectionString: 'postgresql://neondb_owner:npg_VRkNhKFvSr17@ep-noisy-fog-b4p6p3pc-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require',
     ssl: {
@@ -14,7 +14,7 @@ const pool = new Pool({
     }
 });
 
-// Criar tabelas e colunas de forma segura e síncrona para evitar falhas nas primeiras requisições
+// Inicializar tabelas de forma garantida a cada chamada ou carregamento
 async function inicializarBanco() {
     try {
         await pool.query(`
@@ -40,29 +40,23 @@ async function inicializarBanco() {
             );
         `);
 
-        // Criar usuário master padrão (master / 123456) caso não exista nenhum
         const checkMaster = await pool.query("SELECT * FROM usuarios WHERE nome = 'master'");
         if (checkMaster.rows.length === 0) {
             await pool.query(
                 "INSERT INTO usuarios (nome, senha, tipo, status) VALUES ('master', '123456', 'master', 'aprovado')"
             );
-            console.log('Usuário master criado com sucesso! (master / 123456)');
         }
     } catch (err) {
-        console.error('Erro crítico ao inicializar tabelas:', err);
+        console.error('Erro ao inicializar tabelas:', err);
     }
 }
 
-// Inicializa o banco antes de escutar as portas
-inicializarBanco().then(() => {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`Servidor rodando na porta ${PORT}`);
-    });
-});
+// Executa a inicialização do banco ao carregar
+inicializarBanco();
 
-// Rota de Login tratada
+// Rota de Login
 app.post('/api/login', async (req, res) => {
+    await inicializarBanco(); // Garante que o banco está pronto
     const { usuario, senha } = req.body;
     if (!usuario || !senha) {
         return res.status(400).json({ sucesso: false, mensagem: 'Preencha usuário e senha.' });
@@ -83,12 +77,13 @@ app.post('/api/login', async (req, res) => {
         }
     } catch (error) {
         console.error('Erro na rota /api/login:', error);
-        res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor.' });
+        res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor: ' + error.message });
     }
 });
 
 // Rota para cadastrar novo usuário
 app.post('/api/usuarios', async (req, res) => {
+    await inicializarBanco();
     const { nome, senha } = req.body;
     if (!nome || !senha) {
         return res.status(400).json({ sucesso: false, mensagem: 'Nome e senha são obrigatórios.' });
@@ -145,6 +140,7 @@ app.delete('/api/usuarios/:nome', async (req, res) => {
 
 // Rotas de Histórico de Áudios
 app.post('/api/historico', async (req, res) => {
+    await inicializarBanco();
     const { usuario, titulo, texto } = req.body;
     try {
         const novo = await pool.query(
@@ -167,3 +163,14 @@ app.get('/api/historico', async (req, res) => {
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar histórico.' });
     }
 });
+
+// Para rodar localmente com `node server.js`
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Servidor rodando localmente na porta ${PORT}`);
+    });
+}
+
+// Exporta o app para a Vercel
+module.exports = app;
