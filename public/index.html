@@ -202,6 +202,11 @@
             <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
         </div>
 
+        <div class="form-group">
+            <label for="textoExtra">Texto Extra (opcional)</label>
+            <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
+        </div>
+
         <div class="button-row">
             <button class="primary-btn" onclick="gerarEAnunciar()">Gerar anúncio</button>
             <button class="secondary-btn" onclick="ouvirUltimoTexto()">Ouvir</button>
@@ -287,6 +292,7 @@
             const produto = document.getElementById('produto').value.trim();
             const precoOriginal = document.getElementById('precoOriginal').value.trim();
             const precoPromo = document.getElementById('precoPromo').value.trim();
+            const textoExtra = document.getElementById('textoExtra').value.trim();
 
             if (!produto || !precoOriginal || !precoPromo) {
                 mostrarStatus('Preencha todos os campos para continuar.');
@@ -298,9 +304,11 @@
             const pPromDisplay = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const pOrigLeitura = removerMoedaParaLeitura(precoOriginal);
             const pPromLeitura = removerMoedaParaLeitura(precoPromo);
+            const textoExtraDisplay = textoExtra ? ` ${textoExtra}` : '';
+            const textoExtraLeitura = textoExtra ? ` ${textoExtra}` : '';
 
-            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}. Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar!`;
-            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}. Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar!`;
+            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}.${textoExtraDisplay} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
+            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}.${textoExtraLeitura} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
 
             ultimoTexto = textoExibicao;
             ultimoTextoLeitura = textoLeitura;
