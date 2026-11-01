@@ -18,6 +18,7 @@
             --shadow: rgba(15, 23, 42, 0.12);
             --danger: #dc2626;
             --line: #dfe7f1;
+            --warning: #f59e0b;
         }
 
         * { box-sizing: border-box; }
@@ -64,10 +65,7 @@
             pointer-events: none;
         }
 
-        .brand-content {
-            position: relative;
-            z-index: 1;
-        }
+        .brand-content { position: relative; z-index: 1; }
 
         .tag {
             display: inline-block;
@@ -172,7 +170,8 @@
             color: var(--muted);
         }
 
-        .field input {
+        .field input,
+        .field select {
             width: 100%;
             border: 1.5px solid var(--line);
             padding: 14px 16px;
@@ -182,7 +181,8 @@
             transition: 0.2s ease;
         }
 
-        .field input:focus {
+        .field input:focus,
+        .field select:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
@@ -203,9 +203,7 @@
             gap: 8px;
         }
 
-        .checkbox input {
-            accent-color: var(--primary);
-        }
+        .checkbox input { accent-color: var(--primary); }
 
         .text-link {
             color: var(--primary);
@@ -219,7 +217,8 @@
         .primary-btn,
         .secondary-btn,
         .success-btn,
-        .ghost-btn {
+        .ghost-btn,
+        .danger-btn {
             border: none;
             border-radius: 12px;
             padding: 15px 16px;
@@ -238,14 +237,27 @@
         .primary-btn:hover,
         .secondary-btn:hover,
         .success-btn:hover,
-        .ghost-btn:hover {
+        .ghost-btn:hover,
+        .danger-btn:hover {
             transform: translateY(-1px);
+        }
+
+        .secondary-btn {
+            background: #eef2ff;
+            color: var(--primary);
+            border: 1px solid rgba(37, 99, 235, 0.15);
         }
 
         .ghost-btn {
             background: #eef2ff;
             color: var(--primary);
             border: 1px solid rgba(37, 99, 235, 0.15);
+        }
+
+        .danger-btn {
+            background: #fff1f2;
+            color: var(--danger);
+            border: 1px solid rgba(220, 38, 38, 0.12);
         }
 
         .message {
@@ -256,13 +268,8 @@
             font-weight: 600;
         }
 
-        .message.error {
-            color: var(--danger);
-        }
-
-        .message.success {
-            color: var(--success-dark);
-        }
+        .message.error { color: var(--danger); }
+        .message.success { color: var(--success-dark); }
 
         .demo-box {
             margin-top: 20px;
@@ -275,13 +282,11 @@
             line-height: 1.6;
         }
 
-        .demo-box strong {
-            color: var(--text);
-        }
+        .demo-box strong { color: var(--text); }
 
         .app-shell {
             display: none;
-            width: min(100%, 1100px);
+            width: min(100%, 1180px);
             background: rgba(255,255,255,0.95);
             border-radius: 28px;
             border: 1px solid rgba(148, 163, 184, 0.18);
@@ -289,9 +294,7 @@
             overflow: hidden;
         }
 
-        .app-shell.is-visible {
-            display: block;
-        }
+        .app-shell.is-visible { display: block; }
 
         .topbar {
             display: flex;
@@ -380,6 +383,12 @@
             font-size: 0.96rem;
         }
 
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 22px;
+        }
+
         .panel {
             background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
             border: 1px solid #edf2f7;
@@ -393,9 +402,7 @@
             gap: 18px;
         }
 
-        .form-grid .field.full {
-            grid-column: 1 / -1;
-        }
+        .form-grid .field.full { grid-column: 1 / -1; }
 
         .field label {
             display: block;
@@ -406,7 +413,8 @@
         }
 
         .field input,
-        .field textarea {
+        .field textarea,
+        .field select {
             width: 100%;
             padding: 14px 16px;
             border-radius: 12px;
@@ -423,7 +431,8 @@
         }
 
         .field input:focus,
-        .field textarea:focus {
+        .field textarea:focus,
+        .field select:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
@@ -476,7 +485,72 @@
             font-weight: 600;
         }
 
-        @media (max-width: 820px) {
+        .user-list {
+            margin-top: 18px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: #fff;
+            border: 1px solid #edf2f7;
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
+
+        .user-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .user-meta strong {
+            font-size: 0.96rem;
+        }
+
+        .user-meta small {
+            color: var(--muted);
+        }
+
+        .user-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 8px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 700;
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .user-tag.admin {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .inline-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .muted-note {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
             .auth-shell {
                 grid-template-columns: 1fr;
             }
@@ -572,52 +646,103 @@
         <main class="workspace">
             <div class="title-row">
                 <div>
-                    <h1>Gerar anúncio</h1>
-                    <p class="subtitle">Crie mensagens promocionais e copie em um clique.</p>
+                    <h1>Gerenciar painel</h1>
+                    <p class="subtitle">Crie mensagens promocionais e gerencie os usuários com acesso ao sistema.</p>
                 </div>
             </div>
 
-            <div class="panel">
-                <div class="form-grid">
-                    <div class="field">
-                        <label for="produto">Nome do Produto</label>
-                        <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+            <div class="dashboard-grid">
+                <section class="panel">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="produto">Nome do Produto</label>
+                            <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+                        </div>
+
+                        <div class="field">
+                            <label for="precoOriginal">Preço Original (R$)</label>
+                            <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+                        </div>
+
+                        <div class="field">
+                            <label for="precoPromo">Preço Promocional (R$)</label>
+                            <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
+                        </div>
+
+                        <div class="field">
+                            <label for="textoExtra">Texto Extra (opcional)</label>
+                            <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
+                        </div>
                     </div>
 
-                    <div class="field">
-                        <label for="precoOriginal">Preço Original (R$)</label>
-                        <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+                    <div class="button-row">
+                        <button class="primary-btn" type="button" onclick="gerarEAnunciar()">Gerar anúncio</button>
+                        <button class="secondary-btn" type="button" onclick="ouvirUltimoTexto()">Ouvir</button>
                     </div>
 
-                    <div class="field">
-                        <label for="precoPromo">Preço Promocional (R$)</label>
-                        <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
+                    <button class="success-btn" type="button" onclick="copiarTexto()">Copiar anúncio</button>
+
+                    <div class="preview-box">
+                        <h3>Texto do anúncio</h3>
+                        <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
                     </div>
 
-                    <div class="field">
-                        <label for="textoExtra">Texto Extra (opcional)</label>
-                        <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
+                    <div id="status" class="status" aria-live="polite"></div>
+                </section>
+
+                <aside class="panel">
+                    <div class="title-row" style="margin-bottom: 0;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 1.4rem;">Usuários</h2>
+                            <p class="subtitle" style="margin-top: 4px;">Adicionar novos acessos ao sistema.</p>
+                        </div>
                     </div>
-                </div>
 
-                <div class="button-row">
-                    <button class="primary-btn" type="button" onclick="gerarEAnunciar()">Gerar anúncio</button>
-                    <button class="secondary-btn" type="button" onclick="ouvirUltimoTexto()">Ouvir</button>
-                </div>
+                    <form id="userForm" style="margin-top: 20px; display: grid; gap: 14px;">
+                        <div class="field">
+                            <label for="userName">Nome</label>
+                            <input id="userName" type="text" placeholder="Nome completo" required>
+                        </div>
 
-                <button class="success-btn" type="button" onclick="copiarTexto()">Copiar anúncio</button>
+                        <div class="field">
+                            <label for="userEmail">E-mail</label>
+                            <input id="userEmail" type="email" placeholder="usuario@empresa.com" required>
+                        </div>
 
-                <div class="preview-box">
-                    <h3>Texto do anúncio</h3>
-                    <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
-                </div>
+                        <div class="field">
+                            <label for="userPassword">Senha</label>
+                            <input id="userPassword" type="password" placeholder="Mínimo de 6 caracteres" required>
+                        </div>
 
-                <div id="status" class="status" aria-live="polite"></div>
+                        <div class="field">
+                            <label for="userRole">Tipo</label>
+                            <select id="userRole">
+                                <option value="user">Usuário</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="primary-btn">Adicionar usuário</button>
+                        <div id="userMessage" class="message" aria-live="polite"></div>
+                    </form>
+
+                    <div class="muted-note">Usuários salvos no navegador neste dispositivo.</div>
+                    <div id="userList" class="user-list"></div>
+                </aside>
             </div>
         </main>
     </div>
 
     <script>
+        const STORAGE_KEYS = {
+            USERS: 'lojaOfertaUsers',
+            CURRENT: 'lojaOfertaCurrentUser'
+        };
+
+        const DEFAULT_USERS = [
+            { id: 1, name: 'Administrador', email: 'admin@demo.com', password: '123456', role: 'admin' }
+        ];
+
         let ultimoTexto = '';
         let ultimoTextoLeitura = '';
 
@@ -627,6 +752,9 @@
         const loginMessage = document.getElementById('loginMessage');
         const userLabel = document.getElementById('userLabel');
         const userAvatar = document.getElementById('userAvatar');
+        const userForm = document.getElementById('userForm');
+        const userList = document.getElementById('userList');
+        const userMessage = document.getElementById('userMessage');
 
         function setMessage(element, text, type = '') {
             element.textContent = text;
@@ -634,9 +762,77 @@
             if (type) element.classList.add(type);
         }
 
+        function getUsers() {
+            const saved = localStorage.getItem(STORAGE_KEYS.USERS);
+            if (!saved) {
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
+                return DEFAULT_USERS;
+            }
+
+            try {
+                const parsed = JSON.parse(saved);
+                return Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_USERS;
+            } catch {
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
+                return DEFAULT_USERS;
+            }
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+        }
+
+        function isUserRegistered(email, password) {
+            const users = getUsers();
+            return users.some(user => user.email.toLowerCase() === email.toLowerCase() && user.password === password);
+        }
+
         function getUserDisplayName(email) {
-            const localPart = email.split('@')[0] || 'Usuário';
-            return localPart.charAt(0).toUpperCase() + localPart.slice(1);
+            const users = getUsers();
+            const user = users.find(item => item.email.toLowerCase() === email.toLowerCase());
+            return user ? user.name : (email.split('@')[0] || 'Usuário');
+        }
+
+        function getCurrentUser() {
+            const email = localStorage.getItem(STORAGE_KEYS.CURRENT);
+            return email || null;
+        }
+
+        function renderUsers() {
+            const users = getUsers();
+            if (!users.length) {
+                userList.innerHTML = '<div class="user-item"><div class="user-meta"><strong>Nenhum usuário cadastrado</strong><small>Use o formulário acima para criar o primeiro acesso.</small></div></div>';
+                return;
+            }
+
+            userList.innerHTML = users.map((user) => `
+                <div class="user-item">
+                    <div class="user-meta">
+                        <strong>${user.name}</strong>
+                        <small>${user.email}</small>
+                    </div>
+                    <div class="inline-actions">
+                        <span class="user-tag ${user.role === 'admin' ? 'admin' : ''}">${user.role === 'admin' ? 'Admin' : 'User'}</span>
+                        <button type="button" class="danger-btn" data-user-id="${user.id}" ${users.length === 1 ? 'disabled' : ''}>Excluir</button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('[data-user-id]').forEach(button => {
+                button.addEventListener('click', function () {
+                    const userId = Number(this.dataset.userId);
+                    const usersAfterDelete = getUsers().filter(user => user.id !== userId);
+
+                    if (usersAfterDelete.length === 0) {
+                        setMessage(userMessage, 'É preciso manter pelo menos um usuário cadastrado.', 'error');
+                        return;
+                    }
+
+                    saveUsers(usersAfterDelete);
+                    renderUsers();
+                    setMessage(userMessage, 'Usuário removido com sucesso.', 'success');
+                });
+            });
         }
 
         function showLoginScreen() {
@@ -648,7 +844,8 @@
             authScreen.style.display = 'none';
             appScreen.classList.add('is-visible');
             userLabel.textContent = getUserDisplayName(email);
-            userAvatar.textContent = (email || 'A').charAt(0).toUpperCase();
+            userAvatar.textContent = (getUserDisplayName(email) || 'A').charAt(0).toUpperCase();
+            renderUsers();
         }
 
         loginForm.addEventListener('submit', function (event) {
@@ -662,26 +859,64 @@
                 return;
             }
 
-            const isValid = email === 'admin@demo.com' && password === '123456';
-
-            if (!isValid) {
-                setMessage(loginMessage, 'Credenciais inválidas. Use o demo abaixo.', 'error');
+            if (!isUserRegistered(email, password)) {
+                setMessage(loginMessage, 'Credenciais inválidas. Use o demo ou um usuário cadastrado.', 'error');
                 return;
             }
 
+            localStorage.setItem(STORAGE_KEYS.CURRENT, email);
             setMessage(loginMessage, 'Login realizado com sucesso!', 'success');
-            localStorage.setItem('lojaOfertaAuth', email);
             showAppScreen(email);
         });
 
         document.getElementById('logoutBtn').addEventListener('click', function () {
-            localStorage.removeItem('lojaOfertaAuth');
+            localStorage.removeItem(STORAGE_KEYS.CURRENT);
             loginForm.reset();
             setMessage(loginMessage, '', '');
             showLoginScreen();
         });
 
-        const savedUser = localStorage.getItem('lojaOfertaAuth');
+        userForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const password = document.getElementById('userPassword').value.trim();
+            const role = document.getElementById('userRole').value;
+
+            if (!name || !email || !password) {
+                setMessage(userMessage, 'Preencha nome, e-mail e senha para adicionar o usuário.', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                setMessage(userMessage, 'A senha deve ter pelo menos 6 caracteres.', 'error');
+                return;
+            }
+
+            const users = getUsers();
+            const exists = users.some(user => user.email.toLowerCase() === email.toLowerCase());
+            if (exists) {
+                setMessage(userMessage, 'Este e-mail já está cadastrado.', 'error');
+                return;
+            }
+
+            const newUser = {
+                id: Date.now(),
+                name,
+                email,
+                password,
+                role
+            };
+
+            users.push(newUser);
+            saveUsers(users);
+            renderUsers();
+            userForm.reset();
+            setMessage(userMessage, 'Usuário adicionado com sucesso.', 'success');
+        });
+
+        const savedUser = getCurrentUser();
         if (savedUser) {
             showAppScreen(savedUser);
         }
