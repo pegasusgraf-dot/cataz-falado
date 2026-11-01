@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loja Oferta SyncStore - Login</title>
+    <title>Loja Oferta SyncStore</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -33,17 +33,12 @@
 
         .container {
             width: 100%;
-            max-width: 420px;
+            max-width: 620px;
             background: var(--card);
             border-radius: 24px;
             box-shadow: 0 18px 50px var(--shadow);
-            padding: 32px 26px;
+            padding: 28px 26px;
             border: 1px solid rgba(148, 163, 184, 0.18);
-            transition: max-width 0.3s ease;
-        }
-
-        .container.app-view {
-            max-width: 620px;
         }
 
         .brand {
@@ -66,7 +61,7 @@
 
         h1 {
             margin: 0;
-            font-size: clamp(1.8rem, 4vw, 2.4rem);
+            font-size: clamp(2rem, 4vw, 2.8rem);
             color: var(--text);
         }
 
@@ -125,8 +120,6 @@
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
-            width: 100%;
-            margin-top: 18px;
         }
 
         .primary-btn:hover {
@@ -172,19 +165,19 @@
         }
 
         .history-section {
-            margin-top: 24px;
+            margin-top: 22px;
         }
 
         .history-section h3 {
-            font-size: 0.9rem;
+            margin: 0 0 10px;
             color: var(--muted);
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            margin-bottom: 10px;
         }
 
         .history-list {
-            max-height: 180px;
+            max-height: 150px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -193,15 +186,15 @@
 
         .history-item {
             background: #f1f5f9;
-            border: 1px solid #e2e8f0;
             padding: 10px 12px;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: 0.2s;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid #e2e8f0;
+            transition: 0.2s;
         }
 
         .history-item:hover {
@@ -218,8 +211,6 @@
             text-align: center;
         }
 
-        .hidden { display: none !important; }
-
         @media (max-width: 480px) {
             .button-row {
                 grid-template-columns: 1fr;
@@ -228,76 +219,50 @@
     </style>
 </head>
 <body>
-    <div id="mainContainer" class="container">
-        <!-- TELA DE LOGIN -->
-        <div id="loginView">
-            <div class="brand">
-                <div class="tag">Restrito</div>
-                <h1>Acesso ao Sistema</h1>
-                <div class="subtitle">Entre ou cadastre seu usuário</div>
-            </div>
-
-            <div class="form-group">
-                <label for="usuarioLogin">Usuário</label>
-                <input type="text" id="usuarioLogin" placeholder="Ex: Paulo">
-            </div>
-
-            <div class="form-group">
-                <label for="senhaLogin">Senha</label>
-                <input type="password" id="senhaLogin" placeholder="Sua senha">
-            </div>
-
-            <button class="primary-btn" onclick="fazerLogin()">Entrar / Cadastrar</button>
+    <div class="container">
+        <div class="brand">
+            <div class="tag">Oferta do Dia</div>
+            <h1>Loja Oferta SyncStore</h1>
+            <div class="subtitle">Promoções irresistíveis para você aproveitar agora</div>
         </div>
 
-        <!-- TELA DO GERADOR DE ANÚNCIOS (DASHBOARD) -->
-        <div id="appView" class="hidden">
-            <div class="brand" style="margin-bottom: 15px;">
-                <div class="tag">Oferta do Dia</div>
-                <h1>Loja Oferta SyncStore</h1>
-                <div class="subtitle" id="boasVindasUsuario">Promoções irresistíveis para você</div>
+        <div class="form-group">
+            <label for="produto">Nome do Produto</label>
+            <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+        </div>
+
+        <div class="form-group">
+            <label for="precoOriginal">Preço Original (R$)</label>
+            <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+        </div>
+
+        <div class="form-group">
+            <label for="precoPromo">Preço Promocional (R$)</label>
+            <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
+        </div>
+
+        <div class="form-group">
+            <label for="textoExtra">Texto Extra (opcional)</label>
+            <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
+        </div>
+
+        <div class="button-row">
+            <button class="primary-btn" onclick="gerarEAnunciar()">Gerar anúncio</button>
+            <button class="secondary-btn" onclick="ouvirUltimoTexto()">Ouvir</button>
+        </div>
+
+        <button class="success-btn" onclick="copiarTexto()">Copiar anúncio</button>
+
+        <div class="preview-box">
+            <h3>Texto do anúncio</h3>
+            <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
+        </div>
+
+        <div class="history-section">
+            <h3>Anúncios Gerados (Clique para repetir)</h3>
+            <div id="listaHistorico" class="history-list">
+                <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado ainda.</span>
             </div>
-
-            <div class="form-group">
-                <label for="produto">Nome do Produto</label>
-                <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
-            </div>
-
-            <div class="form-group">
-                <label for="precoOriginal">Preço Original (R$)</label>
-                <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
-            </div>
-
-            <div class="form-group">
-                <label for="precoPromo">Preço Promocional (R$)</label>
-                <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
-            </div>
-
-            <div class="form-group">
-                <label for="textoExtra">Texto Extra (opcional)</label>
-                <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
-            </div>
-
-            <div class="button-row">
-                <button class="primary-btn" style="margin-top: 0;" onclick="gerarEAnunciar()">Gerar anúncio</button>
-                <button class="secondary-btn" onclick="ouvirUltimoTexto()">Ouvir</button>
-            </div>
-
-            <button class="success-btn" onclick="copiarTexto()">Copiar anúncio</button>
-
-            <div class="preview-box">
-                <h3>Texto do anúncio</h3>
-                <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
-            </div>
-
-            <div class="history-section">
-                <h3>Anúncios Gerados Hoje (Clique para repetir)</h3>
-                <div id="listaHistorico" class="history-list">
-                    <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado ainda.</span>
-                </div>
-            </div>
-
-            <button class="secondary-btn" style="width: 100%; margin-top: 18px;" onclick="fazerLogout()">Sair / Trocar Usuário</button>
         </div>
 
         <div id="status" class="status" aria-live="polite"></div>
@@ -308,64 +273,18 @@
         let ultimoTextoLeitura = '';
         let historicoAnuncios = JSON.parse(sessionStorage.getItem('historicoAnuncios')) || [];
 
-        const usuarioLogado = sessionStorage.getItem('usuarioLogado');
-        if (usuarioLogado) {
-            ativarDashboard(usuarioLogado);
-        }
-
-        async function fazerLogin() {
-            const usuario = document.getElementById('usuarioLogin').value.trim();
-            if (!usuario) {
-                mostrarStatus('Informe o nome de usuário.');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario })
-                });
-                const data = await response.json();
-
-                if (data.sucesso) {
-                    sessionStorage.setItem('usuarioLogado', data.usuario.nome);
-                    ativarDashboard(data.usuario.nome);
-                } else {
-                    mostrarStatus('Erro ao entrar.');
-                }
-            } catch (error) {
-                mostrarStatus('Erro de conexão com o servidor.');
-            }
-        }
-
-        function ativarDashboard(nome) {
-            document.getElementById('loginView').classList.add('hidden');
-            const appView = document.getElementById('appView');
-            appView.classList.remove('hidden');
-            document.getElementById('mainContainer').classList.add('app-view');
-            document.getElementById('boasVindasUsuario').textContent = `Bem-vindo, ${nome}! Banco Neon sincronizado.`;
-            renderizarHistorico();
-            mostrarStatus('');
-        }
-
-        function fazerLogout() {
-            sessionStorage.removeItem('usuarioLogado');
-            document.getElementById('appView').classList.add('hidden');
-            document.getElementById('loginView').classList.remove('hidden');
-            document.getElementById('mainContainer').classList.remove('app-view');
-            document.getElementById('usuarioLogin').value = '';
-            document.getElementById('senhaLogin').value = '';
-            mostrarStatus('Sessão encerrada.');
-        }
+        renderizarHistorico();
 
         function removerMoedaParaLeitura(valor) {
             const numero = Number(valor);
             if (!Number.isFinite(numero)) return '0';
+
             const [inteiro, centavos] = numero.toFixed(2).split('.');
             const partes = [];
+
             if (Number(inteiro) > 0) partes.push(inteiro);
             if (Number(centavos) > 0) partes.push(centavos);
+
             return partes.join(' e ');
         }
 
@@ -435,6 +354,7 @@
             document.getElementById('textoGerado').innerText = textoExibicao;
             falarTexto(textoExibicao, textoLeitura);
 
+            // Adicionar ao histórico do dia
             const novoItem = { 
                 produto, 
                 textoExibicao, 
@@ -443,7 +363,7 @@
             };
             
             historicoAnuncios.unshift(novoItem);
-            if (historicoAnuncios.length > 20) historicoAnuncios.pop();
+            if (historicoAnuncios.length > 15) historicoAnuncios.pop();
             sessionStorage.setItem('historicoAnuncios', JSON.stringify(historicoAnuncios));
             renderizarHistorico();
         }
@@ -466,7 +386,7 @@
             }
 
             container.innerHTML = historicoAnuncios.map((item, index) => `
-                <div class="history-item" onclick="repetirAnuncio(${index})" title="Clique para repetir o anúncio">
+                <div class="history-item" onclick="repetirAnuncio(${index})" title="Clique para repetir">
                     <span><strong>${item.produto}</strong> (${item.hora})</span>
                     <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">Ouvir 🔊</span>
                 </div>
