@@ -219,11 +219,30 @@
 
     <script>
         let ultimoTexto = '';
+        let ultimoTextoLeitura = '';
 
         function formatarPrecoParaLeitura(valor) {
             const numero = Number(valor);
-            const inteiro = Math.trunc(numero);
-            return `R$ ${inteiro.toLocaleString('pt-BR')}`;
+            if (!Number.isFinite(numero)) return '0';
+            return numero.toFixed(2).replace('.', ',');
+        }
+
+        function removerMoedaParaLeitura(valor) {
+            const numero = Number(valor);
+            if (!Number.isFinite(numero)) return '0';
+
+            const [inteiro, centavos] = numero.toFixed(2).split('.');
+            const partes = [];
+
+            if (Number(inteiro) > 0) {
+                partes.push(inteiro);
+            }
+
+            if (Number(centavos) > 0) {
+                partes.push(centavos);
+            }
+
+            return partes.join(' e ');
         }
 
         function selecionarVozPTBR() {
@@ -277,25 +296,25 @@
 
             const pOrigDisplay = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             const pPromDisplay = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-            const pOrigLeitura = formatarPrecoParaLeitura(precoOriginal);
-            const pPromLeitura = formatarPrecoParaLeitura(precoPromo);
+            const pOrigLeitura = removerMoedaParaLeitura(precoOriginal);
+            const pPromLeitura = removerMoedaParaLeitura(precoPromo);
 
             const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}. Aproveite agora no nosso comércio!`;
             const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}. Aproveite agora no nosso comércio!`;
 
             ultimoTexto = textoExibicao;
+            ultimoTextoLeitura = textoLeitura;
 
             document.getElementById('textoGerado').innerText = textoExibicao;
             falarTexto(textoLeitura);
         }
 
         function ouvirUltimoTexto() {
-            if (!ultimoTexto) {
+            if (!ultimoTextoLeitura) {
                 mostrarStatus('Ainda não há anúncio para ouvir.');
                 return;
             }
-            falarTexto(ultimoTexto.replace(/\$/g, 'reais').replace(/\./g, '').replace(/,/g, ''));
+            falarTexto(ultimoTextoLeitura);
         }
 
         async function copiarTexto() {
