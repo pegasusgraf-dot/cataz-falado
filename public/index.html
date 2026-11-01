@@ -234,7 +234,7 @@
             <div class="brand">
                 <div class="tag">Restrito</div>
                 <h1>Acesso ao Sistema</h1>
-                <div class="subtitle">Entre com suas credenciais cadastradas</div>
+                <div class="subtitle">Entre ou cadastre seu usuário</div>
             </div>
 
             <div class="form-group">
@@ -247,7 +247,7 @@
                 <input type="password" id="senhaLogin" placeholder="Sua senha">
             </div>
 
-            <button class="primary-btn" onclick="fazerLogin()">Entrar</button>
+            <button class="primary-btn" onclick="fazerLogin()">Entrar / Cadastrar</button>
         </div>
 
         <!-- TELA DO GERADOR DE ANÚNCIOS (DASHBOARD) -->
@@ -308,23 +308,35 @@
         let ultimoTextoLeitura = '';
         let historicoAnuncios = JSON.parse(sessionStorage.getItem('historicoAnuncios')) || [];
 
-        // Verificar se já estava logado na sessão atual do navegador
         const usuarioLogado = sessionStorage.getItem('usuarioLogado');
         if (usuarioLogado) {
             ativarDashboard(usuarioLogado);
         }
 
-        function fazerLogin() {
+        async function fazerLogin() {
             const usuario = document.getElementById('usuarioLogin').value.trim();
-            const senha = document.getElementById('senhaLogin').value.trim();
-
             if (!usuario) {
                 mostrarStatus('Informe o nome de usuário.');
                 return;
             }
 
-            sessionStorage.setItem('usuarioLogado', usuario);
-            ativarDashboard(usuario);
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario })
+                });
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    sessionStorage.setItem('usuarioLogado', data.usuario.nome);
+                    ativarDashboard(data.usuario.nome);
+                } else {
+                    mostrarStatus('Erro ao entrar.');
+                }
+            } catch (error) {
+                mostrarStatus('Erro de conexão com o servidor.');
+            }
         }
 
         function ativarDashboard(nome) {
@@ -332,7 +344,7 @@
             const appView = document.getElementById('appView');
             appView.classList.remove('hidden');
             document.getElementById('mainContainer').classList.add('app-view');
-            document.getElementById('boasVindasUsuario').textContent = `Bem-vindo, ${nome}! Promoções para aproveitar hoje.`;
+            document.getElementById('boasVindasUsuario').textContent = `Bem-vindo, ${nome}! Banco Neon sincronizado.`;
             renderizarHistorico();
             mostrarStatus('');
         }
@@ -350,13 +362,10 @@
         function removerMoedaParaLeitura(valor) {
             const numero = Number(valor);
             if (!Number.isFinite(numero)) return '0';
-
             const [inteiro, centavos] = numero.toFixed(2).split('.');
             const partes = [];
-
             if (Number(inteiro) > 0) partes.push(inteiro);
             if (Number(centavos) > 0) partes.push(centavos);
-
             return partes.join(' e ');
         }
 
@@ -365,4 +374,135 @@
             return voices.find(voice =>
                 voice.lang && (
                     voice.lang.toLowerCase().includes('pt-br') ||
-                    voice.lang.toLowerCase
+                    voice.lang.toLowerCase().includes('pt')
+                )
+            ) || null;
+        }
+
+        function mostrarStatus(mensagem) {
+            document.getElementById('status').textContent = mensagem;
+        }
+
+        function falarTexto(textoExibicao, textoLeituraPersonalizada) {
+            if (!('speechSynthesis' in window)) {
+                mostrarStatus('Seu navegador não suporta reprodução de voz.');
+                return;
+            }
+
+            const synth = window.speechSynthesis;
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(textoLeituraPersonalizada);
+            utterance.lang = 'pt-BR';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.08;
+            utterance.volume = 1;
+
+            const vozPTBR = selecionarVozPTBR();
+            if (vozPTBR) {
+                utterance.voice = vozPTBR;
+            }
+
+            synth.speak(utterance);
+            mostrarStatus('Anúncio em reprodução...');
+        }
+
+        function gerarEAnunciar() {
+            const produto = document.getElementById('produto').value.trim();
+            const precoOriginal = document.getElementById('precoOriginal').value.trim();
+            const precoPromo = document.getElementById('precoPromo').value.trim();
+            const textoExtra = document.getElementById('textoExtra').value.trim();
+
+            if (!produto || !precoOriginal || !precoPromo) {
+                mostrarStatus('Preencha todos os campos para continuar.');
+                alert('Preencha todos os campos!');
+                return;
+            }
+
+            const pOrigDisplay = Number(precoOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const pPromDisplay = Number(precoPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const pOrigLeitura = removerMoedaParaLeitura(precoOriginal);
+            const pPromLeitura = removerMoedaParaLeitura(precoPromo);
+            const textoExtraDisplay = textoExtra ? ` ${textoExtra}` : '';
+            const textoExtraLeitura = textoExtra ? ` ${textoExtra}` : '';
+
+            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}.${textoExtraDisplay} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
+            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}.${textoExtraLeitura} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
+
+            ultimoTexto = textoExibicao;
+            ultimoTextoLeitura = textoLeitura;
+
+            document.getElementById('textoGerado').innerText = textoExibicao;
+            falarTexto(textoExibicao, textoLeitura);
+
+            const novoItem = { 
+                produto, 
+                textoExibicao, 
+                textoLeitura, 
+                hora: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) 
+            };
+            
+            historicoAnuncios.unshift(novoItem);
+            if (historicoAnuncios.length > 20) historicoAnuncios.pop();
+            sessionStorage.setItem('historicoAnuncios', JSON.stringify(historicoAnuncios));
+            renderizarHistorico();
+        }
+
+        function repetirAnuncio(index) {
+            const item = historicoAnuncios[index];
+            if (item) {
+                ultimoTexto = item.textoExibicao;
+                ultimoTextoLeitura = item.textoLeitura;
+                document.getElementById('textoGerado').innerText = item.textoExibicao;
+                falarTexto(item.textoExibicao, item.textoLeitura);
+            }
+        }
+
+        function renderizarHistorico() {
+            const container = document.getElementById('listaHistorico');
+            if (historicoAnuncios.length === 0) {
+                container.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado ainda.</span>';
+                return;
+            }
+
+            container.innerHTML = historicoAnuncios.map((item, index) => `
+                <div class="history-item" onclick="repetirAnuncio(${index})" title="Clique para repetir o anúncio">
+                    <span><strong>${item.produto}</strong> (${item.hora})</span>
+                    <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">Ouvir 🔊</span>
+                </div>
+            `).join('');
+        }
+
+        function ouvirUltimoTexto() {
+            if (!ultimoTextoLeitura) {
+                mostrarStatus('Ainda não há anúncio para ouvir.');
+                return;
+            }
+            falarTexto(ultimoTexto, ultimoTextoLeitura);
+        }
+
+        async function copiarTexto() {
+            if (!ultimoTexto) {
+                mostrarStatus('Ainda não há anúncio para copiar.');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(ultimoTexto);
+                mostrarStatus('Anúncio copiado com sucesso!');
+            } catch (error) {
+                mostrarStatus('Não foi possível copiar automaticamente.');
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                const voz = selecionarVozPTBR();
+                if (voz) {
+                    mostrarStatus('Voz em português pronta para uso.');
+                }
+            };
+        }
+    </script>
+</body>
+</html>
