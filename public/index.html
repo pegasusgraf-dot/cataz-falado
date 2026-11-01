@@ -3,487 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyncStore | Login</title>
+    <title>Loja Oferta SyncStore</title>
     <style>
         :root {
-            --bg: #f3f6f2;
-            --panel: #ffffff;
-            --panel-soft: #eef4ee;
-            --primary: #1f7a5d;
-            --primary-dark: #135c46;
-            --primary-soft: #dff5ea;
-            --primary-strong: #0c2d22;
-            --text: #12231d;
-            --muted: #526762;
-            --line: #dfeae5;
-            --shadow: rgba(12, 45, 34, 0.12);
-            --danger: #c62828;
-            --success: #1f9d5e;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #475569;
+            --success: #16a34a;
+            --success-dark: #15803d;
+            --shadow: rgba(15, 23, 42, 0.12);
         }
 
         * { box-sizing: border-box; }
 
-        html, body {
-            margin: 0;
-            min-height: 100%;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #edf6f0 0%, #f4f8f5 100%);
-            color: var(--text);
-        }
-
         body {
+            margin: 0;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 28px;
-        }
-
-        button, input, select {
-            font: inherit;
-        }
-
-        .auth-shell {
-            width: min(100%, 1080px);
-            min-height: 640px;
-            display: grid;
-            grid-template-columns: 1.05fr 0.95fr;
-            background: var(--panel);
-            border-radius: 28px;
-            overflow: hidden;
-            border: 1px solid rgba(20, 59, 48, 0.08);
-            box-shadow: 0 20px 60px rgba(15, 45, 35, 0.12);
-        }
-
-        .brand-panel {
-            position: relative;
-            background: linear-gradient(135deg, #0f2d24 0%, #144d3f 26%, #1d7a5e 100%);
-            padding: 46px 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #eefaf4;
-        }
-
-        .brand-panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(120deg, rgba(255,255,255,0.06), transparent 45%);
-            pointer-events: none;
-        }
-
-        .brand-content {
-            position: relative;
-            z-index: 1;
-            width: min(100%, 420px);
-        }
-
-        .brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.45rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            margin-bottom: 28px;
-        }
-
-        .brand-mark {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #dff8e9 0%, #bfebd0 100%);
-            color: var(--primary-dark);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-        }
-
-        .eyebrow {
-            display: inline-block;
-            margin-bottom: 18px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: #ebf9f1;
-            letter-spacing: 0.12em;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding: 8px 12px;
-            border-radius: 999px;
-        }
-
-        .brand-panel h1 {
-            margin: 0;
-            font-size: clamp(2.4rem, 5vw, 4rem);
-            line-height: 1.02;
-            letter-spacing: -0.06em;
-            font-weight: 800;
-        }
-
-        .brand-panel h1 span { color: #d2f3df; }
-
-        .intro-note {
-            margin: 18px 0 0;
-            color: rgba(238, 250, 244, 0.83);
-            line-height: 1.7;
-            font-size: 1rem;
-        }
-
-        .intro-foot {
-            margin-top: 24px;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.16);
-            border-radius: 999px;
-            padding: 10px 14px;
-            font-weight: 600;
-            color: #edfaf4;
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #7df0a9;
-            box-shadow: 0 0 0 6px rgba(125, 240, 169, 0.18);
-        }
-
-        .form-panel {
-            padding: 42px 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(180deg, #ffffff 0%, #f8fdf9 100%);
-        }
-
-        .login-box {
-            width: min(100%, 400px);
-        }
-
-        .login-box h2 {
-            margin: 0;
-            font-size: clamp(2rem, 3vw, 2.4rem);
-            line-height: 1.1;
-            letter-spacing: -0.05em;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
             color: var(--text);
-        }
-
-        .subtext {
-            margin: 10px 0 0;
-            color: var(--muted);
-            line-height: 1.7;
-            font-size: 0.98rem;
-        }
-
-        .login-form {
-            margin-top: 24px;
-            display: grid;
-            gap: 18px;
-        }
-
-        .field {
-            display: grid;
-            gap: 8px;
-        }
-
-        .field label {
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: var(--muted);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .field input,
-        .field select {
-            width: 100%;
-            border: 1.5px solid var(--line);
-            border-radius: 12px;
-            background: #fff;
-            color: var(--text);
-            padding: 14px 15px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .field input::placeholder { color: #7f8f8a; }
-
-        .field input:focus,
-        .field select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(31, 122, 93, 0.10);
-        }
-
-        .login-options {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            color: var(--muted);
-            font-size: 0.9rem;
-        }
-
-        .checkbox {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .checkbox input { accent-color: var(--primary); }
-
-        .text-link {
-            border: none;
-            background: transparent;
-            color: var(--primary-dark);
-            font-weight: 700;
-            cursor: pointer;
-            padding: 0;
-        }
-
-        .primary-btn,
-        .ghost-btn,
-        .danger-btn,
-        .success-btn,
-        .secondary-btn {
-            border: none;
-            border-radius: 12px;
-            padding: 15px 16px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .primary-btn {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: #fff;
-            box-shadow: 0 12px 26px rgba(31, 122, 93, 0.18);
-        }
-
-        .secondary-btn {
-            background: var(--primary-soft);
-            color: var(--primary-dark);
-        }
-
-        .ghost-btn {
-            background: #edf4f0;
-            color: var(--primary-dark);
-            border: 1px solid rgba(31, 122, 93, 0.12);
-        }
-
-        .danger-btn {
-            background: #fff1f1;
-            color: var(--danger);
-            border: 1px solid rgba(198, 40, 40, 0.12);
-        }
-
-        .success-btn {
-            width: 100%;
-            background: linear-gradient(135deg, var(--success) 0%, #168b59 100%);
-            color: white;
-            box-shadow: 0 12px 26px rgba(31, 157, 94, 0.18);
-        }
-
-        .primary-btn:hover,
-        .secondary-btn:hover,
-        .ghost-btn:hover,
-        .danger-btn:hover,
-        .success-btn:hover { transform: translateY(-1px); }
-
-        .message {
-            min-height: 18px;
-            font-size: 0.92rem;
-            font-weight: 600;
-            color: var(--muted);
-        }
-
-        .message.error { color: var(--danger); }
-        .message.success { color: var(--success); }
-
-        .demo-box {
-            margin-top: 18px;
-            background: #f3faf6;
-            border: 1px dashed rgba(31, 122, 93, 0.28);
-            border-radius: 12px;
-            padding: 12px 14px;
-            color: var(--muted);
-            line-height: 1.6;
-            font-size: 0.85rem;
-        }
-
-        .demo-box strong { color: var(--text); }
-
-        .app-shell {
-            display: none;
-            width: min(100%, 1200px);
-            background: rgba(255,255,255,0.97);
-            border-radius: 26px;
-            overflow: hidden;
-            border: 1px solid rgba(18, 35, 29, 0.08);
-            box-shadow: 0 20px 60px rgba(15, 45, 35, 0.12);
-        }
-
-        .app-shell.is-visible { display: block; }
-
-        .app-layout {
-            display: grid;
-            grid-template-columns: 240px 1fr;
-            min-height: 760px;
-        }
-
-        .sidebar {
-            background: linear-gradient(180deg, #112d24 0%, #143d32 100%);
-            color: #eaf8f1;
-            padding: 22px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .sidebar-brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: #ffffff;
-            padding: 8px 10px;
-        }
-
-        .sidebar-brand .brand-mark {
-            width: 28px;
-            height: 28px;
-            font-size: 0.9rem;
-        }
-
-        .nav-list {
-            display: grid;
-            gap: 10px;
-            margin-top: 8px;
-        }
-
-        .nav-item {
-            border: none;
-            border-radius: 12px;
-            background: transparent;
-            color: rgba(234, 248, 241, 0.8);
-            text-align: left;
-            padding: 12px 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .nav-item.active {
-            background: rgba(255,255,255,0.08);
-            color: #fff;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-        }
-
-        .nav-item:hover { background: rgba(255,255,255,0.05); }
-
-        .sidebar-footer {
-            margin-top: auto;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 14px;
-            padding: 12px;
-            color: rgba(234, 248, 241, 0.8);
-            font-size: 0.85rem;
-            line-height: 1.6;
-        }
-
-        .content {
-            background: #f8fbf9;
+            justify-content: center;
             padding: 24px;
         }
 
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 4px 18px;
-            border-bottom: 1px solid var(--line);
-            background: transparent;
+        .container {
+            width: 100%;
+            max-width: 620px;
+            background: var(--card);
+            border-radius: 24px;
+            box-shadow: 0 18px 50px var(--shadow);
+            padding: 28px 26px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
         }
 
-        .top-title h1 {
+        .brand {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: var(--primary);
+            font-weight: 700;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        h1 {
             margin: 0;
-            font-size: clamp(1.7rem, 2.2vw, 2.4rem);
-            letter-spacing: -0.05em;
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            color: var(--text);
         }
 
         .subtitle {
-            margin: 8px 0 0;
+            margin-top: 10px;
             color: var(--muted);
-            line-height: 1.6;
+            font-size: 0.96rem;
         }
 
-        .user-bar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .form-group {
+            margin-top: 20px;
         }
 
-        .user-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            padding: 9px 12px;
-            color: var(--muted);
-            font-weight: 600;
-        }
-
-        .avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
-            color: #7c4d00;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 0.85rem;
-        }
-
-        .screen {
-            margin-top: 22px;
-            display: none;
-        }
-
-        .screen.active { display: block; }
-
-        .panel {
-            background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
-            border: 1px solid var(--line);
-            border-radius: 22px;
-            padding: 20px;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 22px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-        }
-
-        .form-grid .field.full { grid-column: 1 / -1; }
-
-        .field label {
+        label {
             display: block;
             margin-bottom: 8px;
             font-weight: 700;
@@ -491,42 +83,66 @@
             font-size: 0.96rem;
         }
 
-        .field input,
-        .field textarea,
-        .field select {
+        input {
             width: 100%;
             padding: 14px 16px;
             border-radius: 12px;
-            border: 1.5px solid var(--line);
+            border: 1.5px solid #dbe3ef;
             font-size: 1rem;
             background: #fff;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            font-family: inherit;
+            transition: 0.2s ease;
         }
 
-        .field textarea {
-            resize: vertical;
-            min-height: 90px;
-        }
-
-        .field input:focus,
-        .field textarea:focus,
-        .field select:focus {
+        input:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(31, 122, 93, 0.10);
+            border: 1.5px solid var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
         }
 
         .button-row {
-            margin-top: 22px;
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 12px;
+            margin-top: 18px;
+        }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 15px 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .secondary-btn {
+            background: #eef2ff;
+            color: var(--primary);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+        }
+
+        .success-btn {
+            width: 100%;
+            margin-top: 12px;
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+            color: white;
+            box-shadow: 0 12px 26px rgba(22, 163, 74, 0.2);
         }
 
         .preview-box {
             margin-top: 22px;
-            background: linear-gradient(135deg, #f1faf6 0%, #ecf7f1 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
             border-left: 6px solid var(--primary);
             border-radius: 16px;
             padding: 18px 16px;
@@ -543,592 +159,128 @@
         #textoGerado {
             margin: 0;
             font-size: 1.08rem;
-            line-height: 1.7;
+            line-height: 1.6;
+            font-weight: 500;
             color: var(--text);
+        }
+
+        .history-section {
+            margin-top: 24px;
+        }
+
+        .history-section h3 {
+            font-size: 0.9rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        .history-list {
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-item {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:hover {
+            background: #e2e8f0;
+            border-color: var(--primary);
         }
 
         .status {
             margin-top: 14px;
             min-height: 24px;
-            color: var(--muted);
             font-size: 0.9rem;
+            color: var(--muted);
             font-weight: 600;
         }
 
-        .kpis {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .kpi {
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 18px;
-            padding: 16px 18px;
-        }
-
-        .kpi-label {
-            display: block;
-            font-size: 0.76rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--muted);
-            margin-bottom: 8px;
-            font-weight: 700;
-        }
-
-        .kpi strong {
-            font-size: 1.8rem;
-            letter-spacing: -0.05em;
-        }
-
-        .user-list {
-            margin-top: 20px;
-            display: grid;
-            gap: 10px;
-        }
-
-        .user-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            padding: 12px 12px;
-        }
-
-        .user-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .user-meta strong { font-size: 0.96rem; }
-        .user-meta small { color: var(--muted); }
-
-        .user-tag {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
-            padding: 5px 8px;
-            background: var(--primary-soft);
-            color: var(--primary-dark);
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        .user-tag.admin {
-            background: #fff7db;
-            color: #7a5500;
-        }
-
-        .inline-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .muted-note {
-            margin-top: 12px;
-            color: var(--muted);
-            font-size: 0.8rem;
-        }
-
-        @media (max-width: 900px) {
-            .auth-shell { grid-template-columns: 1fr; }
-            .app-layout { grid-template-columns: 1fr; }
-            .sidebar { padding-bottom: 12px; }
-            .dashboard-grid, .kpis { grid-template-columns: 1fr; }
-        }
-
         @media (max-width: 480px) {
-            body { padding: 18px; }
-            .form-panel, .brand-panel { padding: 28px 22px; }
-            .button-row, .form-grid { grid-template-columns: 1fr; }
-            .topbar { padding-left: 0; padding-right: 0; }
+            .button-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="authScreen" class="auth-shell">
-        <section class="brand-panel">
-            <div class="brand-content">
-                <div class="brand"><span class="brand-mark">S</span><span>SyncStore</span></div>
-                <div class="eyebrow">Espaços & frota</div>
-                <h1>O próximo<br>compromisso,<br><span>no lugar certo.</span></h1>
-                <p class="intro-note">Salas e veículos organizados em uma agenda só, com controle simples, rápido e seguro para sua operação.</p>
-                <div class="intro-foot"><span class="status-dot"></span> Reservas em tempo real</div>
-            </div>
-        </section>
-
-        <section class="form-panel">
-            <div class="login-box">
-                <div class="brand" style="font-size: 1.25rem; margin-bottom: 12px; color: var(--text);"><span class="brand-mark" style="background: linear-gradient(135deg, #dff5ea 0%, #bfe7d5 100%); color: var(--primary-dark);">R</span><span>reserva<span style="color: var(--primary);">.</span></span></div>
-                <h2>Entrar</h2>
-                <p class="subtext">Acesse sua conta para continuar no painel interno.</p>
-
-                <form id="loginForm" class="login-form" novalidate>
-                    <div class="field">
-                        <label for="email">E-mail</label>
-                        <input id="email" name="email" type="email" placeholder="nome@empresa.com" autocomplete="email" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="password">Senha</label>
-                        <input id="password" name="password" type="password" placeholder="Digite sua senha" autocomplete="current-password" required>
-                    </div>
-
-                    <div class="login-options">
-                        <label class="checkbox"><input type="checkbox"> Lembrar-me</label>
-                        <button type="button" class="text-link">Esqueci a senha</button>
-                    </div>
-
-                    <button type="submit" class="primary-btn">Entrar</button>
-                    <div id="loginMessage" class="message" aria-live="polite"></div>
-                </form>
-
-                <div class="demo-box">
-                    <strong>Demo:</strong> admin@demo.com / 123456
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <div id="appScreen" class="app-shell">
-        <div class="app-layout">
-            <aside class="sidebar">
-                <div class="sidebar-brand"><span class="brand-mark">S</span><span>SyncStore</span></div>
-                <nav class="nav-list" aria-label="Menu lateral">
-                    <button type="button" class="nav-item active" data-screen="dashboard">Dashboard</button>
-                    <button type="button" class="nav-item" data-screen="anuncios">Anúncios</button>
-                    <button type="button" class="nav-item" data-screen="usuarios" id="menuUsuarios">Usuários</button>
-                    <button type="button" class="nav-item" data-screen="config">Configurações</button>
-                </nav>
-                <div class="sidebar-footer">
-                    <strong>Operação</strong><br>
-                    Agenda ativa e sincronizada.
-                </div>
-            </aside>
-
-            <main class="content">
-                <header class="topbar">
-                    <div class="top-title">
-                        <h1 id="pageTitle">Dashboard</h1>
-                        <p class="subtitle" id="pageSubtitle">Resumo da operação e ferramentas de gestão.</p>
-                    </div>
-                    <div class="user-bar">
-                        <div class="user-pill"><span class="avatar" id="userAvatar">A</span><span id="userLabel">Administrador</span></div>
-                        <button type="button" class="ghost-btn" id="logoutBtn">Sair</button>
-                    </div>
-                </header>
-
-                <section id="dashboardScreen" class="screen active">
-                    <div class="kpis">
-                        <div class="kpi">
-                            <span class="kpi-label">Reservas hoje</span>
-                            <strong>18</strong>
-                        </div>
-                        <div class="kpi">
-                            <span class="kpi-label">Salas ativas</span>
-                            <strong>12</strong>
-                        </div>
-                        <div class="kpi">
-                            <span class="kpi-label">Veículos</span>
-                            <strong>9</strong>
-                        </div>
-                    </div>
-
-                    <div class="panel">
-                        <div class="title-row" style="margin-bottom: 0;">
-                            <div>
-                                <h2 style="margin: 0; font-size: 1.5rem;">Resumo da operação</h2>
-                                <p class="subtitle" style="margin-top: 8px;">Acompanhe o desempenho e mantenha a rotina organizada.</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="anunciosScreen" class="screen">
-                    <div class="panel">
-                        <div class="form-grid">
-                            <div class="field">
-                                <label for="produto">Nome do Produto</label>
-                                <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
-                            </div>
-
-                            <div class="field">
-                                <label for="precoOriginal">Preço Original (R$)</label>
-                                <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
-                            </div>
-
-                            <div class="field">
-                                <label for="precoPromo">Preço Promocional (R$)</label>
-                                <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
-                            </div>
-
-                            <div class="field">
-                                <label for="textoExtra">Texto Extra (opcional)</label>
-                                <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
-                            </div>
-                        </div>
-
-                        <div class="button-row">
-                            <button class="primary-btn" type="button" onclick="gerarEAnunciar()">Gerar anúncio</button>
-                            <button class="secondary-btn" type="button" onclick="ouvirUltimoTexto()">Ouvir</button>
-                        </div>
-
-                        <button class="success-btn" type="button" onclick="copiarTexto()">Copiar anúncio</button>
-
-                        <div class="preview-box">
-                            <h3>Texto do anúncio</h3>
-                            <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
-                        </div>
-
-                        <div id="status" class="status" aria-live="polite"></div>
-                    </div>
-                </section>
-
-                <section id="usuariosScreen" class="screen">
-                    <div class="panel">
-                        <h2 style="margin-top: 0; font-size: 1.5rem;">Gerenciar usuários</h2>
-
-                        <form id="userForm" style="margin-top: 20px; display: grid; gap: 14px;">
-                            <div class="field">
-                                <label for="userName">Nome</label>
-                                <input id="userName" type="text" placeholder="Nome completo" required>
-                            </div>
-
-                            <div class="field">
-                                <label for="userEmail">E-mail</label>
-                                <input id="userEmail" type="email" placeholder="usuario@empresa.com" required>
-                            </div>
-
-                            <div class="field">
-                                <label for="userPassword">Senha</label>
-                                <input id="userPassword" type="password" placeholder="Mínimo de 6 caracteres" required>
-                            </div>
-
-                            <div class="field">
-                                <label for="userRole">Tipo</label>
-                                <select id="userRole">
-                                    <option value="user">Usuário</option>
-                                    <option value="admin">Administrador</option>
-                                </select>
-                            </div>
-
-                            <button type="submit" class="primary-btn">Adicionar usuário</button>
-                            <div id="userMessage" class="message" aria-live="polite"></div>
-                        </form>
-
-                        <div class="muted-note">Usuários salvos no navegador neste dispositivo.</div>
-                        <div id="userList" class="user-list"></div>
-                    </div>
-                </section>
-
-                <section id="configScreen" class="screen">
-                    <div class="panel">
-                        <h2 style="margin-top: 0; font-size: 1.5rem;">Configurações</h2>
-                        <p class="subtitle">Ajustes de organização, integrações e manutenção do sistema.</p>
-                    </div>
-                </section>
-            </main>
+    <div class="container">
+        <div class="brand">
+            <div class="tag">Oferta do Dia</div>
+            <h1>Loja Oferta SyncStore</h1>
+            <div class="subtitle">Promoções irresistíveis para você aproveitar agora</div>
         </div>
+
+        <div class="form-group">
+            <label for="produto">Nome do Produto</label>
+            <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+        </div>
+
+        <div class="form-group">
+            <label for="precoOriginal">Preço Original (R$)</label>
+            <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+        </div>
+
+        <div class="form-group">
+            <label for="precoPromo">Preço Promocional (R$)</label>
+            <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
+        </div>
+
+        <div class="form-group">
+            <label for="textoExtra">Texto Extra (opcional)</label>
+            <input type="text" id="textoExtra" placeholder="Ex: Entrega rápida e com garantia hoje">
+        </div>
+
+        <div class="button-row">
+            <button class="primary-btn" onclick="gerarEAnunciar()">Gerar anúncio</button>
+            <button class="secondary-btn" onclick="ouvirUltimoTexto()">Ouvir</button>
+        </div>
+
+        <button class="success-btn" onclick="copiarTexto()">Copiar anúncio</button>
+
+        <div class="preview-box">
+            <h3>Texto do anúncio</h3>
+            <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
+        </div>
+
+        <div class="history-section">
+            <h3>Anúncios Gerados Hoje</h3>
+            <div id="listaHistorico" class="history-list">
+                <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado ainda.</span>
+            </div>
+        </div>
+
+        <div id="status" class="status" aria-live="polite"></div>
     </div>
 
     <script>
-        const STORAGE_KEYS = {
-            USERS: 'lojaOfertaUsers',
-            CURRENT: 'lojaOfertaCurrentUser'
-        };
-
-        const DEFAULT_USERS = [
-            { id: 1, name: 'Administrador', email: 'admin@demo.com', password: '123456', role: 'admin' }
-        ];
-
         let ultimoTexto = '';
         let ultimoTextoLeitura = '';
+        let historicoAnuncios = JSON.parse(sessionStorage.getItem('historicoAnuncios')) || [];
 
-        const authScreen = document.getElementById('authScreen');
-        const appScreen = document.getElementById('appScreen');
-        const loginForm = document.getElementById('loginForm');
-        const loginMessage = document.getElementById('loginMessage');
-        const userLabel = document.getElementById('userLabel');
-        const userAvatar = document.getElementById('userAvatar');
-        const userForm = document.getElementById('userForm');
-        const userList = document.getElementById('userList');
-        const userMessage = document.getElementById('userMessage');
-        const menuUsuarios = document.getElementById('menuUsuarios');
-
-        const pageTitle = document.getElementById('pageTitle');
-        const pageSubtitle = document.getElementById('pageSubtitle');
-        const screens = {
-            dashboard: document.getElementById('dashboardScreen'),
-            anuncios: document.getElementById('anunciosScreen'),
-            usuarios: document.getElementById('usuariosScreen'),
-            config: document.getElementById('configScreen')
-        };
-
-        function setScreen(name) {
-            Object.entries(screens).forEach(([key, screen]) => {
-                screen.classList.toggle('active', key === name);
-            });
-
-            document.querySelectorAll('.nav-item').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.screen === name);
-            });
-
-            const labels = {
-                dashboard: ['Dashboard', 'Resumo da operação e ferramentas de gestão.'],
-                anuncios: ['Anúncios', 'Crie mensagens promocionais e copie em um clique.'],
-                usuarios: ['Usuários', 'Gerencie os acessos e permissões do sistema.'],
-                config: ['Configurações', 'Ajustes de organização e manutenção do sistema.']
-            };
-
-            const [title, subtitle] = labels[name] || labels.dashboard;
-            pageTitle.textContent = title;
-            pageSubtitle.textContent = subtitle;
-        }
-
-        document.querySelectorAll('.nav-item').forEach(button => {
-            button.addEventListener('click', () => setScreen(button.dataset.screen));
-        });
-
-        function setMessage(element, text, type = '') {
-            element.textContent = text;
-            element.className = 'message';
-            if (type) element.classList.add(type);
-        }
-
-        function getCurrentUser() {
-            const raw = localStorage.getItem(STORAGE_KEYS.CURRENT);
-            if (!raw) return null;
-            try {
-                return JSON.parse(raw);
-            } catch {
-                return null;
-            }
-        }
-
-        function getUsers() {
-            const saved = localStorage.getItem(STORAGE_KEYS.USERS);
-            if (!saved) {
-                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-                return DEFAULT_USERS;
-            }
-
-            try {
-                const parsed = JSON.parse(saved);
-                return Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_USERS;
-            } catch {
-                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-                return DEFAULT_USERS;
-            }
-        }
-
-        function saveUsers(users) {
-            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-        }
-
-        function isUserRegistered(email, password) {
-            const users = getUsers();
-            return users.some(user => user.email.toLowerCase() === email.toLowerCase() && user.password === password);
-        }
-
-        function getUserByEmail(email) {
-            const users = getUsers();
-            return users.find(item => item.email.toLowerCase() === email.toLowerCase()) || null;
-        }
-
-        function getUserDisplayName(email) {
-            const user = getUserByEmail(email);
-            return user ? user.name : (email.split('@')[0] || 'Usuário');
-        }
-
-        function canManageUsers() {
-            const user = getCurrentUser();
-            return user && user.role === 'admin';
-        }
-
-        function applyPermissions() {
-            const user = getCurrentUser();
-            const isAdmin = !!(user && user.role === 'admin');
-
-            if (menuUsuarios) {
-                menuUsuarios.style.display = isAdmin ? 'block' : 'none';
-            }
-
-            if (userForm) {
-                userForm.style.display = isAdmin ? 'grid' : 'none';
-            }
-
-            if (!isAdmin) {
-                userList.innerHTML = '<div class="user-item"><div class="user-meta"><strong>Sem acesso</strong><small>Somente administradores podem criar e remover usuários.</small></div></div>';
-            } else {
-                renderUsers();
-            }
-        }
-
-        function renderUsers() {
-            const users = getUsers();
-            if (!users.length) {
-                userList.innerHTML = '<div class="user-item"><div class="user-meta"><strong>Nenhum usuário cadastrado</strong><small>Use o formulário acima para criar o primeiro acesso.</small></div></div>';
-                return;
-            }
-
-            userList.innerHTML = users.map((user) => `
-                <div class="user-item">
-                    <div class="user-meta">
-                        <strong>${user.name}</strong>
-                        <small>${user.email}</small>
-                    </div>
-                    <div class="inline-actions">
-                        <span class="user-tag ${user.role === 'admin' ? 'admin' : ''}">${user.role === 'admin' ? 'Admin' : 'User'}</span>
-                        <button type="button" class="danger-btn" data-user-id="${user.id}" ${users.length === 1 ? 'disabled' : ''}>Excluir</button>
-                    </div>
-                </div>
-            `).join('');
-
-            document.querySelectorAll('[data-user-id]').forEach(button => {
-                button.addEventListener('click', function () {
-                    const userId = Number(this.dataset.userId);
-                    const usersAfterDelete = getUsers().filter(user => user.id !== userId);
-
-                    if (usersAfterDelete.length === 0) {
-                        setMessage(userMessage, 'É preciso manter pelo menos um usuário cadastrado.', 'error');
-                        return;
-                    }
-
-                    saveUsers(usersAfterDelete);
-                    renderUsers();
-                    setMessage(userMessage, 'Usuário removido com sucesso.', 'success');
-                });
-            });
-        }
-
-        function showLoginScreen() {
-            authScreen.style.display = 'grid';
-            appScreen.classList.remove('is-visible');
-        }
-
-        function showAppScreen(user) {
-            authScreen.style.display = 'none';
-            appScreen.classList.add('is-visible');
-
-            const currentName = user && user.name ? user.name : 'Administrador';
-            userLabel.textContent = currentName;
-            userAvatar.textContent = currentName.charAt(0).toUpperCase();
-            applyPermissions();
-            setScreen('dashboard');
-        }
-
-        loginForm.addEventListener('submit', function (event) {
-            event.preventDefault();
-
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            if (!email || !password) {
-                setMessage(loginMessage, 'Preencha e-mail e senha para continuar.', 'error');
-                return;
-            }
-
-            if (!isUserRegistered(email, password)) {
-                setMessage(loginMessage, 'Credenciais inválidas. Use o demo ou um usuário cadastrado.', 'error');
-                return;
-            }
-
-            const user = getUserByEmail(email);
-            localStorage.setItem(STORAGE_KEYS.CURRENT, JSON.stringify({
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role || 'user'
-            }));
-
-            setMessage(loginMessage, 'Login realizado com sucesso!', 'success');
-            showAppScreen(JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT)));
-        });
-
-        document.getElementById('logoutBtn').addEventListener('click', function () {
-            localStorage.removeItem(STORAGE_KEYS.CURRENT);
-            loginForm.reset();
-            setMessage(loginMessage, '', '');
-            showLoginScreen();
-        });
-
-        userForm.addEventListener('submit', function (event) {
-            event.preventDefault();
-
-            if (!canManageUsers()) {
-                setMessage(userMessage, 'Você não tem permissão para criar usuários.', 'error');
-                return;
-            }
-
-            const name = document.getElementById('userName').value.trim();
-            const email = document.getElementById('userEmail').value.trim();
-            const password = document.getElementById('userPassword').value.trim();
-            const role = document.getElementById('userRole').value;
-
-            if (!name || !email || !password) {
-                setMessage(userMessage, 'Preencha nome, e-mail e senha para adicionar o usuário.', 'error');
-                return;
-            }
-
-            if (password.length < 6) {
-                setMessage(userMessage, 'A senha deve ter pelo menos 6 caracteres.', 'error');
-                return;
-            }
-
-            const users = getUsers();
-            const exists = users.some(user => user.email.toLowerCase() === email.toLowerCase());
-            if (exists) {
-                setMessage(userMessage, 'Este e-mail já está cadastrado.', 'error');
-                return;
-            }
-
-            const newUser = {
-                id: Date.now(),
-                name,
-                email,
-                password,
-                role
-            };
-
-            users.push(newUser);
-            saveUsers(users);
-            renderUsers();
-            userForm.reset();
-            setMessage(userMessage, 'Usuário adicionado com sucesso.', 'success');
-        });
-
-        const savedUser = getCurrentUser();
-        if (savedUser) {
-            showAppScreen(savedUser);
-        }
-
-        function formatarPrecoParaLeitura(valor) {
-            const numero = Number(valor);
-            if (!Number.isFinite(numero)) return '0';
-            return numero.toFixed(2).replace('.', ',');
-        }
+        renderizarHistorico();
 
         function removerMoedaParaLeitura(valor) {
             const numero = Number(valor);
             if (!Number.isFinite(numero)) return '0';
-
             const [inteiro, centavos] = numero.toFixed(2).split('.');
             const partes = [];
-
             if (Number(inteiro) > 0) partes.push(inteiro);
             if (Number(centavos) > 0) partes.push(centavos);
-
             return partes.join(' e ');
         }
 
@@ -1146,7 +298,7 @@
             document.getElementById('status').textContent = mensagem;
         }
 
-        function falarTexto(texto) {
+        function falarTexto(texto, textoLeituraPersonalizada = null) {
             if (!('speechSynthesis' in window)) {
                 mostrarStatus('Seu navegador não suporta reprodução de voz.');
                 return;
@@ -1155,7 +307,7 @@
             const synth = window.speechSynthesis;
             synth.cancel();
 
-            const utterance = new SpeechSynthesisUtterance(texto);
+            const utterance = new SpeechSynthesisUtterance(textoLeituraPersonalizada || texto);
             utterance.lang = 'pt-BR';
             utterance.rate = 0.9;
             utterance.pitch = 1.08;
@@ -1189,14 +341,46 @@
             const textoExtraDisplay = textoExtra ? ` ${textoExtra}` : '';
             const textoExtraLeitura = textoExtra ? ` ${textoExtra}` : '';
 
-            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}.${textoExtraDisplay} Aproveite! Supermercados Ponto Novo!`;
-            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}.${textoExtraLeitura} Aproveite! Supermercados Ponto Novo!`;
+            const textoExibicao = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigDisplay} por apenas ${pPromDisplay}.${textoExtraDisplay} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
+            const textoLeitura = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrigLeitura} por apenas ${pPromLeitura}.${textoExtraLeitura} Aproveite! Supermercados Ponto Novo, Onde é gostoso Comprar.`;
 
             ultimoTexto = textoExibicao;
             ultimoTextoLeitura = textoLeitura;
 
             document.getElementById('textoGerado').innerText = textoExibicao;
-            falarTexto(textoLeitura);
+            falarTexto(textoExibicao, textoLeitura);
+
+            // Adicionar ao histórico
+            const novoItem = { produto, textoExibicao, textoLeitura, hora: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) };
+            historicoAnuncios.unshift(novoItem);
+            if (historicoAnuncios.length > 20) historicoAnuncios.pop(); // Limitar a 20 itens
+            sessionStorage.setItem('historicoAnuncios', JSON.stringify(historicoAnuncios));
+            renderizarHistorico();
+        }
+
+        function repetirAnuncio(index) {
+            const item = historicoAnuncios[index];
+            if (item) {
+                ultimoTexto = item.textoExibicao;
+                ultimoTextoLeitura = item.textoLeitura;
+                document.getElementById('textoGerado').innerText = item.textoExibicao;
+                falarTexto(item.textoExibicao, item.textoLeitura);
+            }
+        }
+
+        function renderizarHistorico() {
+            const container = document.getElementById('listaHistorico');
+            if (historicoAnuncios.length === 0) {
+                container.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado ainda.</span>';
+                return;
+            }
+
+            container.innerHTML = historicoAnuncios.map((item, index) => `
+                <div class="history-item" onclick="repetirAnuncio(${index})" title="Clique para repetir">
+                    <span><strong>${item.produto}</strong> (${item.hora})</span>
+                    <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">Ouvir 🔊</span>
+                </div>
+            `).join('');
         }
 
         function ouvirUltimoTexto() {
@@ -1204,7 +388,7 @@
                 mostrarStatus('Ainda não há anúncio para ouvir.');
                 return;
             }
-            falarTexto(ultimoTextoLeitura);
+            falarTexto(ultimoTexto, ultimoTextoLeitura);
         }
 
         async function copiarTexto() {
