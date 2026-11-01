@@ -36,7 +36,7 @@
 
       .hidden { display: none !important; }
 
-      /* Estilo da Tela de Login (Mesmo padrão da sua referência) */
+      /* Estilo da Tela de Login */
       .auth-layout {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -202,14 +202,6 @@
         max-width: 900px;
       }
 
-      .preview-box {
-        margin-top: 24px;
-        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-        border-left: 6px solid var(--primary);
-        border-radius: 14px;
-        padding: 20px;
-      }
-
       @media (max-width: 768px) {
         .auth-layout, .app-layout { grid-template-columns: 1fr; }
         .auth-intro { display: none; }
@@ -237,16 +229,15 @@
           <h2 id="auth-title" style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
           <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">Entre para gerar e gerenciar suas locuções.</p>
       
-          <form id="auth-form" class="form-stack" onsubmit="realizarLogin(event)">
-            <label class="field" id="nome-field" hidden>Nome completo<input id="input-nome" placeholder="Nome do operador"></label>
-            <label class="field">E-mail / Usuário<input id="input-email" required placeholder="master ou operador@loja.com"></label>
+          <form id="auth-form" class="form-stack" onsubmit="processarAutenticacao(event)">
+            <label class="field">Usuário / Login<input id="input-usuario" required placeholder="Ex: master"></label>
             <label class="field">Senha<input id="input-senha" type="password" required placeholder="Sua senha"></label>
-            <button class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
+            <button class="button button-primary button-wide" id="btn-submit" type="submit">Entrar <span aria-hidden="true">↗</span></button>
             <p class="form-message" id="auth-message" role="status"></p>
           </form>
 
           <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
-            <a href="#" onclick="alternarModoRegistro(event)" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">Primeiro acesso? Cadastrar Administrador/Usuário</a>
+            <a href="#" onclick="alternarModoRegistro(event)" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">Primeiro acesso? Cadastrar Novo Usuário</a>
           </div>
         </div>
       </section>
@@ -258,7 +249,7 @@
         <div>
           <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
           <p class="eyebrow" style="margin-top: 15px;">HISTÓRICO DO DIA</p>
-          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">Clique para repetir o áudio:</div>
+          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">Seus anúncios gerados:</div>
           <div id="listaHistorico" class="history-list">
             <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>
           </div>
@@ -266,4 +257,116 @@
 
         <div>
           <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
-            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;"
+            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;" onclick="alert('Área restrita Master')">Painel Administrativo</button>
+          </div>
+          <button class="button" style="width: 100%; background: #fee2e2; color: #dc2626; font-size: 0.85rem;" onclick="sairDaConta()">Sair da Conta</button>
+        </div>
+      </aside>
+
+      <section class="dashboard-main">
+        <h2 style="margin-top:0;">Painel de Controle</h2>
+        <p class="muted">Bem-vindo ao sistema de anúncios comerciais da SyncStore.</p>
+        <div class="preview-box">
+          <h3>Sistema Operacional Ativo</h3>
+          <p>Utilize o menu lateral para gerenciar suas operações.</p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      let modoCadastro = false;
+
+      function alternarModoRegistro(e) {
+        e.preventDefault();
+        modoCadastro = !modoCadastro;
+        
+        const titulo = document.getElementById('auth-title');
+        const desc = document.getElementById('auth-description');
+        const btn = document.getElementById('btn-submit');
+        const link = document.getElementById('link-alternar');
+        const msg = document.getElementById('auth-message');
+
+        msg.textContent = '';
+
+        if (modoCadastro) {
+          titulo.textContent = 'Criar nova conta';
+          desc.textContent = 'Cadastre um novo usuário no sistema.';
+          btn.innerHTML = 'Cadastrar <span aria-hidden="true">↗</span>';
+          link.textContent = 'Já possui conta? Faça login';
+        } else {
+          titulo.textContent = 'Acesse sua conta';
+          desc.textContent = 'Entre para gerar e gerenciar suas locuções.';
+          btn.innerHTML = 'Entrar <span aria-hidden="true">↗</span>';
+          link.textContent = 'Primeiro acesso? Cadastrar Novo Usuário';
+        }
+      }
+
+      async function processarAutenticacao(event) {
+        event.preventDefault();
+        
+        const usuario = document.getElementById('input-usuario').value.trim();
+        const senha = document.getElementById('input-senha').value.trim();
+        const msg = document.getElementById('auth-message');
+
+        msg.style.color = 'var(--text)';
+        msg.textContent = modoCadastro ? 'Cadastrando...' : 'Entrando...';
+
+        const endpoint = modoCadastro ? '/api/usuarios' : '/api/login';
+
+        try {
+          const resposta = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario, senha })
+          });
+
+          const dados = await resposta.json();
+
+          if (dados.sucesso) {
+            if (modoCadastro) {
+              msg.style.color = 'var(--success)';
+              msg.textContent = 'Usuário cadastrado com sucesso! Faça login.';
+              modoCadastro = false;
+              document.getElementById('auth-form').reset();
+              // Restaura a tela para login
+              document.getElementById('auth-title').textContent = 'Acesse sua conta';
+              document.getElementById('btn-submit').innerHTML = 'Entrar <span aria-hidden="true">↗</span>';
+              document.getElementById('link-alternar').textContent = 'Primeiro acesso? Cadastrar Novo Usuário';
+            } else {
+              msg.style.color = 'var(--success)';
+              msg.textContent = 'Login efetuado com sucesso! Redirecionando...';
+              
+              // Salva o usuário logado e troca de tela
+              localStorage.setItem('usuarioLogado', JSON.stringify(dados.usuario));
+              
+              setTimeout(() => {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                
+                // Se for master, mostra botão administrativo
+                if (dados.usuario.tipo === 'master') {
+                  document.getElementById('bloco-master').classList.remove('hidden');
+                }
+              }, 800);
+            }
+          } else {
+            msg.style.color = 'var(--danger)';
+            msg.textContent = dados.mensagem || 'Ocorreu um erro.';
+          }
+        } catch (error) {
+          console.error(error);
+          msg.style.color = 'var(--danger)';
+          msg.textContent = 'Erro de conexão com o servidor.';
+        }
+      }
+
+      function sairDaConta() {
+        localStorage.removeItem('usuarioLogado');
+        document.getElementById('app-screen').classList.add('hidden');
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('auth-form').reset();
+        document.getElementById('auth-message').textContent = '';
+      }
+    </script>
+  </body>
+</html>
