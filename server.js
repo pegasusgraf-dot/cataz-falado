@@ -11,7 +11,7 @@ const pool = new Pool({
     connectionString: 'postgresql://neondb_owner:npg_VRkNhKFvSr17@ep-noisy-fog-b4p6p3pc-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require',
 });
 
-// Criar tabelas automaticamente se não existirem
+// Criar tabelas e colunas automaticamente se não existirem
 async function inicializarBanco() {
     try {
         await pool.query(`
@@ -20,15 +20,19 @@ async function inicializarBanco() {
                 nome VARCHAR(100) UNIQUE NOT NULL,
                 senha VARCHAR(100) NOT NULL,
                 tipo VARCHAR(20) DEFAULT 'comum',
+                status VARCHAR(20) DEFAULT 'aprovado',
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `);
         
-        // Criar usuário master padrão (admin / 123456) caso não exista nenhum
+        // Garante que colunas novas existam caso a tabela já tenha sido criada antes
+        await pool.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'aprovado';");
+
+        // Criar usuário master padrão (master / 123456) caso não exista nenhum
         const checkMaster = await pool.query("SELECT * FROM usuarios WHERE nome = 'master'");
         if (checkMaster.rows.length === 0) {
             await pool.query(
-                "INSERT INTO usuarios (nome, senha, tipo) VALUES ('master', '123456', 'master')",
+                "INSERT INTO usuarios (nome, senha, tipo, status) VALUES ('master', '123456', 'master', 'aprovado')",
             );
             console.log('Usuário master criado com sucesso! (master / 123456)');
         }
@@ -38,7 +42,7 @@ async function inicializarBanco() {
 }
 inicializarBanco();
 
-// Rota de Login
+// Rota de Login com validação de status pendente
 app.post('/api/login', async (req, res) => {
     const { usuario, senha } = req.body;
     try {
@@ -47,7 +51,11 @@ app.post('/api/login', async (req, res) => {
             [usuario, senha]
         );
         if (resultado.rows.length > 0) {
-            res.json({ sucesso: true, usuario: resultado.rows[0] });
+            const user = resultado.rows[0];
+            if (user.status === 'pendente') {
+                return res.status(403).json({ sucesso: false, mensagem: 'Sua conta está aguardando aprovação do Administrador Master.' });
+            }
+            res.json({ sucesso: true, usuario: user });
         } else {
             res.status(401).json({ sucesso: false, mensagem: 'Usuário ou senha incorretos.' });
         }
@@ -57,13 +65,15 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Rota para cadastrar novo usuário (Apenas Master)
+// Rota para cadastrar / solicitar novo usuário (Pendente por padrão)
 app.post('/api/usuarios', async (req, res) => {
     const { nome, senha, tipo } = req.body;
     try {
+        // Se o cadastro for feito pelo Master, já nasce aprovado; senão, pendente
+        const statusInicial = (tipo === 'master') ? 'aprovado' : 'pendente';
         const novo = await pool.query(
-            'INSERT INTO usuarios (nome, senha, tipo) VALUES ($1, $2, $3) RETURNING id, nome, tipo',
-            [nome, senha, tipo || 'comum']
+            'INSERT INTO usuarios (nome, senha, tipo, status) VALUES ($1, $2, $3, $4) RETURNING id, nome, tipo, status',
+            [nome, senha, tipo || 'comum', statusInicial]
         );
         res.json({ sucesso: true, usuario: novo.rows[0] });
     } catch (error) {
@@ -75,10 +85,35 @@ app.post('/api/usuarios', async (req, res) => {
 // Rota para listar usuários
 app.get('/api/usuarios', async (req, res) => {
     try {
-        const lista = await pool.query('SELECT id, nome, tipo, created_at FROM usuarios ORDER BY id DESC');
+        const lista = await pool.query('SELECT id, nome, tipo, status, created_at FROM usuarios ORDER BY id DESC');
         res.json({ sucesso: true, usuarios: lista.rows });
     } catch (error) {
         res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar usuários.' });
+    }
+});
+
+// Rota para Aprovar usuário pendente
+app.post('/api/usuarios/aprovar', async (req, res) => {
+    const { nome } = req.body;
+    try {
+        await pool.query("UPDATE usuarios SET status = 'aprovado' WHERE nome = $1", [nome]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, mensagem: 'Erro ao aprovar usuário.' });
+    }
+});
+
+// Rota para Deletar / Recusar usuário
+app.delete('/api/usuarios/:nome', async (req, res) => {
+    const { nome } = req.params;
+    if (nome === 'master') {
+        return res.status(400).json({ sucesso: false, mensagem: 'Não é permitido excluir o usuário master.' });
+    }
+    try {
+        await pool.query('DELETE FROM usuarios WHERE nome = $1', [nome]);
+        res.json({ sucesso: true });
+    } catch (error) {
+        res.status(500).json({ sucesso: false, mensagem: 'Erro ao excluir usuário.' });
     }
 });
 
