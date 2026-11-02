@@ -437,9 +437,12 @@
         </div>
 
         <div>
-          <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
+          <div id="bloco-master" class="hidden" style="display:flex; flex-direction:column; gap:12px; margin-bottom: 12px;">
             <button id="btn-adicionar-usuario" class="button button-primary" style="width: 100%; font-size: 0.85rem;">
               + Incluir usuário
+            </button>
+            <button id="btn-gerenciar-usuarios" class="button button-ghost" style="width: 100%; font-size: 0.85rem;">
+              Gerenciar usuários
             </button>
           </div>
 
@@ -673,6 +676,7 @@
         inputTextoAnuncio.value = texto;
         ultimoTextoGerado = texto;
         previewTexto.textContent = texto;
+        setMessage(anuncioMessage, 'Anúncio gerado com sucesso!', 'var(--success)');
         return texto;
       }
 
@@ -688,7 +692,7 @@
 
         listarHistoricoAnuncios();
         if (isMaster) {
-          listarUsuarios();
+          listaUsuarios.classList.add('hidden');
         } else {
           listaUsuarios.classList.add('hidden');
         }
@@ -790,6 +794,15 @@
           console.error(error);
           userList.innerHTML = '<div style="color: var(--danger); padding: 10px;">Não foi possível carregar os usuários.</div>';
         }
+      }
+
+      function alternarListaUsuarios() {
+        const visivel = !listaUsuarios.classList.contains('hidden');
+        if (visivel) {
+          listaUsuarios.classList.add('hidden');
+          return;
+        }
+        listarUsuarios();
       }
 
       async function atualizarStatusUsuario(id, status) {
@@ -990,6 +1003,7 @@
       });
 
       document.getElementById('btn-adicionar-usuario').addEventListener('click', abrirModalUsuario);
+      document.getElementById('btn-gerenciar-usuarios').addEventListener('click', alternarListaUsuarios);
       document.getElementById('cancelar-usuario').addEventListener('click', fecharModalUsuario);
       formCriarUsuario.addEventListener('submit', criarUsuario);
       authForm.addEventListener('submit', realizarLogin);
