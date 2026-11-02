@@ -440,7 +440,7 @@
               </select>
             </label>
 
-            <button class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
+            <button id="auth-submit-button" class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
             <p class="form-message" id="auth-message" role="status"></p>
           </form>
 
@@ -636,6 +636,7 @@
       const inputSenha = document.getElementById('input-senha');
       const inputTipo = document.getElementById('input-tipo');
       const authForm = document.getElementById('auth-form');
+      const authSubmitButton = document.getElementById('auth-submit-button');
       const linkAlternar = document.getElementById('link-alternar');
       const authScreen = document.getElementById('auth-screen');
       const appScreen = document.getElementById('app-screen');
@@ -684,16 +685,22 @@
         el.style.color = color;
       }
 
+      function atualizarBotaoAuth() {
+        authSubmitButton.innerHTML = modoRegistro
+          ? 'Cadastrar <span aria-hidden="true">✓</span>'
+          : 'Entrar <span aria-hidden="true">↗</span>';
+      }
+
       function alternarModoRegistro(event) {
         event.preventDefault();
         modoRegistro = !modoRegistro;
 
         if (modoRegistro) {
           authTitle.textContent = 'Crie sua conta';
-          authDescription.textContent = 'Cadastre um administrador ou operador.';
+          authDescription.textContent = 'Cadastre um operador para começar a usar o painel.';
           authEyebrow.textContent = 'CADASTRO';
           nomeField.hidden = false;
-          tipoField.hidden = false;
+          tipoField.hidden = true;
           linkAlternar.textContent = 'Já tem conta? Entrar';
           setMessage(authMessage, '');
         } else {
@@ -705,6 +712,8 @@
           linkAlternar.textContent = 'Primeiro acesso? Cadastrar Administrador/Usuário';
           setMessage(authMessage, '');
         }
+
+        atualizarBotaoAuth();
       }
 
       function formatarMoeda(valor) {
@@ -1091,7 +1100,7 @@
         try {
           if (modoRegistro) {
             const nome = inputNome.value.trim();
-            const tipo = inputTipo.value || 'comum';
+            const tipo = 'comum';
 
             if (!nome) {
               setMessage(authMessage, 'Informe o nome completo.', 'var(--danger)');
@@ -1157,6 +1166,7 @@
       formCriarUsuario.addEventListener('submit', criarUsuario);
       authForm.addEventListener('submit', realizarLogin);
       linkAlternar.addEventListener('click', alternarModoRegistro);
+      atualizarBotaoAuth();
 
       const usuarioSalvo = localStorage.getItem('syncstore_usuario');
       if (usuarioSalvo) {
