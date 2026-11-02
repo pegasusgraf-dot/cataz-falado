@@ -138,7 +138,7 @@
         color: var(--text);
       }
 
-      input, select {
+      input, select, textarea {
         width: 100%;
         padding: 14px 16px;
         border-radius: 12px;
@@ -149,7 +149,12 @@
         transition: 0.2s;
       }
 
-      input:focus, select:focus {
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      input:focus, select:focus, textarea:focus {
         outline: none;
         border-color: var(--primary);
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
@@ -242,6 +247,42 @@
         padding: 20px;
       }
 
+      .ad-panel {
+        margin-top: 28px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+      }
+
+      .ad-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+      }
+
+      .ad-form {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .ad-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
       .dashboard-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -303,6 +344,7 @@
       @media (max-width: 768px) {
         .auth-layout, .app-layout { grid-template-columns: 1fr; }
         .auth-intro { display: none; }
+        .field-row { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -443,9 +485,54 @@
 
         <div class="preview-box">
           <h3 style="margin:0 0 10px; font-family:'Manrope';">Preview do anúncio</h3>
-          <p style="margin: 0; color: var(--muted); line-height:1.6;">
+          <p id="preview-texto" style="margin: 0; color: var(--muted); line-height:1.6;">
             Exemplo de script: “Olá, cliente! Hoje temos promoção especial em eletrônicos com desconto de até 40%.”
           </p>
+        </div>
+
+        <div class="ad-panel">
+          <div class="ad-header">
+            <h3 style="margin:0; font-family:'Manrope';">Gerar anúncio comercial</h3>
+            <button id="btn-gerar-audio" type="button" class="button button-ghost">🔊 Reproduzir áudio</button>
+          </div>
+
+          <form id="form-anuncio" class="ad-form">
+            <div class="field-row">
+              <label class="field">
+                Nome do produto
+                <input id="input-produto" placeholder="Ex.: Smart TV 55\"">
+              </label>
+
+              <label class="field">
+                Valor original
+                <input id="input-valor-original" placeholder="Ex.: 4599.90">
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                Valor promocional
+                <input id="input-valor-promocional" placeholder="Ex.: 2999.90">
+              </label>
+
+              <label class="field">
+                Oferta
+                <input id="input-oferta" placeholder="Ex.: 35% OFF">
+              </label>
+            </div>
+
+            <label class="field">
+              Texto do anúncio
+              <textarea id="input-texto-anuncio" placeholder="O texto será gerado automaticamente ou você pode editar aqui."></textarea>
+            </label>
+
+            <div class="ad-actions">
+              <button id="btn-gerar-anuncio" type="button" class="button button-primary">Gerar anúncio</button>
+              <button id="btn-salvar-anuncio" type="button" class="button button-ghost">Salvar anúncio</button>
+            </div>
+
+            <p id="anuncio-message" class="form-message" role="status"></p>
+          </form>
         </div>
 
         <div id="lista-usuarios" class="hidden" style="margin-top: 26px;">
@@ -517,6 +604,14 @@
       const userList = document.getElementById('user-list');
       const listaUsuarios = document.getElementById('lista-usuarios');
       const contadorUsuarios = document.getElementById('contador-usuarios');
+      const listaHistorico = document.getElementById('listaHistorico');
+      const previewTexto = document.getElementById('preview-texto');
+      const inputProduto = document.getElementById('input-produto');
+      const inputValorOriginal = document.getElementById('input-valor-original');
+      const inputValorPromocional = document.getElementById('input-valor-promocional');
+      const inputOferta = document.getElementById('input-oferta');
+      const inputTextoAnuncio = document.getElementById('input-texto-anuncio');
+      const anuncioMessage = document.getElementById('anuncio-message');
 
       const modalCriarUsuario = document.getElementById('modal-criar-usuario');
       const modalMessage = document.getElementById('modal-message');
@@ -528,6 +623,7 @@
 
       let modoRegistro = false;
       let usuarioAtual = null;
+      let ultimoTextoGerado = '';
 
       function setMessage(el, text, color = 'var(--muted)') {
         el.textContent = text;
@@ -557,6 +653,29 @@
         }
       }
 
+      function formatarMoeda(valor) {
+        const numero = Number(String(valor).replace(/[^\d,.-]/g, '').replace(',', '.'));
+        if (Number.isNaN(numero)) return 'R$ 0,00';
+        return new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(numero);
+      }
+
+      function gerarTextoAnuncio() {
+        const produto = (inputProduto.value || 'Produto').trim() || 'Produto';
+        const valorOriginal = inputValorOriginal.value.trim() || 'R$ 0,00';
+        const valorPromocional = inputValorPromocional.value.trim() || 'R$ 0,00';
+        const oferta = inputOferta.value.trim() || 'Oferta especial';
+
+        const texto = `Olá, cliente! Hoje temos ${produto} por ${formatarMoeda(valorPromocional)} em vez de ${formatarMoeda(valorOriginal)}. ${oferta} e você ainda aproveita uma oportunidade imperdível para levar agora. Não perca essa chance!`;
+
+        inputTextoAnuncio.value = texto;
+        ultimoTextoGerado = texto;
+        previewTexto.textContent = texto;
+        return texto;
+      }
+
       function mostrarTelaApp(usuario) {
         usuarioAtual = usuario;
         const isMaster = String(usuario?.tipo || '').toLowerCase() === 'master';
@@ -566,6 +685,8 @@
         saudeUsuario.textContent = `Bem-vindo, ${usuario?.nome || 'usuário'}`;
         badgeUsuario.textContent = isMaster ? 'Master ativo' : 'Operador ativo';
         blocoMaster.classList.toggle('hidden', !isMaster);
+
+        listarHistoricoAnuncios();
         if (isMaster) {
           listarUsuarios();
         } else {
@@ -578,6 +699,43 @@
         authScreen.classList.remove('hidden');
         usuarioAtual = null;
         localStorage.removeItem('syncstore_usuario');
+      }
+
+      async function listarHistoricoAnuncios() {
+        try {
+          const resposta = await fetch('/api/anuncios');
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao buscar anúncios');
+          }
+
+          const anuncios = dados.anuncios || [];
+          listaHistorico.innerHTML = '';
+
+          if (!anuncios.length) {
+            listaHistorico.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>';
+            return;
+          }
+
+          anuncios.forEach((anuncio) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'history-item';
+            item.textContent = `${anuncio.produto || 'Produto'} • ${anuncio.created_at ? new Date(anuncio.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}`;
+            item.addEventListener('click', () => {
+              inputProduto.value = anuncio.produto || '';
+              inputTextoAnuncio.value = anuncio.texto || '';
+              ultimoTextoGerado = anuncio.texto || '';
+              previewTexto.textContent = anuncio.texto || 'Exemplo de script';
+              setMessage(anuncioMessage, 'Anúncio carregado para reprodução.', 'var(--success)');
+            });
+            listaHistorico.appendChild(item);
+          });
+        } catch (error) {
+          console.error(error);
+          listaHistorico.innerHTML = '<span style="color: var(--danger); font-size: 0.85rem;">Não foi possível carregar anúncios.</span>';
+        }
       }
 
       async function listarUsuarios() {
@@ -608,7 +766,7 @@
                   <strong>${usuario.nome || 'Usuário'}</strong><br>
                   <span style="color: var(--muted);">${usuario.email}</span>
                 </div>
-                <span style="padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight:700; background: ${usuario.status === 'aprovado' ? '#dcfce7' : '#fef3c7'}; color: ${usuario.status === 'aprovado' ? '#166534' : '#92400e'};">
+                <span style="padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight:700; background: ${usuario.status === 'aprovado' ? '#dcfce7' : '#fef3c7'}; color: ${usuario.status === 'aprovado' ? '#166534' : '#a16207'};">
                   ${usuario.status || 'pendente'}
                 </span>
               </div>
@@ -766,6 +924,67 @@
         }
       }
 
+      async function salvarAnuncio() {
+        if (!usuarioAtual) {
+          setMessage(anuncioMessage, 'Faça login para salvar o anúncio.', 'var(--danger)');
+          return;
+        }
+
+        const produto = inputProduto.value.trim();
+        const texto = inputTextoAnuncio.value.trim();
+
+        if (!produto || !texto) {
+          setMessage(anuncioMessage, 'Preencha o nome do produto e o texto do anúncio.', 'var(--danger)');
+          return;
+        }
+
+        try {
+          const resposta = await fetch('/api/anuncios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              produto,
+              texto,
+              usuario_id: usuarioAtual.id
+            })
+          });
+
+          const dados = await resposta.json();
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao salvar anúncio');
+          }
+
+          setMessage(anuncioMessage, 'Anúncio salvo com sucesso!', 'var(--success)');
+          await listarHistoricoAnuncios();
+        } catch (error) {
+          console.error(error);
+          setMessage(anuncioMessage, error.message || 'Erro ao salvar anúncio.', 'var(--danger)');
+        }
+      }
+
+      function reproduzirAudio() {
+        if (!('speechSynthesis' in window)) {
+          setMessage(anuncioMessage, 'Seu navegador não suporta reprodução de voz.', 'var(--danger)');
+          return;
+        }
+
+        const texto = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
+        if (!texto) {
+          setMessage(anuncioMessage, 'Primeiro gere um anúncio.', 'var(--danger)');
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 1;
+        utterance.pitch = 1.2;
+        utterance.volume = 1;
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+        setMessage(anuncioMessage, 'Reproduzindo locução...', 'var(--success)');
+      }
+
       document.getElementById('btn-sair').addEventListener('click', () => {
         mostrarTelaLogin();
       });
@@ -775,6 +994,9 @@
       formCriarUsuario.addEventListener('submit', criarUsuario);
       authForm.addEventListener('submit', realizarLogin);
       linkAlternar.addEventListener('click', alternarModoRegistro);
+      document.getElementById('btn-gerar-anuncio').addEventListener('click', gerarTextoAnuncio);
+      document.getElementById('btn-salvar-anuncio').addEventListener('click', salvarAnuncio);
+      document.getElementById('btn-gerar-audio').addEventListener('click', reproduzirAudio);
 
       const usuarioSalvo = localStorage.getItem('syncstore_usuario');
       if (usuarioSalvo) {
