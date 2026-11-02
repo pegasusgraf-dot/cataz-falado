@@ -184,6 +184,11 @@
         border: 1px solid #cbd5e1;
         color: var(--text);
       }
+      .button-danger {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+      }
 
       .form-message {
         font-size: 0.85rem;
@@ -224,8 +229,25 @@
         padding: 12px;
         border-radius: 10px;
         font-size: 0.85rem;
-        cursor: pointer;
         transition: 0.2s;
+      }
+
+      .history-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .history-item-main {
+        flex: 1;
+        background: transparent;
+        border: none;
+        text-align: left;
+        padding: 0;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
       }
 
       .history-item:hover, .user-item:hover {
@@ -618,7 +640,7 @@
       const authScreen = document.getElementById('auth-screen');
       const appScreen = document.getElementById('app-screen');
       const blocoMaster = document.getElementById('bloco-master');
-      const saudeUsuario = document.getElementById('saudacao');
+      const saudacao = document.getElementById('saudacao');
       const badgeUsuario = document.getElementById('badge-usuario');
       const userList = document.getElementById('user-list');
       const listaUsuarios = document.getElementById('lista-usuarios');
@@ -635,6 +657,13 @@
       const metricCampanhas = document.getElementById('metric-campanhas');
       const metricLocucaoDia = document.getElementById('metric-locucao-dia');
       const metricFiltro = document.getElementById('metric-filtro');
+      const btnGerarAudio = document.getElementById('btn-gerar-audio');
+      const btnGerarAnuncio = document.getElementById('btn-gerar-anuncio');
+      const btnSalvarAnuncio = document.getElementById('btn-salvar-anuncio');
+      const btnLimparFiltro = document.getElementById('btn-limpar-filtro');
+      const btnAdicionarUsuario = document.getElementById('btn-adicionar-usuario');
+      const btnGerenciarUsuarios = document.getElementById('btn-gerenciar-usuarios');
+      const btnSair = document.getElementById('btn-sair');
 
       const modalCriarUsuario = document.getElementById('modal-criar-usuario');
       const modalMessage = document.getElementById('modal-message');
@@ -643,6 +672,7 @@
       const inputNovoEmail = document.getElementById('novo-email');
       const inputNovoSenha = document.getElementById('novo-senha');
       const inputNovoTipo = document.getElementById('novo-tipo');
+      const cancelarUsuario = document.getElementById('cancelar-usuario');
 
       let modoRegistro = false;
       let usuarioAtual = null;
@@ -678,7 +708,7 @@
       }
 
       function formatarMoeda(valor) {
-        const numero = Number(String(valor).replace(/[^\d,.-]/g, '').replace(',', '.'));
+        const numero = Number(String(valor).replace(/[^,.-]/g, '').replace(',', '.'));
         if (Number.isNaN(numero)) return 'R$ 0,00';
         return new Intl.NumberFormat('pt-BR', {
           style: 'currency',
@@ -692,7 +722,7 @@
         const valorPromocional = inputValorPromocional.value.trim() || 'R$ 0,00';
         const oferta = inputOferta.value.trim() || 'Oferta especial';
 
-        const texto = `Olá, cliente! Hoje temos ${produto} por ${formatarMoeda(valorPromocional)} em vez de ${formatarMoeda(valorOriginal)}. ${oferta} e você ainda aproveita uma oportunidade imperdível para levar agora. Não perca essa chance!`;
+        const texto = `Olá, cliente! Hoje temos ${produto} por ${formatarMoeda(valorPromocional)} em vez de ${formatarMoeda(valorOriginal)}. ${oferta} e você ainda aproveita uma oportunidade imperdível.`;
 
         inputTextoAnuncio.value = texto;
         ultimoTextoGerado = texto;
@@ -707,8 +737,7 @@
         const dataHoje = hoje.toISOString().slice(0, 10);
         const hojeCount = anunciosCarregados.filter((item) => {
           if (!item.created_at) return false;
-          const dataItem = new Date(item.created_at).toISOString().slice(0, 10);
-          return dataItem === dataHoje;
+          return new Date(item.created_at).toISOString().slice(0, 10) === dataHoje;
         }).length;
 
         const filtroAtual = filtroDataAnuncio.value;
@@ -730,14 +759,12 @@
 
         authScreen.classList.add('hidden');
         appScreen.classList.remove('hidden');
-        saudeUsuario.textContent = `Bem-vindo, ${usuario?.nome || 'usuário'}`;
+        saudacao.textContent = `Bem-vindo, ${usuario?.nome || 'usuário'}`;
         badgeUsuario.textContent = isMaster ? 'Master ativo' : 'Operador ativo';
         blocoMaster.classList.toggle('hidden', !isMaster);
 
         listarHistoricoAnuncios();
         if (isMaster) {
-          listaUsuarios.classList.add('hidden');
-        } else {
           listaUsuarios.classList.add('hidden');
         }
       }
@@ -769,18 +796,38 @@
         }
 
         itens.forEach((anuncio) => {
-          const item = document.createElement('button');
-          item.type = 'button';
-          item.className = 'history-item';
-          item.textContent = `${anuncio.produto || 'Produto'} • ${anuncio.created_at ? new Date(anuncio.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}`;
-          item.addEventListener('click', () => {
+          const row = document.createElement('div');
+          row.className = 'history-item';
+
+          const botoes = document.createElement('div');
+          botoes.style.display = 'flex';
+          botoes.style.alignItems = 'center';
+          botoes.style.gap = '8px';
+
+          const botaoMain = document.createElement('button');
+          botaoMain.type = 'button';
+          botaoMain.className = 'history-item-main';
+          botaoMain.textContent = `${anuncio.produto || 'Produto'} • ${anuncio.created_at ? new Date(anuncio.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}`;
+          botaoMain.addEventListener('click', () => {
             inputProduto.value = anuncio.produto || '';
             inputTextoAnuncio.value = anuncio.texto || '';
             ultimoTextoGerado = anuncio.texto || '';
             previewTexto.textContent = anuncio.texto || 'Exemplo de script';
             setMessage(anuncioMessage, 'Anúncio carregado para reprodução.', 'var(--success)');
           });
-          listaHistorico.appendChild(item);
+
+          const botaoExcluir = document.createElement('button');
+          botaoExcluir.type = 'button';
+          botaoExcluir.className = 'button button-danger';
+          botaoExcluir.style.padding = '8px 10px';
+          botaoExcluir.style.fontSize = '0.72rem';
+          botaoExcluir.textContent = 'Excluir';
+          botaoExcluir.addEventListener('click', () => excluirAnuncio(anuncio.id));
+
+          botoes.appendChild(botaoMain);
+          botoes.appendChild(botaoExcluir);
+          row.appendChild(botoes);
+          listaHistorico.appendChild(row);
         });
 
         atualizarMetricas();
@@ -832,13 +879,14 @@
                   <strong>${usuario.nome || 'Usuário'}</strong><br>
                   <span style="color: var(--muted);">${usuario.email}</span>
                 </div>
-                <span style="padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight:700; background: ${usuario.status === 'aprovado' ? '#dcfce7' : '#fef3c7'}; color: ${usuario.status === 'aprovado' ? '#166534' : '#a16207'};">
+                <span style="padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight:700; background: ${usuario.status === 'aprovado' ? '#dcfce7' : '#fef3c7'}; color: ${usuario.status === 'aprovado' ? '#166534' : '#92400e'};">
                   ${usuario.status || 'pendente'}
                 </span>
               </div>
               <div style="display:flex; gap:8px; margin-top: 10px; flex-wrap: wrap;">
                 <button data-acao="aprovado" data-id="${usuario.id}" class="button button-primary" style="padding: 8px 10px; font-size: 0.75rem;">Aprovar</button>
                 <button data-acao="rejeitado" data-id="${usuario.id}" class="button button-ghost" style="padding: 8px 10px; font-size: 0.75rem;">Rejeitar</button>
+                <button data-acao="excluir" data-id="${usuario.id}" class="button button-danger" style="padding: 8px 10px; font-size: 0.75rem;">Excluir</button>
               </div>
             `;
 
@@ -848,8 +896,14 @@
           userList.querySelectorAll('button[data-id]').forEach((botao) => {
             botao.addEventListener('click', async () => {
               const id = botao.dataset.id;
-              const status = botao.dataset.acao;
-              await atualizarStatusUsuario(id, status);
+              const acao = botao.dataset.acao;
+
+              if (acao === 'excluir') {
+                await excluirUsuario(id);
+                return;
+              }
+
+              await atualizarStatusUsuario(id, acao);
             });
           });
         } catch (error) {
@@ -884,6 +938,47 @@
         } catch (error) {
           console.error(error);
           setMessage(modalMessage, 'Não foi possível atualizar o status do usuário.', 'var(--danger)');
+        }
+      }
+
+      async function excluirUsuario(id) {
+        const confirmado = window.confirm('Deseja realmente excluir este usuário?');
+        if (!confirmado) return;
+
+        try {
+          const resposta = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao excluir usuário');
+          }
+
+          await listarUsuarios();
+          setMessage(modalMessage, 'Usuário excluído com sucesso!', 'var(--success)');
+        } catch (error) {
+          console.error(error);
+          setMessage(modalMessage, error.message || 'Erro ao excluir usuário.', 'var(--danger)');
+        }
+      }
+
+      async function excluirAnuncio(id) {
+        const confirmado = window.confirm('Deseja excluir este áudio salvo?');
+        if (!confirmado) return;
+
+        try {
+          const resposta = await fetch(`/api/anuncios/${id}`, { method: 'DELETE' });
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao excluir áudio');
+          }
+
+          anunciosCarregados = (anunciosCarregados || []).filter((item) => item.id !== id);
+          aplicarFiltroAnuncios();
+          setMessage(anuncioMessage, 'Áudio excluído com sucesso!', 'var(--success)');
+        } catch (error) {
+          console.error(error);
+          setMessage(anuncioMessage, error.message || 'Erro ao excluir áudio.', 'var(--danger)');
         }
       }
 
@@ -929,6 +1024,55 @@
         } catch (error) {
           setMessage(modalMessage, error.message, 'var(--danger)');
         }
+      }
+
+      async function salvarAnuncio() {
+        const produto = inputProduto.value.trim();
+        const texto = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
+        const usuarioId = usuarioAtual?.id || null;
+
+        if (!produto || !texto) {
+          setMessage(anuncioMessage, 'Preencha o nome do produto e o texto do anúncio.', 'var(--danger)');
+          return;
+        }
+
+        try {
+          const resposta = await fetch('/api/anuncios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ produto, texto, usuario_id: usuarioId })
+          });
+
+          const dados = await resposta.json();
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao salvar anúncio');
+          }
+
+          setMessage(anuncioMessage, 'Anúncio salvo com sucesso!', 'var(--success)');
+          await listarHistoricoAnuncios();
+        } catch (error) {
+          console.error(error);
+          setMessage(anuncioMessage, error.message || 'Erro ao salvar anúncio.', 'var(--danger)');
+        }
+      }
+
+      function reproduzirAudio() {
+        const mensagem = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
+        if (!mensagem) {
+          setMessage(anuncioMessage, 'Gere ou escreva um anúncio antes de reproduzir.', 'var(--danger)');
+          return;
+        }
+
+        if (!('speechSynthesis' in window)) {
+          setMessage(anuncioMessage, 'Seu navegador não suporta reprodução por voz.', 'var(--danger)');
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = 'pt-BR';
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utterance);
+        setMessage(anuncioMessage, 'Reproduzindo áudio...', 'var(--success)');
       }
 
       async function realizarLogin(event) {
@@ -992,99 +1136,34 @@
           setTimeout(() => {
             mostrarTelaApp(dados.usuario);
           }, 500);
-
         } catch (error) {
           console.error(error);
           setMessage(authMessage, error.message || 'Erro ao conectar com o servidor.', 'var(--danger)');
         }
       }
 
-      async function salvarAnuncio() {
-        if (!usuarioAtual) {
-          setMessage(anuncioMessage, 'Faça login para salvar o anúncio.', 'var(--danger)');
-          return;
-        }
-
-        const produto = inputProduto.value.trim();
-        const texto = inputTextoAnuncio.value.trim();
-
-        if (!produto || !texto) {
-          setMessage(anuncioMessage, 'Preencha o nome do produto e o texto do anúncio.', 'var(--danger)');
-          return;
-        }
-
-        try {
-          const resposta = await fetch('/api/anuncios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              produto,
-              texto,
-              usuario_id: usuarioAtual.id
-            })
-          });
-
-          const dados = await resposta.json();
-          if (!resposta.ok || !dados.sucesso) {
-            throw new Error(dados.mensagem || 'Erro ao salvar anúncio');
-          }
-
-          setMessage(anuncioMessage, 'Anúncio salvo com sucesso!', 'var(--success)');
-          await listarHistoricoAnuncios();
-        } catch (error) {
-          console.error(error);
-          setMessage(anuncioMessage, error.message || 'Erro ao salvar anúncio.', 'var(--danger)');
-        }
-      }
-
-      function reproduzirAudio() {
-        if (!('speechSynthesis' in window)) {
-          setMessage(anuncioMessage, 'Seu navegador não suporta reprodução de voz.', 'var(--danger)');
-          return;
-        }
-
-        const texto = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
-        if (!texto) {
-          setMessage(anuncioMessage, 'Primeiro gere um anúncio.', 'var(--danger)');
-          return;
-        }
-
-        const utterance = new SpeechSynthesisUtterance(texto);
-        utterance.lang = 'pt-BR';
-        utterance.rate = 1;
-        utterance.pitch = 1.2;
-        utterance.volume = 1;
-
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
-        setMessage(anuncioMessage, 'Reproduzindo locução...', 'var(--success)');
-      }
-
-      document.getElementById('btn-sair').addEventListener('click', () => {
-        mostrarTelaLogin();
-      });
-
-      document.getElementById('btn-adicionar-usuario').addEventListener('click', abrirModalUsuario);
-      document.getElementById('btn-gerenciar-usuarios').addEventListener('click', alternarListaUsuarios);
-      document.getElementById('cancelar-usuario').addEventListener('click', fecharModalUsuario);
-      formCriarUsuario.addEventListener('submit', criarUsuario);
-      authForm.addEventListener('submit', realizarLogin);
-      linkAlternar.addEventListener('click', alternarModoRegistro);
-      document.getElementById('btn-gerar-anuncio').addEventListener('click', gerarTextoAnuncio);
-      document.getElementById('btn-salvar-anuncio').addEventListener('click', salvarAnuncio);
-      document.getElementById('btn-gerar-audio').addEventListener('click', reproduzirAudio);
-      filtroDataAnuncio.addEventListener('change', aplicarFiltroAnuncios);
-      document.getElementById('btn-limpar-filtro').addEventListener('click', () => {
+      btnGerarAnuncio.addEventListener('click', gerarTextoAnuncio);
+      btnSalvarAnuncio.addEventListener('click', salvarAnuncio);
+      btnGerarAudio.addEventListener('click', reproduzirAudio);
+      btnLimparFiltro.addEventListener('click', () => {
         filtroDataAnuncio.value = '';
         aplicarFiltroAnuncios();
       });
+      filtroDataAnuncio.addEventListener('change', aplicarFiltroAnuncios);
+      btnAdicionarUsuario.addEventListener('click', abrirModalUsuario);
+      btnGerenciarUsuarios.addEventListener('click', alternarListaUsuarios);
+      btnSair.addEventListener('click', mostrarTelaLogin);
+      cancelUsuario.addEventListener('click', fecharModalUsuario);
+      formCriarUsuario.addEventListener('submit', criarUsuario);
+      authForm.addEventListener('submit', realizarLogin);
+      linkAlternar.addEventListener('click', alternarModoRegistro);
 
       const usuarioSalvo = localStorage.getItem('syncstore_usuario');
       if (usuarioSalvo) {
         try {
-          const parsed = JSON.parse(usuarioSalvo);
-          mostrarTelaApp(parsed);
-        } catch {
+          const usuario = JSON.parse(usuarioSalvo);
+          mostrarTelaApp(usuario);
+        } catch (error) {
           localStorage.removeItem('syncstore_usuario');
         }
       }
