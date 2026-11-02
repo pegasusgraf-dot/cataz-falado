@@ -17,8 +17,9 @@ if (!DATABASE_URL) {
 const pool = DATABASE_URL
   ? new Pool({
       connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-   
+      ssl: { rejectUnauthorized: false }
+    })
+  : null;
 
 function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
   return res.status(500).json({ sucesso: false, mensagem });
@@ -53,7 +54,7 @@ async function inicializarBanco() {
       );
     `);
 
-    const checkMaster = await pool.query("SELECT 1 FROM usuarios WHERE email = 'master'");
+    const checkMaster = await pool.query("SELECT 1 FROM usuarios WHERE LOWER(email) = LOWER('master') LIMIT 1");
     if (checkMaster.rows.length === 0) {
       await pool.query(
         "INSERT INTO usuarios (nome, email, senha, tipo, status) VALUES ('Master', 'master', '1234', 'master', 'aprovado')"
