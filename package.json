@@ -7,7 +7,7 @@
     "build": "echo 'Build estatico concluido com sucesso'"
   },
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   },
   "dependencies": {
     "express": "^4.21.2",
