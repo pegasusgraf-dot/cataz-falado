@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "start": "node server.js",
     "build": "echo 'Build estatico concluido com sucesso'"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.17.0"
   }
-} 
+}
