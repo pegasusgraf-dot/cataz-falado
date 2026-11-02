@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <style>
       :root {
         --primary: #2563eb;
@@ -36,7 +36,6 @@
 
       .hidden { display: none !important; }
 
-      /* Estilo da Tela de Login (Mesmo padrão da sua referência) */
       .auth-layout {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -83,10 +82,31 @@
       }
 
       .intro-copy h1 span { color: #60a5fa; }
-      .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; }
+      .eyebrow {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+
       .intro-note { color: #cbd5e1; font-size: 1.05rem; }
-      .intro-foot { font-size: 0.85rem; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
-      .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #22c55e; }
+      .intro-foot {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px #22c55e;
+      }
 
       .auth-panel {
         background: var(--card);
@@ -102,8 +122,13 @@
         max-width: 380px;
       }
 
-      .form-stack { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
-      
+      .form-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-top: 24px;
+      }
+
       label.field {
         display: flex;
         flex-direction: column;
@@ -150,9 +175,14 @@
       .button-primary:hover { transform: translateY(-1px); }
       .button-wide { width: 100%; }
 
-      .form-message { font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 10px; min-height: 20px; }
+      .form-message {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+        margin-top: 10px;
+        min-height: 20px;
+      }
 
-      /* Layout do Dashboard Logado */
       .app-layout {
         display: grid;
         grid-template-columns: 300px 1fr;
@@ -210,55 +240,115 @@
         padding: 20px;
       }
 
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .metric-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+      }
+
+      .metric-card h3 {
+        margin: 0 0 8px;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .metric-card strong {
+        font-size: 1.8rem;
+        display: block;
+      }
+
       @media (max-width: 768px) {
         .auth-layout, .app-layout { grid-template-columns: 1fr; }
         .auth-intro { display: none; }
       }
     </style>
   </head>
-  <body>
 
-    <!-- TELA DE LOGIN E CADASTRO -->
+  <body>
     <main id="auth-screen" class="auth-layout">
       <section class="auth-intro">
-        <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
+        <div class="brand">
+          <span class="brand-mark">S</span>
+          <span>SyncStore<span class="brand-period">.</span></span>
+        </div>
+
         <div class="intro-copy">
-          <p class="eyebrow">VOZ E OFERTAS EM TEMPO REAL</p>
+          <p class="eyebrow">Voz e ofertas em tempo real</p>
           <h1>O anúncio certo,<br>na hora exata,<br><span>para vender mais.</span></h1>
           <p class="intro-note">Sistema inteligente de locução e gerenciamento de ofertas comerciais.</p>
         </div>
-        <div class="intro-foot"><span class="status-dot"></span> Sintetizador de voz pronto para uso</div>
+
+        <div class="intro-foot">
+          <span class="status-dot"></span> Sintetizador de voz pronto para uso
+        </div>
       </section>
 
       <section class="auth-panel">
         <div class="auth-box">
-          <div class="brand" style="color:var(--text)"><span class="brand-mark">A</span><span>anúncios<span class="brand-period">.</span></span></div>
+          <div class="brand" style="color:var(--text);">
+            <span class="brand-mark">A</span>
+            <span>anúncios<span class="brand-period">.</span></span>
+          </div>
+
           <p class="eyebrow" id="auth-eyebrow" style="margin-top: 15px;">PAINEL COMERCIAL</p>
           <h2 id="auth-title" style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
-          <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">Entre para gerar e gerenciar suas locuções.</p>
-      
-          <form id="auth-form" class="form-stack" onsubmit="realizarLogin(event)">
-            <label class="field" id="nome-field" hidden>Nome completo<input id="input-nome" placeholder="Nome do operador"></label>
-            <label class="field">E-mail / Usuário<input id="input-email" required placeholder="master ou operador@loja.com"></label>
-            <label class="field">Senha<input id="input-senha" type="password" required placeholder="Sua senha"></label>
+          <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">
+            Entre para gerar e gerenciar suas locuções.
+          </p>
+
+          <form id="auth-form" class="form-stack">
+            <label class="field" id="nome-field" hidden>
+              Nome completo
+              <input id="input-nome" placeholder="Nome do operador">
+            </label>
+
+            <label class="field">
+              E-mail / Usuário
+              <input id="input-email" required placeholder="master ou operador@loja.com">
+            </label>
+
+            <label class="field">
+              Senha
+              <input id="input-senha" type="password" required placeholder="Sua senha">
+            </label>
+
             <button class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
             <p class="form-message" id="auth-message" role="status"></p>
           </form>
 
           <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
-            <a href="#" onclick="alternarModoRegistro(event)" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">Primeiro acesso? Cadastrar Administrador/Usuário</a>
+            <a href="#" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+              Primeiro acesso? Cadastrar Administrador/Usuário
+            </a>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- TELA DO PAINEL PRINCIPAL (DASHBOARD) -->
     <main id="app-screen" class="app-layout hidden">
       <aside class="sidebar">
         <div>
-          <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
-          <p class="eyebrow" style="margin-top: 15px;">HISTÓRICO DO DIA</p>
-          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">Clique para repetir o áudio:</div>
+          <div class="brand">
+            <span class="brand-mark">S</span>
+            <span>SyncStore<span class="brand-period">.</span></span>
+          </div>
+
+          <p class="eyebrow" style="margin-top: 15px;">Histórico do dia</p>
+          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">
+            Clique para repetir o áudio:
+          </div>
+
           <div id="listaHistorico" class="history-list">
             <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>
           </div>
@@ -266,4 +356,182 @@
 
         <div>
           <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
-            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;"
+            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;">
+              Acesso Master
+            </button>
+          </div>
+
+          <button class="button" style="width: 100%; background: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+            Sair
+          </button>
+        </div>
+      </aside>
+
+      <section class="dashboard-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div>
+            <p class="eyebrow" style="margin-top: 0;">Dashboard</p>
+            <h2 style="margin: 0; font-family:'Manrope';">Bem-vindo ao painel</h2>
+          </div>
+
+          <div style="background: #e0f2fe; color: #0f172a; border-radius: 999px; padding: 8px 12px; font-weight:700; font-size:0.8rem;">
+            Operador ativo
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="metric-card">
+            <h3>Vendas hoje</h3>
+            <strong>1.248</strong>
+          </div>
+
+          <div class="metric-card">
+            <h3>Campanhas</h3>
+            <strong>18</strong>
+          </div>
+
+          <div class="metric-card">
+            <h3>Locuções</h3>
+            <strong>96</strong>
+          </div>
+
+          <div class="metric-card">
+            <h3>Taxa de conversão</h3>
+            <strong>12,4%</strong>
+          </div>
+        </div>
+
+        <div class="preview-box">
+          <h3 style="margin:0 0 10px; font-family:'Manrope';">Preview do anúncio</h3>
+          <p style="margin: 0; color: var(--muted); line-height:1.6;">
+            Exemplo de script: “Olá, cliente! Hoje temos promoção especial em eletrônicos com desconto de até 40%.”
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const authTitle = document.getElementById('auth-title');
+      const authDescription = document.getElementById('auth-description');
+      const authEyebrow = document.getElementById('auth-eyebrow');
+      const authMessage = document.getElementById('auth-message');
+      const nomeField = document.getElementById('nome-field');
+      const inputNome = document.getElementById('input-nome');
+      const inputEmail = document.getElementById('input-email');
+      const inputSenha = document.getElementById('input-senha');
+      const authForm = document.getElementById('auth-form');
+      const linkAlternar = document.getElementById('link-alternar');
+      const authScreen = document.getElementById('auth-screen');
+      const appScreen = document.getElementById('app-screen');
+
+      let modoRegistro = false;
+
+      function alternarModoRegistro(event) {
+        event.preventDefault();
+
+        modoRegistro = !modoRegistro;
+
+        if (modoRegistro) {
+          authTitle.textContent = 'Crie sua conta';
+          authDescription.textContent = 'Cadastre um administrador ou operador.';
+          authEyebrow.textContent = 'CADASTRO';
+          nomeField.hidden = false;
+          linkAlternar.textContent = 'Já tem conta? Entrar';
+          authMessage.textContent = '';
+        } else {
+          authTitle.textContent = 'Acesse sua conta';
+          authDescription.textContent = 'Entre para gerar e gerenciar suas locuções.';
+          authEyebrow.textContent = 'PAINEL COMERCIAL';
+          nomeField.hidden = true;
+          linkAlternar.textContent = 'Primeiro acesso? Cadastrar Administrador/Usuário';
+          authMessage.textContent = '';
+        }
+      }
+
+      async function realizarLogin(event) {
+        event.preventDefault();
+
+        const usuario = inputEmail.value.trim();
+        const senha = inputSenha.value.trim();
+
+        if (!usuario || !senha) {
+          authMessage.textContent = 'Preencha usuário e senha.';
+          authMessage.style.color = 'var(--danger)';
+          return;
+        }
+
+        authMessage.textContent = 'Entrando...';
+        authMessage.style.color = 'var(--muted)';
+
+        try {
+          if (modoRegistro) {
+            const nome = inputNome.value.trim();
+
+            if (!nome) {
+              authMessage.textContent = 'Informe o nome completo.';
+              authMessage.style.color = 'var(--danger)';
+              return;
+            }
+
+            const resposta = await fetch('/api/usuarios', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                nome,
+                senha,
+                tipo: 'comum'
+              })
+            });
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok || !dados.sucesso) {
+              authMessage.textContent = dados.mensagem || 'Erro ao cadastrar usuário.';
+              authMessage.style.color = 'var(--danger)';
+              return;
+            }
+
+            authMessage.textContent = 'Cadastro realizado com sucesso!';
+            authMessage.style.color = 'var(--success)';
+            modoRegistro = false;
+            alternarModoRegistro({ preventDefault() {} });
+            inputEmail.value = nome;
+            inputSenha.value = '';
+            inputNome.value = '';
+            return;
+          }
+
+          const resposta = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario, senha })
+          });
+
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            authMessage.textContent = dados.mensagem || 'Usuário ou senha incorretos.';
+            authMessage.style.color = 'var(--danger)';
+            return;
+          }
+
+          authMessage.textContent = 'Login realizado com sucesso!';
+          authMessage.style.color = 'var(--success)';
+
+          setTimeout(() => {
+            authScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+          }, 600);
+
+        } catch (error) {
+          console.error(error);
+          authMessage.textContent = 'Erro ao conectar com o servidor.';
+          authMessage.style.color = 'var(--danger)';
+        }
+      }
+
+      authForm.addEventListener('submit', realizarLogin);
+      linkAlternar.addEventListener('click', alternarModoRegistro);
+    </script>
+  </body>
+</html>
