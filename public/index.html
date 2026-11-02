@@ -731,8 +731,7 @@
         const valorPromocional = inputValorPromocional.value.trim() || 'R$ 0,00';
         const oferta = inputOferta.value.trim() || 'Oferta especial';
 
-        const texto = `Olá, cliente! Hoje temos ${produto} de ${(valorOriginal)} Por apenas ${(valorPromocional)}. ${oferta} pra voce cliente clube de vantagens, aproveitar uma oportunidade imperdível.`;
-
+         const texto = `Olá, cliente! Hoje temos ${produto} de ${formatarMoeda(valorOriginal)} Por apenas ${formatarMoeda(valorPromocional)}. ${oferta} pra voce cliente clube de vantagens aproveite! uma oportunidade imperdível.`;
         inputTextoAnuncio.value = texto;
         ultimoTextoGerado = texto;
         previewTexto.textContent = texto;
