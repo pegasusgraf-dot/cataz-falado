@@ -8,16 +8,29 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-const DATABASE_URL =
-  process.env.DATABASE_URL ||
-  'postgresql://neondb_owner:npg_wDG0VzA1rTgl@ep-empty-leaf-bdhyrvif-pooler.c-8.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const DATABASE_URL = process.env.DATABASE_URL;
 
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL não configurada. Defina a variável de ambiente no Vercel antes do redeploy.');
+}
+
+const pool = DATABASE_URL
+  ? new Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    })
+  : null;
+
+function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
+  return res.status(500).json({ sucesso: false, mensagem });
+}
 
 async function inicializarBanco() {
+  if (!pool) {
+    console.error('Banco não inicializado porque DATABASE_URL não foi configurada.');
+    return;
+  }
+
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
@@ -65,6 +78,10 @@ function normalizarStatus(status) {
 }
 
 app.get('/api/health', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'DATABASE_URL não configurada no ambiente.');
+  }
+
   try {
     await pool.query('SELECT 1');
     res.json({ ok: true, message: 'Banco conectado' });
@@ -75,6 +92,10 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+  }
+
   const { email, usuario, senha } = req.body || {};
   const emailLogin = String(email || usuario || '').trim();
 
@@ -109,6 +130,10 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.get('/api/usuarios', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+  }
+
   try {
     const lista = await pool.query(
       'SELECT id, nome, email, tipo, status, created_at FROM usuarios ORDER BY id DESC'
@@ -121,6 +146,10 @@ app.get('/api/usuarios', async (req, res) => {
 });
 
 app.post('/api/usuarios', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+  }
+
   const { nome, email, usuario, senha, tipo } = req.body || {};
   const emailFinal = String(email || usuario || '').trim();
 
@@ -153,6 +182,10 @@ app.post('/api/usuarios', async (req, res) => {
 });
 
 app.patch('/api/usuarios/:id/status', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+  }
+
   const { id } = req.params;
   const { status } = req.body || {};
   const statusNormalizado = normalizarStatus(status);
@@ -175,6 +208,10 @@ app.patch('/api/usuarios/:id/status', async (req, res) => {
 });
 
 app.get('/api/anuncios', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+  }
+
   try {
     const lista = await pool.query(`
       SELECT a.*, u.nome AS usuario_nome
@@ -191,6 +228,10 @@ app.get('/api/anuncios', async (req, res) => {
 });
 
 app.post('/api/anuncios', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+  }
+
   const { produto, texto, usuario_id } = req.body || {};
 
   if (!produto || !texto) {
