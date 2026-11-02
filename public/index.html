@@ -337,13 +337,6 @@
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
       }
 
-      .button-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-top: 18px;
-      }
-
       .generator-actions {
         display: flex;
         gap: 12px;
@@ -417,8 +410,107 @@
         padding: 14px;
       }
 
+      .master-panel {
+        margin-top: 24px;
+      }
+
+      .master-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+      }
+
+      .master-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 380px) 1fr;
+        gap: 22px;
+      }
+
+      .master-form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .master-form .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .user-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .user-item {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .user-item small {
+        display: block;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .badge.pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .badge.approved {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .user-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .mini-btn {
+        border: none;
+        border-radius: 8px;
+        padding: 7px 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .mini-btn.approve {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .mini-btn.reject {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
       @media (max-width: 900px) {
-        .generator-layout {
+        .generator-layout,
+        .master-layout {
           grid-template-columns: 1fr;
         }
       }
@@ -511,12 +603,6 @@
         </div>
 
         <div>
-          <button id="btn-gerar" class="button button-primary button-wide" style="margin-bottom: 12px;">
-            Gerar anúncio
-          </button>
-          <button id="btn-anuncios" class="button button-secondary button-wide" style="margin-bottom: 12px;">
-            Anúncios gerados
-          </button>
           <button id="btn-sair" class="button button-secondary button-wide">
             Sair
           </button>
@@ -528,10 +614,10 @@
           <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
             <div>
               <p class="eyebrow" style="margin-top: 0;">Dashboard</p>
-              <h2 style="margin: 0; font-family:'Manrope';">Bem-vindo ao painel</h2>
+              <h2 id="welcome-title" style="margin: 0; font-family:'Manrope';">Bem-vindo ao painel</h2>
             </div>
 
-            <div style="background: #e0f2fe; color: #0f172a; border-radius: 999px; padding: 8px 12px; font-weight:700; font-size:0.8rem;">
+            <div id="user-badge" style="background: #e0f2fe; color: #0f172a; border-radius: 999px; padding: 8px 12px; font-weight:700; font-size:0.8rem;">
               Operador ativo
             </div>
           </div>
@@ -603,11 +689,56 @@
               </div>
             </aside>
           </div>
+
+          <section id="panel-master" class="panel master-panel hidden">
+            <div class="master-header">
+              <h3>Gestão de usuários</h3>
+            </div>
+
+            <div class="master-layout">
+              <form id="form-criar-usuario" class="master-form">
+                <div class="field">
+                  <label for="novo-nome">Nome completo</label>
+                  <input id="novo-nome" type="text" placeholder="Nome do operador" required>
+                </div>
+
+                <div class="field">
+                  <label for="novo-email">E-mail / Usuário</label>
+                  <input id="novo-email" type="email" placeholder="novo.usuario@loja.com" required>
+                </div>
+
+                <div class="field">
+                  <label for="nova-senha">Senha</label>
+                  <input id="nova-senha" type="password" placeholder="Crie uma senha" required>
+                </div>
+
+                <div class="field">
+                  <label for="novo-tipo">Tipo de acesso</label>
+                  <select id="novo-tipo">
+                    <option value="comum">Comum</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+
+                <button class="button button-primary" type="submit">Criar conta</button>
+              </form>
+
+              <div>
+                <h4 style="margin: 0 0 12px;">Contas pendentes</h4>
+                <div id="listaUsuariosPendentes" class="user-list">
+                  <div class="empty">Nenhuma conta pendente.</div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
     </main>
 
     <script>
+      const STORAGE_USERS = 'syncstore-users-v2';
+      const STORAGE_SESSION = 'syncstore-current-user';
+
       const authTitle = document.getElementById('auth-title');
       const authDescription = document.getElementById('auth-description');
       const authEyebrow = document.getElementById('auth-eyebrow');
@@ -622,20 +753,59 @@
       const appScreen = document.getElementById('app-screen');
       const listaHistorico = document.getElementById('listaHistorico');
       const listaAnuncios = document.getElementById('listaAnuncios');
-      const btnGerar = document.getElementById('btn-gerar');
-      const btnAnuncios = document.getElementById('btn-anuncios');
+      const panelMaster = document.getElementById('panel-master');
       const btnSair = document.getElementById('btn-sair');
       const btnGerarAnuncio = document.getElementById('btn-gerar-anuncio');
       const btnOuvir = document.getElementById('btn-ouvir');
       const btnCopiar = document.getElementById('btn-copiar');
-      const panelGerador = document.getElementById('panel-gerador');
-      const panelAnuncios = document.getElementById('panel-anuncios');
       const textoGerado = document.getElementById('textoGerado');
       const statusEl = document.getElementById('status');
+      const welcomeTitle = document.getElementById('welcome-title');
+      const userBadge = document.getElementById('user-badge');
+      const formCriarUsuario = document.getElementById('form-criar-usuario');
+      const listaUsuariosPendentes = document.getElementById('listaUsuariosPendentes');
 
       let modoRegistro = false;
       let ultimoTexto = '';
       let anuncios = JSON.parse(localStorage.getItem('syncstore-anuncios') || '[]');
+
+      function getUsers() {
+        const users = JSON.parse(localStorage.getItem(STORAGE_USERS) || '[]');
+        if (!users.length) {
+          const master = {
+            id: 1,
+            nome: 'Master',
+            email: 'master',
+            senha: '1234',
+            tipo: 'master',
+            status: 'aprovado',
+            createdAt: new Date().toISOString()
+          };
+          localStorage.setItem(STORAGE_USERS, JSON.stringify([master]));
+          return [master];
+        }
+        return users;
+      }
+
+      function saveUsers(users) {
+        localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+      }
+
+      function getCurrentUser() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_SESSION) || 'null');
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function setCurrentUser(user) {
+        localStorage.setItem(STORAGE_SESSION, JSON.stringify(user));
+      }
+
+      function clearCurrentUser() {
+        localStorage.removeItem(STORAGE_SESSION);
+      }
 
       function alternarModoRegistro(event) {
         event.preventDefault();
@@ -663,6 +833,8 @@
         authScreen.classList.add('hidden');
         appScreen.classList.remove('hidden');
         renderizarHistorico();
+        renderUsuarioAtivo();
+        renderMasterPanel();
         authMessage.textContent = '';
       }
 
@@ -672,23 +844,79 @@
         inputEmail.value = '';
         inputSenha.value = '';
         inputNome.value = '';
+        clearCurrentUser();
         authMessage.textContent = 'Sessão encerrada. Faça login novamente.';
         authMessage.style.color = 'var(--muted)';
       }
 
-      function autenticarLocal(usuario, senha) {
-        const credenciais = ['master', 'admin', 'operador'];
-        const senhaPadrao = '1234';
-        const usuarioNormalizado = String(usuario || '').trim().toLowerCase();
+      function autenticarLocal(email, senha) {
+        const usuarios = getUsers();
+        const usuarioNormalizado = String(email || '').trim().toLowerCase();
         const senhaNormalizada = String(senha || '').trim();
 
-        if (!usuarioNormalizado || !senhaNormalizada) return false;
+        const usuario = usuarios.find(item => String(item.email || '').trim().toLowerCase() === usuarioNormalizado);
+        if (!usuario) return null;
+        if (String(usuario.senha || '') !== senhaNormalizada) return null;
+        if (usuario.status !== 'aprovado' && usuario.tipo !== 'master') return null;
+        return usuario;
+      }
 
-        if (credenciais.includes(usuarioNormalizado) && senhaNormalizada === senhaPadrao) {
-          return true;
+      function renderUsuarioAtivo() {
+        const usuario = getCurrentUser();
+        if (!usuario) return;
+
+        const nome = usuario.nome || usuario.email || 'Operador';
+        const tipo = usuario.tipo === 'master' ? 'Master' : 'Operador';
+        welcomeTitle.textContent = 'Bem-vindo, ' + nome;
+        userBadge.textContent = tipo + ' ativo';
+      }
+
+      function renderMasterPanel() {
+        const usuario = getCurrentUser();
+        const isMaster = usuario && usuario.tipo === 'master';
+        panelMaster.classList.toggle('hidden', !isMaster);
+
+        if (!isMaster) return;
+
+        const usuarios = getUsers().filter(item => item.tipo !== 'master');
+        const pendentes = usuarios.filter(item => item.status === 'pendente');
+
+        if (!pendentes.length) {
+          listaUsuariosPendentes.innerHTML = '<div class="empty">Nenhuma conta pendente.</div>';
+          return;
         }
 
-        return false;
+        listaUsuariosPendentes.innerHTML = pendentes.map(usuarioItem => `
+          <div class="user-item">
+            <div>
+              <strong>${usuarioItem.nome}</strong>
+              <small>${usuarioItem.email}</small>
+              <small>Tipo: ${usuarioItem.tipo}</small>
+            </div>
+            <div class="user-actions">
+              <button type="button" class="mini-btn approve" data-user-id="${usuarioItem.id}" data-action="approve">Aprovar</button>
+              <button type="button" class="mini-btn reject" data-user-id="${usuarioItem.id}" data-action="reject">Rejeitar</button>
+            </div>
+          </div>
+        `).join('');
+
+        listaUsuariosPendentes.querySelectorAll('[data-action]').forEach(botao => {
+          botao.addEventListener('click', () => {
+            const userId = Number(botao.dataset.userId);
+            const action = botao.dataset.action;
+            atualizarStatusUsuario(userId, action === 'approve' ? 'aprovado' : 'rejeitado');
+          });
+        });
+      }
+
+      function atualizarStatusUsuario(userId, status) {
+        const usuarios = getUsers();
+        const usuario = usuarios.find(item => Number(item.id) === Number(userId));
+        if (!usuario) return;
+
+        usuario.status = status;
+        saveUsers(usuarios);
+        renderMasterPanel();
       }
 
       async function realizarLogin(event) {
@@ -716,38 +944,36 @@
               return;
             }
 
-            try {
-              const resposta = await fetch('/api/usuarios', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, senha, tipo: 'comum' })
-              });
+            const usuarios = getUsers();
+            const jaExiste = usuarios.some(item => String(item.email || '').trim().toLowerCase() === usuario.toLowerCase());
 
-              const dados = await resposta.json();
-
-              if (!resposta.ok || !dados.sucesso) {
-                throw new Error(dados.mensagem || 'Erro ao cadastrar usuário.');
-              }
-
-              authMessage.textContent = 'Cadastro realizado com sucesso!';
-              authMessage.style.color = 'var(--success)';
-              modoRegistro = false;
-              alternarModoRegistro({ preventDefault() {} });
-              inputEmail.value = nome;
-              inputSenha.value = '';
-              inputNome.value = '';
-              return;
-            } catch (error) {
-              console.warn('Cadastro via API falhou, usando modo local:', error);
-              authMessage.textContent = 'Cadastro local realizado com sucesso!';
-              authMessage.style.color = 'var(--success)';
-              modoRegistro = false;
-              alternarModoRegistro({ preventDefault() {} });
-              inputEmail.value = nome;
-              inputSenha.value = '';
-              inputNome.value = '';
+            if (jaExiste) {
+              authMessage.textContent = 'Este usuário já existe.';
+              authMessage.style.color = 'var(--danger)';
               return;
             }
+
+            const novoUsuario = {
+              id: Date.now(),
+              nome,
+              email: usuario.toLowerCase(),
+              senha,
+              tipo: 'comum',
+              status: 'pendente',
+              createdAt: new Date().toISOString()
+            };
+
+            usuarios.push(novoUsuario);
+            saveUsers(usuarios);
+
+            authMessage.textContent = 'Cadastro enviado para aprovação do usuário master.';
+            authMessage.style.color = 'var(--success)';
+            modoRegistro = false;
+            alternarModoRegistro({ preventDefault() {} });
+            inputEmail.value = '';
+            inputSenha.value = '';
+            inputNome.value = '';
+            return;
           }
 
           try {
@@ -760,6 +986,8 @@
             const dados = await resposta.json();
 
             if (resposta.ok && dados.sucesso) {
+              const loginUser = autenticarLocal(usuario, senha) || { nome: usuario, email: usuario, tipo: 'comum', status: 'aprovado' };
+              setCurrentUser(loginUser);
               authMessage.textContent = 'Login realizado com sucesso!';
               authMessage.style.color = 'var(--success)';
               setTimeout(irParaApp, 400);
@@ -769,10 +997,22 @@
             console.warn('Login via API falhou, usando fallback local:', error);
           }
 
-          if (autenticarLocal(usuario, senha)) {
+          const loginUser = autenticarLocal(usuario, senha);
+
+          if (loginUser) {
+            setCurrentUser(loginUser);
             authMessage.textContent = 'Login realizado com sucesso!';
             authMessage.style.color = 'var(--success)';
             setTimeout(irParaApp, 400);
+            return;
+          }
+
+          const usuarios = getUsers();
+          const usuarioEncontrado = usuarios.find(item => String(item.email || '').trim().toLowerCase() === usuario.toLowerCase());
+
+          if (usuarioEncontrado && usuarioEncontrado.status === 'pendente') {
+            authMessage.textContent = 'Sua conta ainda está pendente de aprovação do usuário master.';
+            authMessage.style.color = 'var(--danger)';
             return;
           }
 
@@ -944,30 +1184,53 @@
         }
       }
 
-      btnGerar.addEventListener('click', () => {
-        panelGerador.classList.remove('hidden');
-        panelAnuncios.classList.remove('hidden');
-        btnAnuncios.textContent = 'Anúncios gerados';
-      });
+      function criarNovoUsuario(event) {
+        event.preventDefault();
 
-      btnAnuncios.addEventListener('click', () => {
-        const hasAds = listaAnuncios.querySelector('button[data-id]');
-        if (hasAds) {
-          panelGerador.classList.toggle('hidden');
-          panelAnuncios.classList.toggle('hidden');
-          btnAnuncios.textContent = panelGerador.classList.contains('hidden') ? 'Voltar ao gerador' : 'Anúncios gerados';
+        const nome = document.getElementById('novo-nome').value.trim();
+        const email = document.getElementById('novo-email').value.trim();
+        const senha = document.getElementById('nova-senha').value.trim();
+        const tipo = document.getElementById('novo-tipo').value;
+
+        if (!nome || !email || !senha) {
+          mostrarStatus('Preencha nome, e-mail e senha para criar a conta.', 'danger');
+          return;
         }
-      });
+
+        const usuarios = getUsers();
+        const jaExiste = usuarios.some(item => String(item.email || '').trim().toLowerCase() === email.toLowerCase());
+
+        if (jaExiste) {
+          mostrarStatus('Este usuário já existe no sistema.', 'danger');
+          return;
+        }
+
+        usuarios.push({
+          id: Date.now(),
+          nome,
+          email: email.toLowerCase(),
+          senha,
+          tipo,
+          status: 'aprovado',
+          createdAt: new Date().toISOString()
+        });
+
+        saveUsers(usuarios);
+        formCriarUsuario.reset();
+        renderMasterPanel();
+        mostrarStatus('Conta criada com sucesso!', 'success');
+      }
 
       btnSair.addEventListener('click', irParaLogin);
       btnGerarAnuncio.addEventListener('click', gerarEAnunciar);
       btnOuvir.addEventListener('click', ouvirUltimoTexto);
       btnCopiar.addEventListener('click', copiarTexto);
-
       authForm.addEventListener('submit', realizarLogin);
       linkAlternar.addEventListener('click', alternarModoRegistro);
+      formCriarUsuario.addEventListener('submit', criarNovoUsuario);
 
       renderizarHistorico();
+      renderMasterPanel();
 
       if ('speechSynthesis' in window) {
         window.speechSynthesis.onvoiceschanged = () => {
