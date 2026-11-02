@@ -207,6 +207,41 @@ app.patch('/api/usuarios/:id/status', async (req, res) => {
   }
 });
 
+app.delete('/api/usuarios/:id', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+  }
+
+  const { id } = req.params;
+
+  try {
+    const cliente = await pool.connect();
+    try {
+      await cliente.query('BEGIN');
+      await cliente.query('DELETE FROM anuncios WHERE usuario_id = $1', [id]);
+      const removido = await cliente.query(
+        'DELETE FROM usuarios WHERE id = $1 RETURNING id, nome, email, tipo, status',
+        [id]
+      );
+      await cliente.query('COMMIT');
+
+      if (removido.rows.length === 0) {
+        return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado.' });
+      }
+
+      return res.json({ sucesso: true, usuario: removido.rows[0] });
+    } catch (error) {
+      await cliente.query('ROLLBACK');
+      throw error;
+    } finally {
+      cliente.release();
+    }
+  } catch (error) {
+    console.error('Erro ao remover usuário:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover usuário.' });
+  }
+});
+
 app.get('/api/anuncios', async (req, res) => {
   if (!pool) {
     return bancoIndisponivel(res, 'Banco de dados não configurado.');
@@ -250,6 +285,30 @@ app.post('/api/anuncios', async (req, res) => {
   } catch (error) {
     console.error('Erro ao salvar anúncio:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar anúncio.' });
+  }
+});
+
+app.delete('/api/anuncios/:id', async (req, res) => {
+  if (!pool) {
+    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+  }
+
+  const { id } = req.params;
+
+  try {
+    const removido = await pool.query(
+      'DELETE FROM anuncios WHERE id = $1 RETURNING *',
+      [id]
+    );
+
+    if (removido.rows.length === 0) {
+      return res.status(404).json({ sucesso: false, mensagem: 'Anúncio não encontrado.' });
+    }
+
+    return res.json({ sucesso: true, anuncio: removido.rows[0] });
+  } catch (error) {
+    console.error('Erro ao remover anúncio:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover anúncio.' });
   }
 });
 
