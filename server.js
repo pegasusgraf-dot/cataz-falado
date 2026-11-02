@@ -14,12 +14,11 @@ if (!DATABASE_URL) {
   console.error('DATABASE_URL não configurada. Defina a variável de ambiente no Vercel antes do redeploy.');
 }
 
-const pool = DATABASE_URL
-  ? new Pool({
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-    })
-  : null;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_qMwLymTrBp86@ep-cool-term-bc07jih0-pooler.c-16.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  ssl: { rejectUnauthorized: false }
+});
+   
 
 function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
   return res.status(500).json({ sucesso: false, mensagem });
