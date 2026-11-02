@@ -708,7 +708,7 @@
       }
 
       function formatarMoeda(valor) {
-        const numero = Number(String(valor).replace(/[^,.-]/g, '').replace(',', '.'));
+        const numero = Number(String(valor).replace(/[^\d,.-]/g, '').replace(',', '.'));
         if (Number.isNaN(numero)) return 'R$ 0,00';
         return new Intl.NumberFormat('pt-BR', {
           style: 'currency',
@@ -1153,7 +1153,7 @@
       btnAdicionarUsuario.addEventListener('click', abrirModalUsuario);
       btnGerenciarUsuarios.addEventListener('click', alternarListaUsuarios);
       btnSair.addEventListener('click', mostrarTelaLogin);
-      cancelUsuario.addEventListener('click', fecharModalUsuario);
+      cancelarUsuario.addEventListener('click', fecharModalUsuario);
       formCriarUsuario.addEventListener('submit', criarUsuario);
       authForm.addEventListener('submit', realizarLogin);
       linkAlternar.addEventListener('click', alternarModoRegistro);
