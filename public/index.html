@@ -173,7 +173,16 @@
       }
 
       .button-primary:hover { transform: translateY(-1px); }
+      .button-secondary {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        color: var(--text);
+      }
       .button-wide { width: 100%; }
+      .button-success {
+        background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+        color: white;
+      }
 
       .form-message {
         font-size: 0.85rem;
@@ -213,12 +222,14 @@
         border: 1px solid #cbd5e1;
         padding: 12px;
         border-radius: 10px;
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         cursor: pointer;
         transition: 0.2s;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 8px;
+        text-align: left;
       }
 
       .history-item:hover {
@@ -226,18 +237,25 @@
         background: #f0fdf4;
       }
 
+      .history-item strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.78rem;
+      }
+
+      .history-item small {
+        color: var(--muted);
+        display: block;
+      }
+
       .dashboard-main {
         padding: 40px;
         overflow-y: auto;
-        max-width: 900px;
       }
 
-      .preview-box {
-        margin-top: 24px;
-        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-        border-left: 6px solid var(--primary);
-        border-radius: 14px;
-        padding: 20px;
+      .content-shell {
+        max-width: 980px;
+        margin: 0 auto;
       }
 
       .dashboard-grid {
@@ -268,9 +286,147 @@
         display: block;
       }
 
+      .generator-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.9fr);
+        gap: 22px;
+        margin-top: 28px;
+      }
+
+      .panel {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+      }
+
+      .panel h3 {
+        margin: 0 0 18px;
+        font-family: 'Manrope', sans-serif;
+        font-size: 1.2rem;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 18px;
+      }
+
+      .field label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+        color: var(--text);
+        font-size: 0.96rem;
+      }
+
+      .field input {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1.5px solid #dbe3ef;
+        font-size: 1rem;
+        background: #fff;
+        transition: 0.2s ease;
+      }
+
+      .field input:focus {
+        outline: none;
+        border: 1.5px solid var(--primary);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      }
+
+      .button-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .generator-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .generator-actions .button {
+        flex: 1;
+      }
+
+      .preview-box {
+        margin-top: 22px;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        border-left: 6px solid var(--primary);
+        border-radius: 16px;
+        padding: 18px 16px;
+      }
+
+      .preview-box h4 {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      #textoGerado {
+        margin: 0;
+        font-size: 1.08rem;
+        line-height: 1.6;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .status {
+        margin-top: 14px;
+        min-height: 24px;
+        font-size: 0.9rem;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .ads-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .ads-list button {
+        width: 100%;
+        border: 1px solid #dbeafe;
+        background: linear-gradient(135deg, #f8fbff 0%, #eef2ff 100%);
+        border-radius: 12px;
+        padding: 12px 14px;
+        text-align: left;
+        cursor: pointer;
+        color: var(--text);
+        font: inherit;
+      }
+
+      .ads-list button:hover {
+        border-color: var(--primary);
+      }
+
+      .ads-list .empty {
+        color: var(--muted);
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 14px;
+      }
+
+      @media (max-width: 900px) {
+        .generator-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
       @media (max-width: 768px) {
         .auth-layout, .app-layout { grid-template-columns: 1fr; }
         .auth-intro { display: none; }
+        .dashboard-main { padding: 24px 16px 40px; }
       }
     </style>
   </head>
@@ -355,57 +511,95 @@
         </div>
 
         <div>
-          <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
-            <button class="button" style="width: 100%; background: #e2e8f0; font-size: 0.85rem;">
-              Acesso Master
-            </button>
-          </div>
-
-          <button class="button" style="width: 100%; background: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.85rem;">
-            Sair
+          <button id="btn-gerar" class="button button-primary button-wide" style="margin-bottom: 12px;">
+            Gerar anúncio
+          </button>
+          <button id="btn-anuncios" class="button button-secondary button-wide">
+            Anúncios gerados
           </button>
         </div>
       </aside>
 
       <section class="dashboard-main">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-          <div>
-            <p class="eyebrow" style="margin-top: 0;">Dashboard</p>
-            <h2 style="margin: 0; font-family:'Manrope';">Bem-vindo ao painel</h2>
+        <div class="content-shell">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div>
+              <p class="eyebrow" style="margin-top: 0;">Dashboard</p>
+              <h2 style="margin: 0; font-family:'Manrope';">Bem-vindo ao painel</h2>
+            </div>
+
+            <div style="background: #e0f2fe; color: #0f172a; border-radius: 999px; padding: 8px 12px; font-weight:700; font-size:0.8rem;">
+              Operador ativo
+            </div>
           </div>
 
-          <div style="background: #e0f2fe; color: #0f172a; border-radius: 999px; padding: 8px 12px; font-weight:700; font-size:0.8rem;">
-            Operador ativo
-          </div>
-        </div>
+          <div class="dashboard-grid">
+            <div class="metric-card">
+              <h3>Vendas hoje</h3>
+              <strong>1.248</strong>
+            </div>
 
-        <div class="dashboard-grid">
-          <div class="metric-card">
-            <h3>Vendas hoje</h3>
-            <strong>1.248</strong>
+            <div class="metric-card">
+              <h3>Campanhas</h3>
+              <strong>18</strong>
+            </div>
+
+            <div class="metric-card">
+              <h3>Locuções</h3>
+              <strong>96</strong>
+            </div>
+
+            <div class="metric-card">
+              <h3>Taxa de conversão</h3>
+              <strong>12,4%</strong>
+            </div>
           </div>
 
-          <div class="metric-card">
-            <h3>Campanhas</h3>
-            <strong>18</strong>
-          </div>
+          <div class="generator-layout">
+            <section class="panel" id="panel-gerador">
+              <h3>Gerar anúncio</h3>
 
-          <div class="metric-card">
-            <h3>Locuções</h3>
-            <strong>96</strong>
-          </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="produto">Nome do Produto</label>
+                  <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
+                </div>
 
-          <div class="metric-card">
-            <h3>Taxa de conversão</h3>
-            <strong>12,4%</strong>
-          </div>
-        </div>
+                <div class="field">
+                  <label for="precoOriginal">Preço Original (R$)</label>
+                  <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
+                </div>
 
-        <div class="preview-box">
-          <h3 style="margin:0 0 10px; font-family:'Manrope';">Preview do anúncio</h3>
-          <p style="margin: 0; color: var(--muted); line-height:1.6;">
-            Exemplo de script: “Olá, cliente! Hoje temos promoção especial em eletrônicos com desconto de até 40%.”
-          </p>
+                <div class="field" style="grid-column: 1 / -1;">
+                  <label for="precoPromo">Preço Promocional</label>
+                  <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
+                </div>
+              </div>
+
+              <div class="generator-actions">
+                <button class="button button-primary" id="btn-gerar-anuncio" type="button">Gerar anúncio</button>
+                <button class="button button-secondary" id="btn-ouvir" type="button">Ouvir</button>
+              </div>
+
+              <button class="button button-success button-wide" id="btn-copiar" type="button" style="margin-top: 14px;">
+                Copiar anúncio
+              </button>
+
+              <div class="preview-box">
+                <h4>Texto do anúncio</h4>
+                <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
+              </div>
+
+              <div id="status" class="status" aria-live="polite"></div>
+            </section>
+
+            <aside class="panel" id="panel-anuncios">
+              <h3>Anúncios gerados</h3>
+              <div id="listaAnuncios" class="ads-list">
+                <div class="empty">Nenhum anúncio salvo ainda.</div>
+              </div>
+            </aside>
+          </div>
         </div>
       </section>
     </main>
@@ -423,8 +617,21 @@
       const linkAlternar = document.getElementById('link-alternar');
       const authScreen = document.getElementById('auth-screen');
       const appScreen = document.getElementById('app-screen');
+      const listaHistorico = document.getElementById('listaHistorico');
+      const listaAnuncios = document.getElementById('listaAnuncios');
+      const btnGenerar = document.getElementById('btn-gerar');
+      const btnAnuncios = document.getElementById('btn-anuncios');
+      const btnGerarAnuncio = document.getElementById('btn-gerar-anuncio');
+      const btnOuvir = document.getElementById('btn-ouvir');
+      const btnCopiar = document.getElementById('btn-copiar');
+      const panelGerador = document.getElementById('panel-gerador');
+      const panelAnuncios = document.getElementById('panel-anuncios');
+      const textoGerado = document.getElementById('textoGerado');
+      const statusEl = document.getElementById('status');
 
       let modoRegistro = false;
+      let ultimoTexto = '';
+      let anuncios = JSON.parse(localStorage.getItem('syncstore-anuncios') || '[]');
 
       function alternarModoRegistro(event) {
         event.preventDefault();
@@ -521,6 +728,7 @@
           setTimeout(() => {
             authScreen.classList.add('hidden');
             appScreen.classList.remove('hidden');
+            renderizarHistorico();
           }, 600);
 
         } catch (error) {
@@ -530,8 +738,210 @@
         }
       }
 
+      function mostrarStatus(mensagem, tipo = 'muted') {
+        statusEl.textContent = mensagem;
+        statusEl.style.color = tipo === 'success' ? 'var(--success)' : tipo === 'danger' ? 'var(--danger)' : 'var(--muted)';
+      }
+
+      function selecionarVozPTBR() {
+        const voices = window.speechSynthesis.getVoices();
+        return voices.find(voice =>
+          voice.lang && (
+            voice.lang.toLowerCase().includes('pt-br') ||
+            voice.lang.toLowerCase().includes('pt')
+          )
+        ) || null;
+      }
+
+      function falarTexto(texto) {
+        if (!('speechSynthesis' in window)) {
+          mostrarStatus('Seu navegador não suporta reprodução de voz.', 'danger');
+          return;
+        }
+
+        const synth = window.speechSynthesis;
+        synth.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(texto);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 0.9;
+        utterance.pitch = 1.08;
+        utterance.volume = 1;
+
+        const vozPTBR = selecionarVozPTBR();
+        if (vozPTBR) {
+          utterance.voice = vozPTBR;
+        }
+
+        synth.speak(utterance);
+        mostrarStatus('Anúncio em reprodução...', 'muted');
+      }
+
+      function salvarAnuncios() {
+        localStorage.setItem('syncstore-anuncios', JSON.stringify(anuncios));
+      }
+
+      function renderizarHistorico() {
+        if (!anuncios.length) {
+          listaHistorico.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>';
+          listaAnuncios.innerHTML = '<div class="empty">Nenhum anúncio salvo ainda.</div>';
+          return;
+        }
+
+        listaHistorico.innerHTML = anuncios
+          .slice()
+          .reverse()
+          .map((item) => `
+            <button type="button" class="history-item" data-id="${item.id}" aria-label="Reproduzir anúncio ${item.produto}">
+              <div style="flex:1; min-width:0;">
+                <strong>${item.produto}</strong>
+                <small>${item.data}</small>
+              </div>
+              <span>▶</span>
+            </button>
+          `)
+          .join('');
+
+        listaAnuncios.innerHTML = anuncios
+          .slice()
+          .reverse()
+          .map((item) => `
+            <button type="button" data-id="${item.id}">
+              <strong style="display:block; margin-bottom:4px;">${item.produto}</strong>
+              <span style="font-size: 0.82rem; color: var(--muted);">${item.data}</span>
+            </button>
+          `)
+          .join('');
+
+        listaHistorico.querySelectorAll('.history-item').forEach(botao => {
+          botao.addEventListener('click', () => {
+            const item = anuncios.find(anuncio => anuncio.id === Number(botao.dataset.id));
+            if (!item) return;
+            ultimoTexto = item.texto;
+            textoGerado.textContent = item.texto;
+            falarTexto(item.texto);
+          });
+        });
+
+        listaAnuncios.querySelectorAll('button[data-id]').forEach(botao => {
+          botao.addEventListener('click', () => {
+            const item = anuncios.find(anuncio => anuncio.id === Number(botao.dataset.id));
+            if (!item) return;
+            ultimoTexto = item.texto;
+            textoGerado.textContent = item.texto;
+            mostrarStatus('Anúncio carregado para reprodução.', 'success');
+          });
+        });
+      }
+
+      function gerarEAnunciar() {
+        const produto = document.getElementById('produto').value.trim();
+        const precoOriginal = document.getElementById('precoOriginal').value.trim();
+        const precoPromo = document.getElementById('precoPromo').value.trim();
+
+        if (!produto || !precoOriginal || !precoPromo) {
+          mostrarStatus('Preencha todos os campos para continuar.', 'danger');
+          return;
+        }
+
+        const numeroOriginal = Number(precoOriginal);
+        const numeroPromo = Number(precoPromo);
+
+        if (Number.isNaN(numeroOriginal) || Number.isNaN(numeroPromo)) {
+          mostrarStatus('Valores de preço inválidos.', 'danger');
+          return;
+        }
+
+        const pOrig = numeroOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const pProm = numeroPromo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        const texto = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${pOrig} por apenas ${pProm}. Aproveite! Supermercados Ponto Novo, onde é gostoso comprar.`;
+        ultimoTexto = texto;
+
+        textoGerado.textContent = texto;
+
+        const anuncio = {
+          id: Date.now(),
+          produto,
+          texto,
+          data: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        };
+
+        anuncios.push(anuncio);
+        salvarAnuncios();
+        renderizarHistorico();
+        mostrarStatus('Anúncio gerado com sucesso!', 'success');
+        falarTexto(texto);
+      }
+
+      function ouvirUltimoTexto() {
+        if (!ultimoTexto) {
+          mostrarStatus('Ainda não há anúncio para ouvir.', 'danger');
+          return;
+        }
+        falarTexto(ultimoTexto);
+      }
+
+      async function copiarTexto() {
+        if (!ultimoTexto) {
+          mostrarStatus('Ainda não há anúncio para copiar.', 'danger');
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(ultimoTexto);
+          mostrarStatus('Anúncio copiado com sucesso!', 'success');
+        } catch (error) {
+          mostrarStatus('Não foi possível copiar automaticamente.', 'danger');
+        }
+      }
+
+      function alternarTelaHistorico() {
+        const viewActive = listaAnuncios.querySelector('button[data-id]') !== null;
+        if (viewActive) {
+          panelGerador.classList.add('hidden');
+          panelAnuncios.classList.remove('hidden');
+          btnAnuncios.textContent = 'Voltar ao gerador';
+          btnGerar.textContent = 'Gerar anúncio';
+        } else {
+          panelGerador.classList.remove('hidden');
+          panelAnuncios.classList.remove('hidden');
+          btnAnuncios.textContent = 'Anúncios gerados';
+        }
+      }
+
+      btnGerar.addEventListener('click', () => {
+        panelGerador.classList.remove('hidden');
+        panelAnuncios.classList.remove('hidden');
+        btnAnuncios.textContent = 'Anúncios gerados';
+      });
+
+      btnAnuncios.addEventListener('click', () => {
+        const hasAds = listaAnuncios.querySelector('button[data-id]');
+        if (hasAds) {
+          panelGerador.classList.toggle('hidden');
+          panelAnuncios.classList.toggle('hidden');
+          btnAnuncios.textContent = panelGerador.classList.contains('hidden') ? 'Voltar ao gerador' : 'Anúncios gerados';
+        }
+      });
+
+      btnGerarAnuncio.addEventListener('click', gerarEAnunciar);
+      btnOuvir.addEventListener('click', ouvirUltimoTexto);
+      btnCopiar.addEventListener('click', copiarTexto);
+
       authForm.addEventListener('submit', realizarLogin);
       linkAlternar.addEventListener('click', alternarModoRegistro);
+
+      renderizarHistorico();
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          const voz = selecionarVozPTBR();
+          if (voz) {
+            mostrarStatus('Voz em português pronta para uso.', 'success');
+          }
+        };
+      }
     </script>
   </body>
 </html>
