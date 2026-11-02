@@ -1,9 +1,15 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#2563eb">
     <title>SyncStore | Gerador de Anúncios</title>
+    <meta name="description" content="Sistema profissional para criação e reprodução de anúncios comerciais e voz de loja.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
       :root {
         --primary: #2563eb;
@@ -20,38 +26,27 @@
 
       * { box-sizing: border-box; }
 
-      html, body {
+      body, html {
         margin: 0;
         min-height: 100vh;
-        font-family: "Segoe UI", Tahoma, sans-serif;
-        background: linear-gradient(135deg, #eef6ff 0%, #f8fafc 100%);
+        font-family: 'DM Sans', 'Segoe UI', Tahoma, sans-serif;
+        background: var(--bg);
         color: var(--text);
       }
 
-      body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 24px;
-      }
+      .hidden { display: none !important; }
 
-      .app-shell {
-        width: 100%;
-        max-width: 1280px;
-        min-height: 760px;
+      .auth-layout {
         display: grid;
-        grid-template-columns: 290px 1fr;
-        border-radius: 28px;
-        overflow: hidden;
-        background: rgba(255,255,255,0.8);
-        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
-        border: 1px solid rgba(148, 163, 184, 0.14);
+        grid-template-columns: 1fr 1fr;
+        min-height: 100vh;
+        width: 100%;
       }
 
-      .sidebar {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        border-right: 1px solid #e2e8f0;
-        padding: 24px 18px;
+      .auth-intro {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #ffffff;
+        padding: 60px 48px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -61,247 +56,327 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        font-weight: 800;
-        font-size: 1.3rem;
+        font-weight: 700;
+        font-size: 1.25rem;
+        font-family: 'Manrope', sans-serif;
       }
 
       .brand-mark {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        background: var(--primary);
         color: white;
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+        border-radius: 8px;
       }
 
-      .brand-period {
-        color: var(--primary);
+      .brand-period { color: var(--primary); }
+
+      .intro-copy h1 {
+        font-family: 'Manrope', sans-serif;
+        font-size: clamp(2.2rem, 4vw, 3.2rem);
+        line-height: 1.15;
+        margin: 20px 0;
       }
 
-      .nav-button {
-        width: 100%;
-        padding: 14px 16px;
-        border: none;
-        border-radius: 14px;
-        font-size: 0.95rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: 0.2s ease;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark));
-        color: white;
-        box-shadow: 0 12px 22px rgba(37, 99, 235, 0.25);
-      }
-
-      .nav-button.secondary {
-        background: #eef2ff;
-        color: var(--primary);
-        border: 1px solid rgba(37, 99, 235, 0.15);
-        box-shadow: none;
-      }
-
-      .sidebar-section {
-        margin-top: 18px;
-      }
-
-      .sidebar-title {
+      .intro-copy h1 span { color: #60a5fa; }
+      .eyebrow {
         font-size: 0.75rem;
+        font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 10px;
-        font-weight: 800;
+        color: #94a3b8;
       }
 
-      .history-list {
+      .intro-note { color: #cbd5e1; font-size: 1.05rem; }
+      .intro-foot {
+        font-size: 0.85rem;
+        color: #94a3b8;
         display: flex;
-        flex-direction: column;
-        gap: 10px;
-        max-height: 420px;
-        overflow-y: auto;
-        padding-right: 4px;
-      }
-
-      .history-item {
-        background: white;
-        border: 1px solid #dfe7f2;
-        border-radius: 12px;
-        padding: 12px 12px;
-        cursor: pointer;
-        transition: 0.2s ease;
-        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
-      }
-
-      .history-item:hover {
-        border: 1px solid rgba(37, 99, 235, 0.25);
-        background: #f8fbff;
-      }
-
-      .history-item strong {
-        display: block;
-        font-size: 0.9rem;
-        margin-bottom: 4px;
-      }
-
-      .history-item small {
-        display: block;
-        color: var(--muted);
-        line-height: 1.5;
-      }
-
-      .main-panel {
-        background: #fff;
-        padding: 28px 32px;
-      }
-
-      .topbar {
-        display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-      }
-
-      .topbar h1 {
-        margin: 0;
-        font-size: clamp(1.7rem, 2vw, 2.4rem);
-      }
-
-      .empty-state {
-        color: var(--muted);
-        font-size: 0.92rem;
-      }
-
-      .content-card {
-        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-        border-radius: 20px;
-        padding: 20px 22px;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-      }
-
-      .form-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 18px;
-        margin-top: 18px;
-      }
-
-      .field {
-        display: flex;
-        flex-direction: column;
         gap: 8px;
       }
 
-      label {
-        font-weight: 700;
-        font-size: 0.96rem;
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px #22c55e;
+      }
+
+      .auth-panel {
+        background: var(--card);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+      }
+
+      .auth-box {
+        width: 100%;
+        max-width: 380px;
+      }
+
+      .form-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      label.field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
         color: var(--text);
       }
 
-      input {
+      input, select {
         width: 100%;
         padding: 14px 16px;
         border-radius: 12px;
-        border: 1.5px solid #d9e3ef;
-        background: white;
+        border: 1.5px solid #cbd5e1;
         font-size: 1rem;
-        transition: 0.2s ease;
+        background: #fff;
+        font-family: inherit;
+        transition: 0.2s;
       }
 
-      input:focus {
+      input:focus, select:focus {
         outline: none;
         border-color: var(--primary);
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
       }
 
-      .button-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-top: 16px;
-      }
-
-      button {
+      .button {
         border: none;
         border-radius: 12px;
-        padding: 14px 16px;
+        padding: 14px 20px;
         font-size: 1rem;
         font-weight: 700;
         cursor: pointer;
-        transition: 0.2s ease;
+        transition: 0.2s;
+        font-family: inherit;
       }
 
-      .primary-btn {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark));
+      .button-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         color: white;
-        box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
       }
 
-      .primary-btn:hover { transform: translateY(-1px); }
-
-      .secondary-btn {
-        background: #eef2ff;
-        color: var(--primary);
-        border: 1px solid rgba(37, 99, 235, 0.15);
-      }
-
-      .success-btn {
-        width: 100%;
-        margin-top: 12px;
-        background: linear-gradient(135deg, var(--success) 0%, var(--success-dark));
-        color: white;
-        box-shadow: 0 12px 26px rgba(22, 163, 74, 0.2);
-      }
-
-      .preview-box {
-        margin-top: 20px;
-        background: white;
-        border-left: 6px solid var(--primary);
-        border-radius: 16px;
-        padding: 18px 16px;
-        border: 1px solid rgba(148, 163, 184, 0.12);
-      }
-
-      .preview-box h3 {
-        margin: 0 0 12px;
-        font-size: 0.8rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-
-      #textoGerado {
-        margin: 0;
-        font-size: 1.08rem;
-        line-height: 1.6;
+      .button-primary:hover { transform: translateY(-1px); }
+      .button-wide { width: 100%; }
+      .button-ghost {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
         color: var(--text);
       }
 
-      .status {
-        margin-top: 14px;
-        min-height: 24px;
-        font-size: 0.92rem;
+      .form-message {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+        margin-top: 10px;
+        min-height: 20px;
+      }
+
+      .app-layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        min-height: 100vh;
+        width: 100%;
+      }
+
+      .sidebar {
+        background: #f1f5f9;
+        border-right: 1px solid #e2e8f0;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .history-list, .user-list {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .history-item, .user-item {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .history-item:hover, .user-item:hover {
+        border-color: var(--primary);
+        background: #f0fdf4;
+      }
+
+      .dashboard-main {
+        padding: 40px;
+        overflow-y: auto;
+        max-width: 920px;
+      }
+
+      .preview-box {
+        margin-top: 24px;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        border-left: 6px solid var(--primary);
+        border-radius: 14px;
+        padding: 20px;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .metric-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+      }
+
+      .metric-card h3 {
+        margin: 0 0 8px;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
         color: var(--muted);
-        font-weight: 700;
       }
 
-      @media (max-width: 960px) {
-        .app-shell {
-          grid-template-columns: 1fr;
-        }
+      .metric-card strong {
+        font-size: 1.8rem;
+        display: block;
       }
 
-      @media (max-width: 560px) {
-        .button-row {
-          grid-template-columns: 1fr;
-        }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modal {
+        width: min(460px, 100%);
+        background: white;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 30px 70px rgba(15, 23, 42, 0.25);
+      }
+
+      .modal h3 {
+        margin: 0 0 20px;
+        font-family: 'Manrope', sans-serif;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .row > * { flex: 1; }
+
+      @media (max-width: 768px) {
+        .auth-layout, .app-layout { grid-template-columns: 1fr; }
+        .auth-intro { display: none; }
       }
     </style>
   </head>
+
   <body>
-    <div class="app-shell">
+    <main id="auth-screen" class="auth-layout">
+      <section class="auth-intro">
+        <div class="brand">
+          <span class="brand-mark">S</span>
+          <span>SyncStore<span class="brand-period">.</span></span>
+        </div>
+
+        <div class="intro-copy">
+          <p class="eyebrow">Voz e ofertas em tempo real</p>
+          <h1>O anúncio certo,<br>na hora exata,<br><span>para vender mais.</span></h1>
+          <p class="intro-note">Sistema inteligente de locução e gerenciamento de ofertas comerciais.</p>
+        </div>
+
+        <div class="intro-foot">
+          <span class="status-dot"></span> Sintetizador de voz pronto para uso
+        </div>
+      </section>
+
+      <section class="auth-panel">
+        <div class="auth-box">
+          <div class="brand" style="color:var(--text);">
+            <span class="brand-mark">A</span>
+            <span>anúncios<span class="brand-period">.</span></span>
+          </div>
+
+          <p class="eyebrow" id="auth-eyebrow" style="margin-top: 15px;">PAINEL COMERCIAL</p>
+          <h2 id="auth-title" style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
+          <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">
+            Entre para gerar e gerenciar suas locuções.
+          </p>
+
+          <form id="auth-form" class="form-stack">
+            <label class="field" id="nome-field" hidden>
+              Nome completo
+              <input id="input-nome" placeholder="Nome do operador">
+            </label>
+
+            <label class="field" id="email-field">
+              E-mail / Usuário
+              <input id="input-email" required placeholder="master ou operador@loja.com">
+            </label>
+
+            <label class="field">
+              Senha
+              <input id="input-senha" type="password" required placeholder="Sua senha">
+            </label>
+
+            <label class="field" id="tipo-field" hidden>
+              Tipo de usuário
+              <select id="input-tipo">
+                <option value="comum">Comum</option>
+                <option value="master">Master</option>
+              </select>
+            </label>
+
+            <button class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
+            <p class="form-message" id="auth-message" role="status"></p>
+          </form>
+
+          <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
+            <a href="#" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+              Primeiro acesso? Cadastrar Administrador/Usuário
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <main id="app-screen" class="app-layout hidden">
       <aside class="sidebar">
         <div>
           <div class="brand">
@@ -309,270 +384,406 @@
             <span>SyncStore<span class="brand-period">.</span></span>
           </div>
 
-          <button class="nav-button" id="btnAnunciosGerados">
-            Anúncios gerados
-          </button>
+          <p class="eyebrow" style="margin-top: 15px;">Histórico do dia</p>
+          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">
+            Clique para repetir o áudio:
+          </div>
 
-          <div class="sidebar-section">
-            <div class="sidebar-title">Histórico</div>
-            <div id="listaHistorico" class="history-list">
-              <span class="empty-state">Nenhum anúncio gerado.</span>
-            </div>
+          <div id="listaHistorico" class="history-list">
+            <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>
           </div>
         </div>
 
         <div>
-          <button class="nav-button secondary" id="btnSair">
+          <div id="bloco-master" class="hidden" style="margin-bottom: 12px;">
+            <button id="btn-adicionar-usuario" class="button button-primary" style="width: 100%; font-size: 0.85rem;">
+              + Incluir usuário
+            </button>
+          </div>
+
+          <button id="btn-sair" class="button button-ghost" style="width: 100%; font-size: 0.85rem;">
             Sair
           </button>
         </div>
       </aside>
 
-      <main class="main-panel">
-        <div class="topbar">
+      <section class="dashboard-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
           <div>
-            <p class="eyebrow" style="margin:0; color: var(--muted); letter-spacing: .12em; font-size: .75rem; text-transform: uppercase; font-weight: 800;">
-              Dashboard
-            </p>
-            <h1>Gerador de anúncios</h1>
+            <p class="eyebrow" style="margin-top: 0;">Dashboard</p>
+            <h2 id="saudacao" style="margin: 0; font-family:'Manrope';">Bem-vindo ao painel</h2>
           </div>
-          <div style="background:#e0f2fe; color:#0f172a; border-radius:999px; padding:8px 12px; font-weight:800; font-size: .8rem;">
+
+          <div id="badge-usuario" style="background: #e0f2fe; color: #0f172a; border-radius: 999px; padding: 8px 12px; font-weight:700; font-size:0.8rem;">
             Operador ativo
           </div>
         </div>
 
-        <div class="content-card">
-          <div class="form-grid">
-            <div class="field">
-              <label for="produto">Nome do produto</label>
-              <input type="text" id="produto" placeholder="Ex: Arroz Tio João 5kg">
-            </div>
+        <div class="dashboard-grid">
+          <div class="metric-card">
+            <h3>Vendas hoje</h3>
+            <strong>1.248</strong>
+          </div>
 
-            <div class="field">
-              <label for="precoOriginal">Preço original (R$)</label>
-              <input type="number" step="0.01" id="precoOriginal" placeholder="Ex: 29.90">
-            </div>
+          <div class="metric-card">
+            <h3>Campanhas</h3>
+            <strong>18</strong>
+          </div>
 
-            <div class="field">
-              <label for="precoPromo">Preço promocional</label>
-              <input type="number" step="0.01" id="precoPromo" placeholder="Ex: 21.90">
-            </div>
+          <div class="metric-card">
+            <h3>Locuções</h3>
+            <strong>96</strong>
+          </div>
 
-            <div class="button-row">
-              <button class="primary-btn" onclick="gerarEAnunciar()">Gerar anúncio</button>
-              <button class="secondary-btn" onclick="ouvirUltimoTexto()">Ouvir</button>
-            </div>
-
-            <button class="success-btn" onclick="copiarTexto()">Copiar anúncio</button>
-
-            <div class="preview-box">
-              <h3>Texto do anúncio</h3>
-              <p id="textoGerado">Preencha os dados acima para gerar o anúncio...</p>
-            </div>
-
-            <div id="status" class="status" aria-live="polite"></div>
+          <div class="metric-card">
+            <h3>Taxa de conversão</h3>
+            <strong>12,4%</strong>
           </div>
         </div>
-      </main>
+
+        <div class="preview-box">
+          <h3 style="margin:0 0 10px; font-family:'Manrope';">Preview do anúncio</h3>
+          <p style="margin: 0; color: var(--muted); line-height:1.6;">
+            Exemplo de script: “Olá, cliente! Hoje temos promoção especial em eletrônicos com desconto de até 40%.”
+          </p>
+        </div>
+
+        <div id="lista-usuarios" class="hidden" style="margin-top: 26px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom: 12px; flex-wrap: wrap;">
+            <h3 style="margin:0; font-family:'Manrope';">Gerenciar usuários</h3>
+            <span id="contador-usuarios" style="color: var(--muted); font-size:0.85rem;">0 usuários</span>
+          </div>
+          <div id="user-list" class="user-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <div id="modal-criar-usuario" class="modal-backdrop hidden">
+      <div class="modal">
+        <h3>Incluir usuário</h3>
+
+        <form id="form-criar-usuario" class="form-stack">
+          <label class="field">
+            Nome completo
+            <input id="novo-nome" required placeholder="Ex.: Maria da Silva">
+          </label>
+
+          <label class="field">
+            E-mail
+            <input id="novo-email" type="email" required placeholder="usuario@loja.com">
+          </label>
+
+          <label class="field">
+            Senha
+            <input id="novo-senha" type="password" required placeholder="Crie uma senha">
+          </label>
+
+          <label class="field">
+            Tipo
+            <select id="novo-tipo">
+              <option value="comum">Comum</option>
+              <option value="master">Master</option>
+            </select>
+          </label>
+
+          <div class="row">
+            <button type="button" id="cancelar-usuario" class="button button-ghost" style="flex:1;">Cancelar</button>
+            <button type="submit" class="button button-primary" style="flex:1;">Salvar</button>
+          </div>
+
+          <p id="modal-message" class="form-message" role="status"></p>
+        </form>
+      </div>
     </div>
 
     <script>
-      const historico = [];
-      const STORAGE_KEY = 'syncstore_anuncios';
-      let ultimoTexto = '';
+      const authTitle = document.getElementById('auth-title');
+      const authDescription = document.getElementById('auth-description');
+      const authEyebrow = document.getElementById('auth-eyebrow');
+      const authMessage = document.getElementById('auth-message');
+      const nomeField = document.getElementById('nome-field');
+      const tipoField = document.getElementById('tipo-field');
+      const inputNome = document.getElementById('input-nome');
+      const inputEmail = document.getElementById('input-email');
+      const inputSenha = document.getElementById('input-senha');
+      const inputTipo = document.getElementById('input-tipo');
+      const authForm = document.getElementById('auth-form');
+      const linkAlternar = document.getElementById('link-alternar');
+      const authScreen = document.getElementById('auth-screen');
+      const appScreen = document.getElementById('app-screen');
+      const blocoMaster = document.getElementById('bloco-master');
+      const saudeUsuario = document.getElementById('saudacao');
+      const badgeUsuario = document.getElementById('badge-usuario');
+      const userList = document.getElementById('user-list');
+      const listaUsuarios = document.getElementById('lista-usuarios');
+      const contadorUsuarios = document.getElementById('contador-usuarios');
 
-      function formatarMoeda(valor) {
-        return Number(valor).toLocaleString('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        });
+      const modalCriarUsuario = document.getElementById('modal-criar-usuario');
+      const modalMessage = document.getElementById('modal-message');
+      const formCriarUsuario = document.getElementById('form-criar-usuario');
+      const inputNovoNome = document.getElementById('novo-nome');
+      const inputNovoEmail = document.getElementById('novo-email');
+      const inputNovoSenha = document.getElementById('novo-senha');
+      const inputNovoTipo = document.getElementById('novo-tipo');
+
+      let modoRegistro = false;
+      let usuarioAtual = null;
+
+      function setMessage(el, text, color = 'var(--muted)') {
+        el.textContent = text;
+        el.style.color = color;
       }
 
-      function mostrarStatus(mensagem) {
-        document.getElementById('status').textContent = mensagem;
-      }
+      function alternarModoRegistro(event) {
+        event.preventDefault();
+        modoRegistro = !modoRegistro;
 
-      function carregarHistorico() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-
-        if (!saved) {
-          document.getElementById('listaHistorico').innerHTML = '<span class=\"empty-state\">Nenhum anúncio gerado.</span>';
-          return;
+        if (modoRegistro) {
+          authTitle.textContent = 'Crie sua conta';
+          authDescription.textContent = 'Cadastre um administrador ou operador.';
+          authEyebrow.textContent = 'CADASTRO';
+          nomeField.hidden = false;
+          tipoField.hidden = false;
+          linkAlternar.textContent = 'Já tem conta? Entrar';
+          setMessage(authMessage, '');
+        } else {
+          authTitle.textContent = 'Acesse sua conta';
+          authDescription.textContent = 'Entre para gerar e gerenciar suas locuções.';
+          authEyebrow.textContent = 'PAINEL COMERCIAL';
+          nomeField.hidden = true;
+          tipoField.hidden = true;
+          linkAlternar.textContent = 'Primeiro acesso? Cadastrar Administrador/Usuário';
+          setMessage(authMessage, '');
         }
+      }
 
+      function mostrarTelaApp(usuario) {
+        usuarioAtual = usuario;
+        const isMaster = String(usuario?.tipo || '').toLowerCase() === 'master';
+
+        authScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+        saudeUsuario.textContent = `Bem-vindo, ${usuario?.nome || 'usuário'}`;
+        badgeUsuario.textContent = isMaster ? 'Master ativo' : 'Operador ativo';
+        blocoMaster.classList.toggle('hidden', !isMaster);
+        if (isMaster) {
+          listarUsuarios();
+        } else {
+          listaUsuarios.classList.add('hidden');
+        }
+      }
+
+      function mostrarTelaLogin() {
+        appScreen.classList.add('hidden');
+        authScreen.classList.remove('hidden');
+        usuarioAtual = null;
+        localStorage.removeItem('syncstore_usuario');
+      }
+
+      async function listarUsuarios() {
         try {
-          const items = JSON.parse(saved);
-          if (!items.length) {
-            document.getElementById('listaHistorico').innerHTML = '<span class=\"empty-state\">Nenhum anúncio gerado.</span>';
+          const resposta = await fetch('/api/usuarios');
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao buscar usuários');
+          }
+
+          const usuarios = dados.usuarios || [];
+          contadorUsuarios.textContent = `${usuarios.length} usuários`;
+          listaUsuarios.classList.remove('hidden');
+          userList.innerHTML = '';
+
+          if (!usuarios.length) {
+            userList.innerHTML = '<div style="color: var(--muted); padding: 10px;">Nenhum usuário cadastrado.</div>';
             return;
           }
 
-          document.getElementById('listaHistorico').innerHTML = '';
-          items.forEach((item, index) => {
-            const el = document.createElement('div');
-            el.className = 'history-item';
-            el.innerHTML = `
-              <strong>${item.produto || 'Produto'}</strong>
-              <small>${item.texto || 'Sem texto'}</small>
+          usuarios.forEach((usuario) => {
+            const item = document.createElement('div');
+            item.className = 'user-item';
+            item.innerHTML = `
+              <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                <div>
+                  <strong>${usuario.nome || 'Usuário'}</strong><br>
+                  <span style="color: var(--muted);">${usuario.email}</span>
+                </div>
+                <span style="padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight:700; background: ${usuario.status === 'aprovado' ? '#dcfce7' : '#fef3c7'}; color: ${usuario.status === 'aprovado' ? '#166534' : '#92400e'};">
+                  ${usuario.status || 'pendente'}
+                </span>
+              </div>
+              <div style="display:flex; gap:8px; margin-top: 10px; flex-wrap: wrap;">
+                <button data-acao="aprovado" data-id="${usuario.id}" class="button button-primary" style="padding: 8px 10px; font-size: 0.75rem;">Aprovar</button>
+                <button data-acao="rejeitado" data-id="${usuario.id}" class="button button-ghost" style="padding: 8px 10px; font-size: 0.75rem;">Rejeitar</button>
+              </div>
             `;
 
-            el.addEventListener('click', () => {
-              const texto = item.texto || '';
-              document.getElementById('textoGerado').innerText = texto;
-              ultimoTexto = texto;
-              mostrarStatus('Anúncio carregado do histórico.');
-              falarTexto(texto);
-            });
+            userList.appendChild(item);
+          });
 
-            document.getElementById('listaHistorico').appendChild(el);
+          userList.querySelectorAll('button[data-id]').forEach((botao) => {
+            botao.addEventListener('click', async () => {
+              const id = botao.dataset.id;
+              const status = botao.dataset.acao;
+              await atualizarStatusUsuario(id, status);
+            });
           });
         } catch (error) {
-          document.getElementById('listaHistorico').innerHTML = '<span class=\"empty-state\">Nenhum anúncio gerado.</span>';
+          console.error(error);
+          userList.innerHTML = '<div style="color: var(--danger); padding: 10px;">Não foi possível carregar os usuários.</div>';
         }
       }
 
-      function salvarHistorico(item) {
-        const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        items.unshift(item);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(0, 20)));
-        carregarHistorico();
-      }
+      async function atualizarStatusUsuario(id, status) {
+        try {
+          const resposta = await fetch(`/api/usuarios/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+          });
 
-      function selecionarVozPTBR() {
-        const voices = window.speechSynthesis.getVoices();
-        return voices.find(voice =>
-          voice.lang && (
-            voice.lang.toLowerCase().includes('pt-br') ||
-            voice.lang.toLowerCase().includes('pt')
-          )
-        ) || null;
-      }
+          const dados = await resposta.json();
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao atualizar status');
+          }
 
-      function falarTexto(texto) {
-        if (!('speechSynthesis' in window)) {
-          mostrarStatus('Seu navegador não suporta reprodução de voz.');
-          return;
+          await listarUsuarios();
+        } catch (error) {
+          console.error(error);
+          setMessage(modalMessage, 'Não foi possível atualizar o status do usuário.', 'var(--danger)');
         }
-
-        const synth = window.speechSynthesis;
-        synth.cancel();
-
-        const utterance = new SpeechSynthesisUtterance(texto);
-        utterance.lang = 'pt-BR';
-        utterance.rate = 0.9;
-        utterance.pitch = 1.08;
-        utterance.volume = 1;
-
-        const vozPTBR = selecionarVozPTBR();
-        if (vozPTBR) {
-          utterance.voice = vozPTBR;
-        }
-
-        synth.speak(utterance);
-        mostrarStatus('Anúncio em reprodução...');
       }
 
-      function gerarEAnunciar() {
-        const produto = document.getElementById('produto').value.trim();
-        const precoOriginal = document.getElementById('precoOriginal').value.trim();
-        const precoPromo = document.getElementById('precoPromo').value.trim();
-
-        if (!produto || !precoOriginal || !precoPromo) {
-          mostrarStatus('Preencha todos os campos para continuar.');
-          alert('Preencha todos os campos!');
-          return;
-        }
-
-        const pOrig = Number(precoOriginal);
-        const pProm = Number(precoPromo);
-
-        const texto = `Atenção, cliente! Olha a oferta imperdível! ${produto}. De ${formatarMoeda(pOrig)} por apenas ${formatarMoeda(pProm)}. Aproveite! Supermercados Ponto Novo, onde e gostoso comprar.`;
-
-        ultimoTexto = texto;
-
-        document.getElementById('textoGerado').innerText = texto;
-
-        const novoItem = {
-          produto,
-          texto,
-          createdAt: new Date().toISOString()
-        };
-
-        salvarHistorico(novoItem);
-        mostrarStatus('Anúncio gerado com sucesso!');
-        falarTexto(texto);
+      function abrirModalUsuario() {
+        modalCriarUsuario.classList.remove('hidden');
+        modalMessage.textContent = '';
       }
 
-      function ouvirUltimoTexto() {
-        if (!ultimoTexto) {
-          mostrarStatus('Ainda não há anúncio para ouvir.');
-          return;
-        }
-
-        falarTexto(ultimoTexto);
+      function fecharModalUsuario() {
+        modalCriarUsuario.classList.add('hidden');
+        formCriarUsuario.reset();
+        modalMessage.textContent = '';
       }
 
-      async function copiarTexto() {
-        if (!ultimoTexto) {
-          mostrarStatus('Ainda não há anúncio para copiar.');
+      async function criarUsuario(event) {
+        event.preventDefault();
+        const nome = inputNovoNome.value.trim();
+        const email = inputNovoEmail.value.trim();
+        const senha = inputNovoSenha.value.trim();
+        const tipo = inputNovoTipo.value;
+
+        if (!nome || !email || !senha) {
+          setMessage(modalMessage, 'Preencha nome, e-mail e senha.', 'var(--danger)');
           return;
         }
 
         try {
-          await navigator.clipboard.writeText(ultimoTexto);
-          mostrarStatus('Anúncio copiado com sucesso!');
+          const resposta = await fetch('/api/usuarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, email, senha, tipo })
+          });
+
+          const dados = await resposta.json();
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao cadastrar usuário');
+          }
+
+          setMessage(modalMessage, 'Usuário incluído com sucesso!', 'var(--success)');
+          formCriarUsuario.reset();
+          await listarUsuarios();
+          setTimeout(fecharModalUsuario, 700);
         } catch (error) {
-          mostrarStatus('Não foi possível copiar automaticamente.');
+          setMessage(modalMessage, error.message, 'var(--danger)');
         }
       }
 
-      document.getElementById('btnAnunciosGerados').addEventListener('click', () => {
-        const container = document.getElementById('listaHistorico');
-        const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      async function realizarLogin(event) {
+        event.preventDefault();
 
-        if (!items.length) {
-          container.innerHTML = '<span class=\"empty-state\">Nenhum anúncio gerado.</span>';
-          mostrarStatus('Nenhum anúncio gerado até o momento.');
+        const usuario = inputEmail.value.trim();
+        const senha = inputSenha.value.trim();
+
+        if (!usuario || !senha) {
+          setMessage(authMessage, 'Preencha usuário e senha.', 'var(--danger)');
           return;
         }
 
-        container.innerHTML = '';
+        setMessage(authMessage, 'Entrando...', 'var(--muted)');
 
-        items.forEach((item) => {
-          const el = document.createElement('div');
-          el.className = 'history-item';
-          el.innerHTML = `
-            <strong>${item.produto || 'Produto'}</strong>
-            <small>${item.texto || 'Sem texto'}</small>
-          `;
+        try {
+          if (modoRegistro) {
+            const nome = inputNome.value.trim();
+            const tipo = inputTipo.value || 'comum';
 
-          el.addEventListener('click', () => {
-            document.getElementById('textoGerado').innerText = item.texto;
-            ultimoTexto = item.texto;
-            mostrarStatus('Anúncio carregado do histórico.');
-            falarTexto(item.texto);
+            if (!nome) {
+              setMessage(authMessage, 'Informe o nome completo.', 'var(--danger)');
+              return;
+            }
+
+            const resposta = await fetch('/api/usuarios', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nome, email: usuario, senha, tipo })
+            });
+
+            const dados = await resposta.json();
+            if (!resposta.ok || !dados.sucesso) {
+              throw new Error(dados.mensagem || 'Erro ao cadastrar usuário.');
+            }
+
+            setMessage(authMessage, 'Cadastro realizado com sucesso! Agora faça login.', 'var(--success)');
+            modoRegistro = false;
+            alternarModoRegistro({ preventDefault() {} });
+            inputEmail.value = usuario;
+            inputSenha.value = '';
+            inputNome.value = '';
+            return;
+          }
+
+          const resposta = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: usuario, senha })
           });
 
-          container.appendChild(el);
-        });
-      });
+          const dados = await resposta.json();
 
-      document.getElementById('btnSair').addEventListener('click', () => {
-        localStorage.removeItem(STORAGE_KEY);
-        window.location.reload();
-      });
-
-      window.addEventListener('load', () => {
-        carregarHistorico();
-      });
-
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          const voz = selecionarVozPTBR();
-          if (voz) {
-            mostrarStatus('Voz em português pronta para uso.');
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Usuário ou senha incorretos.');
           }
-        };
+
+          localStorage.setItem('syncstore_usuario', JSON.stringify(dados.usuario));
+          setMessage(authMessage, 'Login realizado com sucesso!', 'var(--success)');
+
+          setTimeout(() => {
+            mostrarTelaApp(dados.usuario);
+          }, 500);
+
+        } catch (error) {
+          console.error(error);
+          setMessage(authMessage, error.message || 'Erro ao conectar com o servidor.', 'var(--danger)');
+        }
+      }
+
+      document.getElementById('btn-sair').addEventListener('click', () => {
+        mostrarTelaLogin();
+      });
+
+      document.getElementById('btn-adicionar-usuario').addEventListener('click', abrirModalUsuario);
+      document.getElementById('cancelar-usuario').addEventListener('click', fecharModalUsuario);
+      formCriarUsuario.addEventListener('submit', criarUsuario);
+      authForm.addEventListener('submit', realizarLogin);
+      linkAlternar.addEventListener('click', alternarModoRegistro);
+
+      const usuarioSalvo = localStorage.getItem('syncstore_usuario');
+      if (usuarioSalvo) {
+        try {
+          const parsed = JSON.parse(usuarioSalvo);
+          mostrarTelaApp(parsed);
+        } catch {
+          localStorage.removeItem('syncstore_usuario');
+        }
       }
     </script>
   </body>
