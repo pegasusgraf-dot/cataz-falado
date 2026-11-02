@@ -247,6 +247,19 @@
         padding: 20px;
       }
 
+      .filter-bar {
+        margin-top: 24px;
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .filter-field {
+        flex: 1;
+        min-width: 180px;
+      }
+
       .ad-panel {
         margin-top: 28px;
         background: white;
@@ -464,25 +477,28 @@
           </div>
         </div>
 
+        <div class="filter-bar">
+          <label class="field filter-field">
+            Filtrar anúncios por dia
+            <input id="filtro-data-anuncio" type="date">
+          </label>
+          <button id="btn-limpar-filtro" type="button" class="button button-ghost">Limpar filtro</button>
+        </div>
+
         <div class="dashboard-grid">
           <div class="metric-card">
-            <h3>Vendas hoje</h3>
-            <strong>1.248</strong>
-          </div>
-
-          <div class="metric-card">
             <h3>Campanhas</h3>
-            <strong>18</strong>
+            <strong id="metric-campanhas">0</strong>
           </div>
 
           <div class="metric-card">
-            <h3>Locuções</h3>
-            <strong>96</strong>
+            <h3>Locações do dia</h3>
+            <strong id="metric-locucao-dia">0</strong>
           </div>
 
           <div class="metric-card">
-            <h3>Taxa de conversão</h3>
-            <strong>12,4%</strong>
+            <h3>Registros no filtro</h3>
+            <strong id="metric-filtro">0</strong>
           </div>
         </div>
 
@@ -615,6 +631,10 @@
       const inputOferta = document.getElementById('input-oferta');
       const inputTextoAnuncio = document.getElementById('input-texto-anuncio');
       const anuncioMessage = document.getElementById('anuncio-message');
+      const filtroDataAnuncio = document.getElementById('filtro-data-anuncio');
+      const metricCampanhas = document.getElementById('metric-campanhas');
+      const metricLocucaoDia = document.getElementById('metric-locucao-dia');
+      const metricFiltro = document.getElementById('metric-filtro');
 
       const modalCriarUsuario = document.getElementById('modal-criar-usuario');
       const modalMessage = document.getElementById('modal-message');
@@ -627,6 +647,7 @@
       let modoRegistro = false;
       let usuarioAtual = null;
       let ultimoTextoGerado = '';
+      let anunciosCarregados = [];
 
       function setMessage(el, text, color = 'var(--muted)') {
         el.textContent = text;
@@ -680,6 +701,29 @@
         return texto;
       }
 
+      function atualizarMetricas() {
+        const total = anunciosCarregados.length;
+        const hoje = new Date();
+        const dataHoje = hoje.toISOString().slice(0, 10);
+        const hojeCount = anunciosCarregados.filter((item) => {
+          if (!item.created_at) return false;
+          const dataItem = new Date(item.created_at).toISOString().slice(0, 10);
+          return dataItem === dataHoje;
+        }).length;
+
+        const filtroAtual = filtroDataAnuncio.value;
+        const itensAtivos = filtroAtual
+          ? anunciosCarregados.filter((item) => {
+              if (!item.created_at) return false;
+              return new Date(item.created_at).toISOString().slice(0, 10) === filtroAtual;
+            })
+          : anunciosCarregados;
+
+        metricCampanhas.textContent = String(total);
+        metricLocucaoDia.textContent = String(hojeCount);
+        metricFiltro.textContent = String(itensAtivos.length);
+      }
+
       function mostrarTelaApp(usuario) {
         usuarioAtual = usuario;
         const isMaster = String(usuario?.tipo || '').toLowerCase() === 'master';
@@ -705,6 +749,43 @@
         localStorage.removeItem('syncstore_usuario');
       }
 
+      function aplicarFiltroAnuncios() {
+        const filtroAtual = filtroDataAnuncio.value;
+        let itens = anunciosCarregados;
+
+        if (filtroAtual) {
+          itens = anunciosCarregados.filter((item) => {
+            if (!item.created_at) return false;
+            return new Date(item.created_at).toISOString().slice(0, 10) === filtroAtual;
+          });
+        }
+
+        listaHistorico.innerHTML = '';
+
+        if (!itens.length) {
+          listaHistorico.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado para o período selecionado.</span>';
+          atualizarMetricas();
+          return;
+        }
+
+        itens.forEach((anuncio) => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'history-item';
+          item.textContent = `${anuncio.produto || 'Produto'} • ${anuncio.created_at ? new Date(anuncio.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}`;
+          item.addEventListener('click', () => {
+            inputProduto.value = anuncio.produto || '';
+            inputTextoAnuncio.value = anuncio.texto || '';
+            ultimoTextoGerado = anuncio.texto || '';
+            previewTexto.textContent = anuncio.texto || 'Exemplo de script';
+            setMessage(anuncioMessage, 'Anúncio carregado para reprodução.', 'var(--success)');
+          });
+          listaHistorico.appendChild(item);
+        });
+
+        atualizarMetricas();
+      }
+
       async function listarHistoricoAnuncios() {
         try {
           const resposta = await fetch('/api/anuncios');
@@ -714,31 +795,12 @@
             throw new Error(dados.mensagem || 'Erro ao buscar anúncios');
           }
 
-          const anuncios = dados.anuncios || [];
-          listaHistorico.innerHTML = '';
-
-          if (!anuncios.length) {
-            listaHistorico.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>';
-            return;
-          }
-
-          anuncios.forEach((anuncio) => {
-            const item = document.createElement('button');
-            item.type = 'button';
-            item.className = 'history-item';
-            item.textContent = `${anuncio.produto || 'Produto'} • ${anuncio.created_at ? new Date(anuncio.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}`;
-            item.addEventListener('click', () => {
-              inputProduto.value = anuncio.produto || '';
-              inputTextoAnuncio.value = anuncio.texto || '';
-              ultimoTextoGerado = anuncio.texto || '';
-              previewTexto.textContent = anuncio.texto || 'Exemplo de script';
-              setMessage(anuncioMessage, 'Anúncio carregado para reprodução.', 'var(--success)');
-            });
-            listaHistorico.appendChild(item);
-          });
+          anunciosCarregados = dados.anuncios || [];
+          aplicarFiltroAnuncios();
         } catch (error) {
           console.error(error);
           listaHistorico.innerHTML = '<span style="color: var(--danger); font-size: 0.85rem;">Não foi possível carregar anúncios.</span>';
+          atualizarMetricas();
         }
       }
 
@@ -1011,6 +1073,11 @@
       document.getElementById('btn-gerar-anuncio').addEventListener('click', gerarTextoAnuncio);
       document.getElementById('btn-salvar-anuncio').addEventListener('click', salvarAnuncio);
       document.getElementById('btn-gerar-audio').addEventListener('click', reproduzirAudio);
+      filtroDataAnuncio.addEventListener('change', aplicarFiltroAnuncios);
+      document.getElementById('btn-limpar-filtro').addEventListener('click', () => {
+        filtroDataAnuncio.value = '';
+        aplicarFiltroAnuncios();
+      });
 
       const usuarioSalvo = localStorage.getItem('syncstore_usuario');
       if (usuarioSalvo) {
