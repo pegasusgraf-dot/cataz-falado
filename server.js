@@ -75,32 +75,33 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
-  const { email, senha } = req.body || {};
+  const { email, usuario, senha } = req.body || {};
+  const emailLogin = String(email || usuario || '').trim();
 
-  if (!email || !senha) {
+  if (!emailLogin || !senha) {
     return res.status(400).json({ sucesso: false, mensagem: 'E-mail e senha são obrigatórios.' });
   }
 
   try {
     const resultado = await pool.query(
       'SELECT id, nome, email, senha, tipo, status, created_at FROM usuarios WHERE LOWER(email) = LOWER($1) AND senha = $2',
-      [String(email).trim(), String(senha).trim()]
+      [emailLogin, String(senha).trim()]
     );
 
     if (resultado.rows.length === 0) {
       return res.status(401).json({ sucesso: false, mensagem: 'Usuário ou senha incorretos.' });
     }
 
-    const usuario = resultado.rows[0];
+    const usuarioLogado = resultado.rows[0];
 
-    if (usuario.status !== 'aprovado' && usuario.tipo !== 'master') {
+    if (usuarioLogado.status !== 'aprovado' && usuarioLogado.tipo !== 'master') {
       return res.status(403).json({
         sucesso: false,
         mensagem: 'Sua conta ainda está pendente de aprovação do usuário master.',
       });
     }
 
-    return res.json({ sucesso: true, usuario });
+    return res.json({ sucesso: true, usuario: usuarioLogado });
   } catch (error) {
     console.error('Erro no login:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor.' });
@@ -120,16 +121,17 @@ app.get('/api/usuarios', async (req, res) => {
 });
 
 app.post('/api/usuarios', async (req, res) => {
-  const { nome, email, senha, tipo } = req.body || {};
+  const { nome, email, usuario, senha, tipo } = req.body || {};
+  const emailFinal = String(email || usuario || '').trim();
 
-  if (!nome || !email || !senha) {
+  if (!nome || !emailFinal || !senha) {
     return res.status(400).json({ sucesso: false, mensagem: 'Nome, e-mail e senha são obrigatórios.' });
   }
 
   try {
     const existe = await pool.query(
       'SELECT 1 FROM usuarios WHERE LOWER(email) = LOWER($1)',
-      [String(email).trim()]
+      [emailFinal]
     );
 
     if (existe.rows.length > 0) {
@@ -140,7 +142,7 @@ app.post('/api/usuarios', async (req, res) => {
       `INSERT INTO usuarios (nome, email, senha, tipo, status)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, nome, email, tipo, status, created_at`,
-      [String(nome).trim(), String(email).trim(), String(senha).trim(), String(tipo || 'comum').trim(), 'pendente']
+      [String(nome).trim(), emailFinal, String(senha).trim(), String(tipo || 'comum').trim(), 'pendente']
     );
 
     return res.status(201).json({ sucesso: true, usuario: novo.rows[0] });
