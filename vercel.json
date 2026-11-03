@@ -1,9 +1,14 @@
 {
   "version": 2,
   "builds": [
-    { "src": "server.js", "use": "@vercel/node" }
+    { "src": "server.js", "use": "@vercel/node" },
+    { "src": "api/*.js", "use": "@vercel/node" }
   ],
   "routes": [
+    { "src": "^/api/vozes/?$", "dest": "/api/voices.js" },
+    { "src": "^/api/tts/?$", "dest": "/api/tts.js" },
+    { "src": "^/$", "dest": "/api/page.js" },
+    { "src": "^/index.html$", "dest": "/api/page.js" },
     { "src": "/api/(.*)", "dest": "server.js" },
     { "src": "/(.*)", "dest": "server.js" }
   ]
