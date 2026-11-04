@@ -119,7 +119,7 @@
 
         <div class="preview-box">
           <h3 style="margin:0 0 10px; font-family:'Manrope';">Roteiro do Anúncio</h3>
-          <p id="preview-texto" style="margin:0; color:var(--muted); line-height:1.6;">O anúncio que você gerar ou escrever será transformado em áudio.</p>
+          <p id="preview-texto" style="margin:0; color:var(--muted); line-height:1.6;">O anúncio que você gerar ou escrever será narrado pelo locutor selecionado.</p>
         </div>
 
         <div class="ad-panel">
@@ -131,9 +131,9 @@
           <form id="form-anuncio" class="ad-form">
             <div class="field-row">
               <label class="field">Nome do produto<input id="input-produto" placeholder="Ex.: Smart TV 55 pol"></label>
-              <label class="field">Escolher Locutor
+              <label class="field">Escolher Narrador
                 <select id="select-voz">
-                  <option value="">Locutor Padrão</option>
+                  <option value="">Locutor Padrão (Gemini)</option>
                 </select>
               </label>
             </div>
@@ -159,12 +159,19 @@
     <!-- MODAL: SUBIR ÁUDIO E CADASTRAR VOZ -->
     <div id="modal-criar-voz" class="modal-backdrop hidden">
       <div class="modal">
-        <h3>Cadastrar Voz / Amostra de Áudio</h3>
-        <p style="font-size:0.8rem; color:var(--muted); margin-top:-5px;">Tamanho máximo recomendado: 3 MB (.mp3 ou .wav)</p>
+        <h3>Cadastrar Nova Voz de Narrador</h3>
+        <p style="font-size:0.8rem; color:var(--muted); margin-top:-5px;">Tamanho máximo do arquivo: 3 MB (.mp3 ou .wav)</p>
         <form id="form-criar-voz" class="form-stack">
           <label class="field">Nome do Locutor / Voz<input id="voz-nome" required placeholder="Ex.: Locutor João Varejo"></label>
-          <label class="field">Tipo / Estilo<input id="voz-tipo" placeholder="Ex.: Animado / Varejo"></label>
-          <label class="field">Arquivo de Áudio (.mp3 ou .wav)<input id="voz-arquivo" type="file" accept="audio/*"></label>
+          <label class="field">Timbre / Estilo da Locução
+            <select id="voz-tipo">
+              <option value="Animado / Varejo">Varejo / Enérgico (Voz Puck)</option>
+              <option value="Grave / Impactante">Grave / Promocional Forte (Voz Fenrir)</option>
+              <option value="Feminina / Suave">Feminina / Elegante (Voz Aoede)</option>
+              <option value="Institucional">Institucional / Padrão (Voz Charon)</option>
+            </select>
+          </label>
+          <label class="field">Arquivo de Áudio de Referência (.mp3 ou .wav)<input id="voz-arquivo" type="file" accept="audio/*"></label>
           <div class="row">
             <button type="button" id="cancelar-voz" class="button button-ghost">Cancelar</button>
             <button type="submit" class="button button-primary" id="btn-enviar-voz">Salvar Voz no Banco</button>
@@ -385,7 +392,7 @@
           const data = await res.json();
           if (data.sucesso) {
             vozesCarregadas = data.vozes;
-            selectVoz.innerHTML = '<option value="">Locutor Padrão</option>';
+            selectVoz.innerHTML = '<option value="">Locutor Padrão (Gemini)</option>';
             data.vozes.forEach(v => {
               const opt = document.createElement('option');
               opt.value = v.id;
@@ -395,16 +402,6 @@
           }
         } catch (err) { console.error('Erro ao carregar vozes', err); }
       }
-
-      // Tocar amostra ao selecionar voz
-      selectVoz.addEventListener('change', () => {
-        const vozId = Number(selectVoz.value);
-        const vozSel = vozesCarregadas.find(v => v.id === vozId);
-        if (vozSel && vozSel.arquivo_base64) {
-          const previewAudio = new Audio(vozSel.arquivo_base64);
-          previewAudio.play().catch(e => console.log('Áudio automático bloqueado pelo navegador'));
-        }
-      });
 
       btnAdicionarVoz.addEventListener('click', () => modalCriarVoz.classList.remove('hidden'));
       cancelarVoz.addEventListener('click', () => modalCriarVoz.classList.add('hidden'));
@@ -561,19 +558,23 @@
         }
       });
 
-      // NARRAR / GERAR ÁUDIO
+      // NARRAR O TEXTO (TOCA APENAS A FALA GERADA COM A VOZ ESCOLHIDA)
       document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
         const texto = document.getElementById('input-texto-anuncio').value.trim();
         const valorSelecionado = selectVoz.value;
         const vozId = (valorSelecionado && !isNaN(Number(valorSelecionado))) ? Number(valorSelecionado) : null;
         const msgEl = document.getElementById('anuncio-message');
+        const btnNarrar = document.getElementById('btn-gerar-audio');
 
         if (!texto) {
           setMessage(msgEl, 'Escreva ou gere um roteiro antes de narrar.', 'var(--danger)');
           return;
         }
 
-        setMessage(msgEl, 'Preparando áudio da locução...', 'var(--primary)');
+        btnNarrar.disabled = true;
+        btnNarrar.textContent = '🎙️ Narrando...';
+        setMessage(msgEl, 'Narrando o texto com o locutor selecionado...', 'var(--primary)');
+
         try {
           const res = await fetch('/api/gerar-locucao', {
             method: 'POST',
@@ -583,14 +584,20 @@
           const data = await res.json();
           if (res.ok && data.sucesso && data.audio_data) {
             ultimoAudioBase64 = data.audio_data;
+
+            // Reproduz exclusivamente a narração do texto
             const audio = new Audio(data.audio_data);
             audio.play();
-            setMessage(msgEl, 'Locução pronta e em reprodução!', 'var(--success)');
+
+            setMessage(msgEl, 'Narração concluída e reproduzida!', 'var(--success)');
           } else {
-            throw new Error(data.mensagem || 'Falha na geração');
+            throw new Error(data.mensagem || 'Falha na geração da voz');
           }
         } catch(e) {
-          setMessage(msgEl, 'Erro ao reproduzir áudio: ' + e.message, 'var(--danger)');
+          setMessage(msgEl, 'Erro ao narrar: ' + e.message, 'var(--danger)');
+        } finally {
+          btnNarrar.disabled = false;
+          btnNarrar.textContent = '🎙️ Narrar Texto';
         }
       });
 
