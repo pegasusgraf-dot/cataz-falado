@@ -5,8 +5,8 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '15mb' }));
-app.use(express.urlencoded({ limit: '15mb', extended: true }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ limit: '25mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Chaves de API
@@ -183,6 +183,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover usuário.' });
   }
 });
+
 // --- ROTAS DE VOZES ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
@@ -201,7 +202,7 @@ app.get('/api/vozes', async (req, res) => {
   }
 });
 
-// CLONAGEM NA ELEVENLABS
+// CLONAGEM NA ELEVENLABS CORRIGIDA
 app.post('/api/clonar-voz', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   const { nome, tipo_locucao, arquivo_base64, usuario_id } = req.body || {};
@@ -218,32 +219,41 @@ app.post('/api/clonar-voz', async (req, res) => {
     }
 
     let clonedVoiceId = null;
+    let mensagemAlerta = null;
 
     if (arquivo_base64 && ELEVENLABS_API_KEY) {
       try {
-        const base64Data = arquivo_base64.includes(',') ? arquivo_base64.split(',')[1] : arquivo_base64;
-        const audioBuffer = Buffer.from(base64Data, 'base64');
+        const rawBase64 = arquivo_base64.includes(',') ? arquivo_base64.split(',')[1] : arquivo_base64;
+        const audioBuffer = Buffer.from(rawBase64, 'base64');
 
+        // Cria o formulário compatível com a API da ElevenLabs
         const formData = new FormData();
-        formData.append('name', nome);
-        const fileBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-        formData.append('files', fileBlob, `${nome}.mp3`);
+        formData.append('name', String(nome).trim());
         formData.append('description', `Locutor ${tipo_locucao || 'varejo'}`);
+
+        // Anexa o arquivo de áudio com mimetype e nome corretos
+        const fileBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+        formData.append('files', fileBlob, 'amostra.mp3');
 
         const elRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
           method: 'POST',
-          headers: { 'xi-api-key': ELEVENLABS_API_KEY },
+          headers: {
+            'xi-api-key': ELEVENLABS_API_KEY
+          },
           body: formData
         });
 
         const elData = await elRes.json();
+
         if (elRes.ok && elData.voice_id) {
           clonedVoiceId = elData.voice_id;
         } else {
-          console.warn('[ElevenLabs] Erro ao clonar:', elData);
+          mensagemAlerta = elData?.detail?.message || elData?.detail || 'Erro ao clonar na ElevenLabs';
+          console.warn('[ElevenLabs Add Voice Error]:', mensagemAlerta);
         }
       } catch (errEl) {
-        console.warn('[ElevenLabs] Exceção:', errEl.message);
+        mensagemAlerta = errEl.message;
+        console.warn('[ElevenLabs Exception]:', errEl.message);
       }
     }
 
@@ -265,7 +275,8 @@ app.post('/api/clonar-voz', async (req, res) => {
     return res.status(201).json({ 
       sucesso: true, 
       voz: novaVoz.rows[0],
-      clonado_na_nuvem: Boolean(clonedVoiceId)
+      clonado_na_nuvem: Boolean(clonedVoiceId),
+      aviso: mensagemAlerta
     });
   } catch (error) {
     console.error('Erro ao salvar voz no Neon:', error);
@@ -332,7 +343,7 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
   return res.json({ sucesso: true, roteiro: fallbackText });
 });
 
-// --- NARRAÇÃO COM ELEVENLABS ---
+// --- NARRAÇÃO COM A ELEVENLABS CORRIGIDA ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório para narrar.' });
@@ -342,11 +353,12 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     if (voz_id && pool) {
       const vozResult = await pool.query('SELECT external_voice_id FROM vozes WHERE id = $1', [Number(voz_id)]);
-      if (vozResult.rows.length > 0) {
+      if (vozResult.rows.length > 0 && vozResult.rows[0].external_voice_id) {
         externalVoiceId = vozResult.rows[0].external_voice_id;
       }
     }
 
+    // Se a voz selecionada tiver clone criado, usa ela. Senão, usa voz comercial masculina 'Adam'
     const voiceToUse = externalVoiceId || 'pNInz6obpgDQGcFmaJgB';
 
     if (ELEVENLABS_API_KEY) {
@@ -355,14 +367,15 @@ app.post('/api/gerar-locucao', async (req, res) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'xi-api-key': ELEVENLABS_API_KEY
+            'xi-api-key': ELEVENLABS_API_KEY,
+            'Accept': 'audio/mpeg'
           },
           body: JSON.stringify({
             text: texto,
             model_id: "eleven_multilingual_v2",
             voice_settings: {
-              stability: 0.45,
-              similarity_boost: 0.85
+              stability: 0.5,
+              similarity_boost: 0.8
             }
           })
         });
@@ -370,16 +383,21 @@ app.post('/api/gerar-locucao', async (req, res) => {
         if (elRes.ok) {
           const arrayBuffer = await elRes.arrayBuffer();
           const audioBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
-          return res.json({ sucesso: true, audio_data: audioBase64 });
+          return res.json({ 
+            sucesso: true, 
+            audio_data: audioBase64,
+            voz_clonada: Boolean(externalVoiceId)
+          });
         } else {
           const elErr = await elRes.json();
-          console.warn('[ElevenLabs TTS] Erro retornado:', elErr);
+          console.warn('[ElevenLabs TTS Error]:', elErr);
         }
       } catch (errElTts) {
-        console.warn('[ElevenLabs TTS] Falha:', errElTts.message);
+        console.warn('[ElevenLabs TTS Connection Error]:', errElTts.message);
       }
     }
 
+    // Fallback de contingência
     const encodedText = encodeURIComponent(texto.substring(0, 250));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
     const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
