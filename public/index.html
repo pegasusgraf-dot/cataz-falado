@@ -131,9 +131,16 @@
           <form id="form-anuncio" class="ad-form">
             <div class="field-row">
               <label class="field">Nome do produto<input id="input-produto" placeholder="Ex.: Smart TV 55 pol"></label>
-              <label class="field">Escolher Narrador
+              <label class="field">Escolher Narrador para Falar
                 <select id="select-voz">
-                  <option value="">Locutor Padrão (Gemini)</option>
+                  <optgroup label="Locutores Inteligentes (Gemini)">
+                    <option value="puck">Voz Varejo / Enérgico (Puck)</option>
+                    <option value="fenrir">Voz Grave / Oferta Forte (Fenrir)</option>
+                    <option value="aoede">Voz Feminina / Suave (Aoede)</option>
+                    <option value="charon">Voz Institucional (Charon)</option>
+                  </optgroup>
+                  <optgroup id="optgroup-vozes-banco" label="Vozes Salvas no Banco">
+                  </optgroup>
                 </select>
               </label>
             </div>
@@ -144,7 +151,7 @@
             <div class="field-row">
               <label class="field" style="grid-column: span 2;">Oferta / Destaque<input id="input-oferta" placeholder="Ex.: 35% OFF, só até amanhã"></label>
             </div>
-            <label class="field">Texto completo que a voz irá narrar<textarea id="input-texto-anuncio"></textarea></label>
+            <label class="field">Texto completo que a voz selecionada irá narrar<textarea id="input-texto-anuncio"></textarea></label>
             
             <div class="ad-actions">
               <button id="btn-gerar-anuncio" type="button" class="button button-ghost">✨ Gerar com Gemini AI</button>
@@ -163,12 +170,12 @@
         <p style="font-size:0.8rem; color:var(--muted); margin-top:-5px;">Tamanho máximo do arquivo: 3 MB (.mp3 ou .wav)</p>
         <form id="form-criar-voz" class="form-stack">
           <label class="field">Nome do Locutor / Voz<input id="voz-nome" required placeholder="Ex.: Locutor João Varejo"></label>
-          <label class="field">Timbre / Estilo da Locução
+          <label class="field">Timbre do Narrador
             <select id="voz-tipo">
-              <option value="Animado / Varejo">Varejo / Enérgico (Voz Puck)</option>
-              <option value="Grave / Impactante">Grave / Promocional Forte (Voz Fenrir)</option>
-              <option value="Feminina / Suave">Feminina / Elegante (Voz Aoede)</option>
-              <option value="Institucional">Institucional / Padrão (Voz Charon)</option>
+              <option value="varejo">Varejo / Enérgico (Voz Puck)</option>
+              <option value="grave">Grave / Promocional Forte (Voz Fenrir)</option>
+              <option value="feminina">Feminina / Elegante (Voz Aoede)</option>
+              <option value="institucional">Institucional / Padrão (Voz Charon)</option>
             </select>
           </label>
           <label class="field">Arquivo de Áudio de Referência (.mp3 ou .wav)<input id="voz-arquivo" type="file" accept="audio/*"></label>
@@ -234,6 +241,7 @@
       const authScreen = document.getElementById('auth-screen');
       const appScreen = document.getElementById('app-screen');
       const selectVoz = document.getElementById('select-voz');
+      const optgroupVozesBanco = document.getElementById('optgroup-vozes-banco');
       
       const modalCriarVoz = document.getElementById('modal-criar-voz');
       const formCriarVoz = document.getElementById('form-criar-voz');
@@ -265,418 +273,4 @@
 
       document.getElementById('link-alternar').addEventListener('click', (e) => {
         e.preventDefault();
-        modoRegistro = !modoRegistro;
-        authTitle.textContent = modoRegistro ? 'Crie sua conta' : 'Acesse sua conta';
-        nomeField.hidden = !modoRegistro;
-      });
-
-      authForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('input-email').value.trim();
-        const senha = document.getElementById('input-senha').value.trim();
-
-        if (modoRegistro) {
-          const nome = document.getElementById('input-nome').value.trim();
-          const res = await fetch('/api/usuarios', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nome, email, senha, tipo: 'comum' }) });
-          const data = await res.json();
-          if(data.sucesso) { alert('Cadastrado com sucesso! Aguarde aprovação.'); modoRegistro = false; }
-          else alert(data.mensagem);
-          return;
-        }
-
-        const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email, senha }) });
-        const data = await res.json();
-        if (data.sucesso) {
-          usuarioAtual = data.usuario;
-          localStorage.setItem('syncstore_usuario', JSON.stringify(usuarioAtual));
-          entrarNoApp();
-        } else {
-          setMessage(authMessage, data.mensagem, 'var(--danger)');
-        }
-      });
-
-      function entrarNoApp() {
-        authScreen.classList.add('hidden');
-        appScreen.classList.remove('hidden');
-        document.getElementById('saudacao').textContent = `Bem-vindo, ${usuarioAtual.nome}`;
-        const isMaster = usuarioAtual.tipo === 'master';
-        document.getElementById('bloco-master').classList.toggle('hidden', !isMaster);
-        carregarVozes();
-        carregarHistorico();
-      }
-
-      btnAdicionarUsuario.addEventListener('click', () => modalCriarUsuario.classList.remove('hidden'));
-      cancelarUsuario.addEventListener('click', () => modalCriarUsuario.classList.add('hidden'));
-
-      formCriarUsuario.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nome = document.getElementById('novo-nome').value.trim();
-        const email = document.getElementById('novo-email').value.trim();
-        const senha = document.getElementById('novo-senha').value.trim();
-        const tipo = document.getElementById('novo-tipo').value;
-
-        try {
-          const res = await fetch('/api/usuarios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, email, senha, tipo })
-          });
-          const data = await res.json();
-          if (res.ok && data.sucesso) {
-            setMessage(modalUsuarioMessage, 'Usuário criado com sucesso!', 'var(--success)');
-            formCriarUsuario.reset();
-            setTimeout(() => modalCriarUsuario.classList.add('hidden'), 1000);
-          } else {
-            setMessage(modalUsuarioMessage, data.mensagem || 'Erro ao cadastrar.', 'var(--danger)');
-          }
-        } catch (err) {
-          setMessage(modalUsuarioMessage, 'Erro de conexão.', 'var(--danger)');
-        }
-      });
-
-      btnGerenciarUsuarios.addEventListener('click', () => {
-        modalGerenciarUsuarios.classList.remove('hidden');
-        carregarUsuariosPendentes();
-      });
-      fecharGerenciarUsuarios.addEventListener('click', () => modalGerenciarUsuarios.classList.add('hidden'));
-
-      async function carregarUsuariosPendentes() {
-        try {
-          const res = await fetch('/api/usuarios');
-          const data = await res.json();
-          if (data.sucesso) {
-            listaUsuariosPendentes.innerHTML = '';
-            if (data.usuarios.length === 0) {
-              listaUsuariosPendentes.innerHTML = '<span style="color:var(--muted); font-size:0.85rem;">Nenhum usuário.</span>';
-              return;
-            }
-            data.usuarios.forEach(u => {
-              const item = document.createElement('div');
-              item.style = 'display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px;';
-              item.innerHTML = `
-                <div>
-                  <strong>${u.nome}</strong> (${u.email})<br>
-                  <small style="color:var(--muted);">Tipo: ${u.tipo} | Status: <b>${u.status}</b></small>
-                </div>
-                <div style="display:flex; gap:6px;">
-                  ${u.status !== 'aprovado' ? `<button class="button button-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="atualizarStatusUsuario(${u.id}, 'aprovado')">Aprovar</button>` : ''}
-                  <button class="button button-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="excluirUsuario(${u.id})">Excluir</button>
-                </div>
-              `;
-              listaUsuariosPendentes.appendChild(item);
-            });
-          }
-        } catch (e) {
-          console.error('Erro ao carregar usuários', e);
-        }
-      }
-
-      window.atualizarStatusUsuario = async function(id, status) {
-        await fetch(`/api/usuarios/${id}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status })
-        });
-        carregarUsuariosPendentes();
-      };
-
-      window.excluirUsuario = async function(id) {
-        if (!confirm('Deseja excluir este usuário?')) return;
-        await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
-        carregarUsuariosPendentes();
-      };
-
-      async function carregarVozes() {
-        try {
-          const res = await fetch('/api/vozes');
-          const data = await res.json();
-          if (data.sucesso) {
-            vozesCarregadas = data.vozes;
-            selectVoz.innerHTML = '<option value="">Locutor Padrão (Gemini)</option>';
-            data.vozes.forEach(v => {
-              const opt = document.createElement('option');
-              opt.value = v.id;
-              opt.textContent = `${v.nome} (${v.tipo_locucao || 'Padrão'})`;
-              selectVoz.appendChild(opt);
-            });
-          }
-        } catch (err) { console.error('Erro ao carregar vozes', err); }
-      }
-
-      btnAdicionarVoz.addEventListener('click', () => modalCriarVoz.classList.remove('hidden'));
-      cancelarVoz.addEventListener('click', () => modalCriarVoz.classList.add('hidden'));
-
-      // UPLOAD DE ÁUDIO NOVO COM VALIDAÇÃO DE TAMANHO
-      formCriarVoz.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nome = document.getElementById('voz-nome').value.trim();
-        const tipo_locucao = document.getElementById('voz-tipo').value.trim() || 'Padrão';
-        const fileInput = document.getElementById('voz-arquivo');
-        const file = fileInput.files[0];
-        const btnSalvar = document.getElementById('btn-enviar-voz');
-
-        if (file && file.size > 3.2 * 1024 * 1024) {
-          setMessage(vozModalMessage, 'O arquivo deve ter no máximo 3 MB para envio na Vercel.', 'var(--danger)');
-          return;
-        }
-
-        btnSalvar.disabled = true;
-        setMessage(vozModalMessage, 'Salvando voz no banco Neon...', 'var(--primary)');
-
-        const enviarDados = async (base64Audio = null) => {
-          try {
-            const res = await fetch('/api/clonar-voz', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                nome, 
-                tipo_locucao, 
-                arquivo_base64: base64Audio, 
-                usuario_id: usuarioAtual ? usuarioAtual.id : null 
-              })
-            });
-            const data = await res.json();
-            if (res.ok && data.sucesso) {
-              setMessage(vozModalMessage, 'Voz salva com sucesso no Neon!', 'var(--success)');
-              formCriarVoz.reset();
-              await carregarVozes();
-              setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
-            } else {
-              setMessage(vozModalMessage, data.mensagem || 'Erro ao salvar voz.', 'var(--danger)');
-            }
-          } catch (err) {
-            setMessage(vozModalMessage, 'Erro de conexão/limite: ' + err.message, 'var(--danger)');
-          } finally {
-            btnSalvar.disabled = false;
-          }
-        };
-
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = async function() {
-            await enviarDados(reader.result);
-          };
-          reader.onerror = function() {
-            setMessage(vozModalMessage, 'Erro ao ler arquivo de áudio.', 'var(--danger)');
-            btnSalvar.disabled = false;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          await enviarDados(null);
-        }
-      });
-
-      btnGerenciarVozes.addEventListener('click', () => {
-        modalGerenciarVozes.classList.remove('hidden');
-        renderizarListaVozes();
-      });
-      fecharGerenciarVozes.addEventListener('click', () => modalGerenciarVozes.classList.add('hidden'));
-
-      function renderizarListaVozes() {
-        listaVozesCadastradas.innerHTML = '';
-        if (vozesCarregadas.length === 0) {
-          listaVozesCadastradas.innerHTML = '<span style="color:var(--muted); font-size:0.85rem;">Nenhuma voz cadastrada.</span>';
-          return;
-        }
-
-        vozesCarregadas.forEach(v => {
-          const item = document.createElement('div');
-          item.style = 'display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px;';
-          item.innerHTML = `
-            <div>
-              <strong>${v.nome}</strong><br>
-              <small style="color:var(--muted);">${v.tipo_locucao || 'Padrão'}</small>
-            </div>
-            <div style="display:flex; gap:6px;">
-              ${v.arquivo_base64 ? `<button class="button button-ghost" style="padding:6px 10px; font-size:0.75rem;" onclick="reproduzirAudioHistorico('${v.arquivo_base64}')">▶️ Amostra</button>` : ''}
-              <button class="button button-danger" style="padding:6px 10px; font-size:0.75rem;" onclick="removerVoz(${v.id})">Excluir</button>
-            </div>
-          `;
-          listaVozesCadastradas.appendChild(item);
-        });
-      }
-
-      window.removerVoz = async function(id) {
-        if (!confirm('Deseja realmente excluir esta voz?')) return;
-        try {
-          const res = await fetch(`/api/vozes/${id}`, { method: 'DELETE' });
-          if (res.ok) {
-            await carregarVozes();
-            renderizarListaVozes();
-          }
-        } catch (e) {
-          alert('Erro ao excluir voz.');
-        }
-      };
-
-      // GERAR ROTEIRO COM GEMINI AI
-      document.getElementById('btn-gerar-anuncio').addEventListener('click', async () => {
-        const prod = document.getElementById('input-produto').value.trim();
-        const orig = document.getElementById('input-valor-original').value.trim();
-        const promo = document.getElementById('input-valor-promocional').value.trim();
-        const oferta = document.getElementById('input-oferta').value.trim();
-        const msgEl = document.getElementById('anuncio-message');
-        const btnGerar = document.getElementById('btn-gerar-anuncio');
-
-        if (!prod) {
-          setMessage(msgEl, 'Preencha o nome do produto para a IA criar o anúncio.', 'var(--danger)');
-          return;
-        }
-
-        btnGerar.disabled = true;
-        btnGerar.textContent = '✨ Criando com Gemini...';
-        setMessage(msgEl, 'Aguarde, gerando roteiro de alta conversão...', 'var(--primary)');
-
-        try {
-          const res = await fetch('/api/gerar-roteiro-ia', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              produto: prod,
-              valorOriginal: orig,
-              valorPromocional: promo,
-              oferta: oferta
-            })
-          });
-
-          const data = await res.json();
-          if (res.ok && data.sucesso && data.roteiro) {
-            document.getElementById('input-texto-anuncio').value = data.roteiro;
-            document.getElementById('preview-texto').textContent = data.roteiro;
-            setMessage(msgEl, 'Roteiro gerado pelo Gemini com sucesso!', 'var(--success)');
-          } else {
-            throw new Error(data.mensagem || 'Falha na resposta da IA');
-          }
-        } catch (err) {
-          const fallback = `Atenção clientes! Hoje temos ${prod} por apenas R$ ${promo || orig}! ${oferta || 'Aproveite essa super oferta'} na nossa loja!`;
-          document.getElementById('input-texto-anuncio').value = fallback;
-          document.getElementById('preview-texto').textContent = fallback;
-          setMessage(msgEl, 'Aviso: Usado roteiro alternativo (' + err.message + ')', 'var(--muted)');
-        } finally {
-          btnGerar.disabled = false;
-          btnGerar.textContent = '✨ Gerar com Gemini AI';
-        }
-      });
-
-      // NARRAR O TEXTO (TOCA APENAS A FALA GERADA COM A VOZ ESCOLHIDA)
-      document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
-        const texto = document.getElementById('input-texto-anuncio').value.trim();
-        const valorSelecionado = selectVoz.value;
-        const vozId = (valorSelecionado && !isNaN(Number(valorSelecionado))) ? Number(valorSelecionado) : null;
-        const msgEl = document.getElementById('anuncio-message');
-        const btnNarrar = document.getElementById('btn-gerar-audio');
-
-        if (!texto) {
-          setMessage(msgEl, 'Escreva ou gere um roteiro antes de narrar.', 'var(--danger)');
-          return;
-        }
-
-        btnNarrar.disabled = true;
-        btnNarrar.textContent = '🎙️ Narrando...';
-        setMessage(msgEl, 'Narrando o texto com o locutor selecionado...', 'var(--primary)');
-
-        try {
-          const res = await fetch('/api/gerar-locucao', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ texto, voz_id: vozId })
-          });
-          const data = await res.json();
-          if (res.ok && data.sucesso && data.audio_data) {
-            ultimoAudioBase64 = data.audio_data;
-
-            // Reproduz exclusivamente a narração do texto
-            const audio = new Audio(data.audio_data);
-            audio.play();
-
-            setMessage(msgEl, 'Narração concluída e reproduzida!', 'var(--success)');
-          } else {
-            throw new Error(data.mensagem || 'Falha na geração da voz');
-          }
-        } catch(e) {
-          setMessage(msgEl, 'Erro ao narrar: ' + e.message, 'var(--danger)');
-        } finally {
-          btnNarrar.disabled = false;
-          btnNarrar.textContent = '🎙️ Narrar Texto';
-        }
-      });
-
-      document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
-        const produto = document.getElementById('input-produto').value.trim();
-        const texto = document.getElementById('input-texto-anuncio').value.trim();
-        const valorSelecionado = selectVoz.value;
-        const vozIdSelecionada = (valorSelecionado && !isNaN(Number(valorSelecionado))) ? Number(valorSelecionado) : null;
-        const msgEl = document.getElementById('anuncio-message');
-
-        if (!produto || !texto) {
-          setMessage(msgEl, 'Preencha o nome do produto e o texto do anúncio.', 'var(--danger)');
-          return;
-        }
-
-        try {
-          const res = await fetch('/api/anuncios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              produto, 
-              texto, 
-              voz_id: vozIdSelecionada, 
-              usuario_id: usuarioAtual ? usuarioAtual.id : null,
-              audio_data: ultimoAudioBase64 
-            })
-          });
-          const data = await res.json();
-          if (res.ok && data.sucesso) {
-            setMessage(msgEl, 'Anúncio salvo com sucesso no banco!', 'var(--success)');
-            ultimoAudioBase64 = null;
-            carregarHistorico();
-          } else {
-            setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
-          }
-        } catch (err) {
-          setMessage(msgEl, 'Erro de conexão ao salvar anúncio.', 'var(--danger)');
-        }
-      });
-
-      async function carregarHistorico() {
-        const res = await fetch('/api/anuncios');
-        const data = await res.json();
-        const lista = document.getElementById('listaHistorico');
-        if (data.sucesso && data.anuncios.length > 0) {
-          lista.innerHTML = data.anuncios.map(a => `
-            <div class="history-item">
-              <div>
-                <b>${a.produto}</b><br>
-                <small style="color:var(--muted);">${a.voz_nome ? '🎙️ ' + a.voz_nome : 'Locutor Padrão'}</small>
-              </div>
-              <div style="display:flex; gap:6px;">
-                ${a.audio_data ? `<button class="button button-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="reproduzirAudioHistorico('${a.audio_data}')">▶️ Ouvir</button>` : ''}
-                <button class="button button-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="excluirAnuncio(${a.id})">x</button>
-              </div>
-            </div>
-          `).join('');
-        }
-      }
-
-      window.reproduzirAudioHistorico = function(base64) {
-        if (!base64) return;
-        const audio = new Audio(base64);
-        audio.play().catch(e => console.error('Erro ao reproduzir áudio:', e));
-      };
-
-      window.excluirAnuncio = async function(id) {
-        if (!confirm('Deseja excluir este anúncio?')) return;
-        await fetch(`/api/anuncios/${id}`, { method: 'DELETE' });
-        carregarHistorico();
-      };
-
-      document.getElementById('btn-sair').addEventListener('click', () => {
-        localStorage.removeItem('syncstore_usuario');
-        location.reload();
-      });
-
-      const salvo = localStorage.getItem('syncstore_usuario');
-      if (salvo) { usuarioAtual = JSON.parse(salvo); entrarNoApp(); }
-    </script>
-  </body>
-</html>
+        modoRegistro = !modoRegistro
