@@ -47,6 +47,7 @@ async function inicializarBanco() {
         nome VARCHAR(100) NOT NULL,
         descricao VARCHAR(255),
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
+        arquivo_base64 TEXT,
         usuario_id INTEGER REFERENCES usuarios(id),
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -132,7 +133,6 @@ app.post('/api/usuarios', async (req, res) => {
   }
 });
 
-// Rota para aprovar/rejeitar novos cadastros
 app.patch('/api/usuarios/:id/status', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -156,7 +156,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- GERENCIAMENTO DE VOZES ---
+// --- GERENCIAMENTO DE VOZES (COM SUPORTE A UPLOAD DE ÁUDIO) ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -169,7 +169,7 @@ app.get('/api/vozes', async (req, res) => {
 
 app.post('/api/clonar-voz', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  const { nome, tipo_locucao, usuario_id } = req.body || {};
+  const { nome, tipo_locucao, arquivo_base64, usuario_id } = req.body || {};
 
   if (!nome) {
     return res.status(400).json({ sucesso: false, mensagem: 'Nome da voz é obrigatório.' });
@@ -177,13 +177,14 @@ app.post('/api/clonar-voz', async (req, res) => {
 
   try {
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, tipo_locucao, usuario_id) VALUES ($1, $2, $3) RETURNING *`,
-      [nome, tipo_locucao || 'Padrão', usuario_id ? Number(usuario_id) : null]
+      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [nome, tipo_locucao || 'Padrão', arquivo_base64 || null, usuario_id ? Number(usuario_id) : null]
     );
 
     return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
   } catch (err) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao processar voz.' });
+    console.error('Erro ao salvar voz:', err);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao processar cadastro de voz.' });
   }
 });
 
