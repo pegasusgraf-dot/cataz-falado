@@ -10,7 +10,6 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const DATABASE_URL = process.env.DATABASE_URL;
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'AQ.Ab8RN6KU3HdZFjjAotsW0BlafLbYe4cEbToWow9FetNe6Csi0w';
 
 if (!DATABASE_URL) {
   console.error('DATABASE_URL não configurada.');
@@ -155,7 +154,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- CLONAGEM DE VOZ NA ELEVENLABS + NEON ---
+// --- GERENCIAMENTO DE VOZES LOCAL (NEON) ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -168,52 +167,25 @@ app.get('/api/vozes', async (req, res) => {
 
 app.post('/api/clonar-voz', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  const { nome, tipo_locucao, audio_base64, usuario_id } = req.body || {};
+  const { nome, tipo_locucao, usuario_id } = req.body || {};
 
-  if (!nome || !audio_base64) {
-    return res.status(400).json({ sucesso: false, mensagem: 'Nome da voz e o arquivo de áudio são obrigatórios.' });
+  if (!nome) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Nome da voz é obrigatório.' });
   }
 
   try {
-    // 1. Converter Base64 para Buffer
-    const base64Data = audio_base64.replace(/^data:audio\/\w+;base64,/, '');
-    const audioBuffer = Buffer.from(base64Data, 'base64');
-
-    // 2. Montar FormData nativo para a API ElevenLabs (Instant Voice Cloning)
-    const formData = new FormData();
-    formData.append('name', nome);
-    formData.append('description', tipo_locucao || 'Locução de Loja');
-    const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-    formData.append('files', audioBlob, 'sample.mp3');
-
-    const elevenRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
-      method: 'POST',
-      headers: {
-        'xi-api-key': ELEVENLABS_API_KEY
-      },
-      body: formData
-    });
-
-    if (!elevenRes.ok) {
-      const errDetail = await elevenRes.text();
-      console.error('Erro ElevenLabs Voice Clone:', errDetail);
-      return res.status(500).json({ sucesso: false, mensagem: 'A ElevenLabs rejeitou o áudio. Envie um arquivo de voz nítido (mp3/wav).' });
-    }
-
-    const elevenData = await elevenRes.json();
-    const voice_id_eleven = elevenData.voice_id;
-
-    // 3. Salvar referência no Neon
+    // Salvando registro simulado/local no Neon para modo gratuito
+    const dummyId = 'voz_gratuita_' + Date.now();
     const novaVoz = await pool.query(
       `INSERT INTO vozes (nome, tipo_locucao, voice_id_eleven, usuario_id)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [nome, tipo_locucao || 'Padrão', voice_id_eleven, usuario_id ? Number(usuario_id) : null]
+      [nome, tipo_locucao || 'Padrão Gratuito', dummyId, usuario_id ? Number(usuario_id) : null]
     );
 
     return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
   } catch (err) {
-    console.error('Erro ao clonar voz:', err);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao processar clonagem de voz.' });
+    console.error('Erro ao cadastrar voz:', err);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao processar voz.' });
   }
 });
 
@@ -222,19 +194,6 @@ app.delete('/api/vozes/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Busca o voice_id_eleven para excluir também na ElevenLabs
-    const v = await pool.query('SELECT voice_id_eleven FROM vozes WHERE id = $1', [id]);
-    if (v.rows.length > 0 && v.rows[0].voice_id_eleven) {
-      try {
-        await fetch(`https://api.elevenlabs.io/v1/voices/${v.rows[0].voice_id_eleven}`, {
-          method: 'DELETE',
-          headers: { 'xi-api-key': ELEVENLABS_API_KEY }
-        });
-      } catch (e) {
-        console.warn('Erro ao deletar voz na ElevenLabs:', e.message);
-      }
-    }
-
     await pool.query('DELETE FROM anuncios WHERE voz_id = $1', [id]);
     await pool.query('DELETE FROM vozes WHERE id = $1', [id]);
     return res.json({ sucesso: true });
@@ -243,33 +202,26 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- NARRAR TEXTO COM ELEVENLABS ---
+// --- NARRAR TEXTO COM SINTETIZADOR GRATUITO (GOOGLE TRANSLATE TTS) ---
 app.post('/api/gerar-locucao', async (req, res) => {
-  const { texto, voice_id } = req.body || {};
+  const { texto } = req.body || {};
 
-  if (!texto || !voice_id) {
-    return res.status(400).json({ sucesso: false, mensagem: 'Texto e voz são obrigatórios.' });
+  if (!texto) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
   }
 
   try {
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, {
-      method: 'POST',
+    const encodedText = encodeURIComponent(texto);
+    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
+
+    const response = await fetch(googleTtsUrl, {
       headers: {
-        'Accept': 'audio/mpeg',
-        'Content-Type': 'application/json',
-        'xi-api-key': ELEVENLABS_API_KEY
-      },
-      body: JSON.stringify({
-        text: texto,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-      })
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      }
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.error('Erro na locução:', errText);
-      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar voz na ElevenLabs.' });
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar áudio gratuito.' });
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -278,7 +230,8 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     return res.json({ sucesso: true, audio_data: audioBase64 });
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha de conexão com sintetizador.' });
+    console.error('Erro na locução gratuita:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha de conexão com o sintetizador gratuito.' });
   }
 });
 
