@@ -184,7 +184,7 @@
       </div>
     </div>
 
-    <!-- MODAL: VALIDAÇÃO / GERENCIAR USUÁRIOS (NOVO) -->
+    <!-- MODAL: VALIDAÇÃO / GERENCIAR USUÁRIOS -->
     <div id="modal-gerenciar-usuarios" class="modal-backdrop hidden">
       <div class="modal">
         <h3>Validação de Usuários Pendentes</h3>
@@ -400,34 +400,48 @@
       btnAdicionarVoz.addEventListener('click', () => modalCriarVoz.classList.remove('hidden'));
       cancelarVoz.addEventListener('click', () => modalCriarVoz.classList.add('hidden'));
 
+      // UPLOAD DE VOZ CORRIGIDO COM LEITURA EM BASE64 SEGURO
       formCriarVoz.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nome = document.getElementById('voz-nome').value.trim();
         const tipo_locucao = document.getElementById('voz-tipo').value.trim() || 'Padrão';
+        const fileInput = document.getElementById('voz-arquivo').files[0];
         const btnSalvar = document.getElementById('btn-enviar-voz');
 
         btnSalvar.disabled = true;
         setMessage(vozModalMessage, 'Salvando voz...', 'var(--primary)');
 
-        try {
-          const res = await fetch('/api/clonar-voz', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, tipo_locucao, usuario_id: usuarioAtual.id })
-          });
-          const data = await res.json();
-          if (res.ok && data.sucesso) {
-            setMessage(vozModalMessage, 'Voz cadastrada com sucesso!', 'var(--success)');
-            formCriarVoz.reset();
-            await carregarVozes();
-            setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
-          } else {
-            setMessage(vozModalMessage, data.mensagem || 'Erro ao salvar voz.', 'var(--danger)');
+        const enviarDados = async (base64Audio = null) => {
+          try {
+            const res = await fetch('/api/clonar-voz', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nome, tipo_locucao, arquivo_base64: base64Audio, usuario_id: usuarioAtual.id })
+            });
+            const data = await res.json();
+            if (res.ok && data.sucesso) {
+              setMessage(vozModalMessage, 'Voz cadastrada com sucesso!', 'var(--success)');
+              formCriarVoz.reset();
+              await carregarVozes();
+              setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
+            } else {
+              setMessage(vozModalMessage, data.mensagem || 'Erro ao salvar voz.', 'var(--danger)');
+            }
+          } catch (err) {
+            setMessage(vozModalMessage, 'Erro de conexão.', 'var(--danger)');
+          } finally {
+            btnSalvar.disabled = false;
           }
-        } catch (err) {
-          setMessage(vozModalMessage, 'Erro de conexão.', 'var(--danger)');
-        } finally {
-          btnSalvar.disabled = false;
+        };
+
+        if (fileInput) {
+          const reader = new FileReader();
+          reader.onload = async function() {
+            await enviarDados(reader.result);
+          };
+          reader.readAsDataURL(fileInput);
+        } else {
+          await enviarDados(null);
         }
       });
 
@@ -539,7 +553,7 @@
           const data = await res.json();
           if (res.ok && data.sucesso) {
             setMessage(msgEl, 'Anúncio e áudio salvos com sucesso no banco!', 'var(--success)');
-            ultimoAudioBase64 = null; // reseta
+            ultimoAudioBase64 = null;
             carregarHistorico();
           } else {
             setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
