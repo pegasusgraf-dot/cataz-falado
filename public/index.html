@@ -45,6 +45,7 @@
       .button-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25); }
       .button-wide { width: 100%; }
       .button-ghost { background: #f8fafc; border: 1px solid #cbd5e1; color: var(--text); }
+      .button-danger { background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; }
       .form-message { font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 10px; min-height: 20px; }
       .app-layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; width: 100%; }
       .sidebar { background: #f1f5f9; border-right: 1px solid #e2e8f0; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; }
@@ -56,7 +57,7 @@
       .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
       .ad-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
       .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
-      .modal { width: min(460px, 100%); background: white; border-radius: 18px; padding: 24px; box-shadow: 0 30px 70px rgba(15, 23, 42, 0.25); }
+      .modal { width: min(500px, 100%); background: white; border-radius: 18px; padding: 24px; box-shadow: 0 30px 70px rgba(15, 23, 42, 0.25); max-height: 90vh; overflow-y: auto; }
       .row { display: flex; gap: 10px; } .row > * { flex: 1; }
       @media (max-width: 768px) { .auth-layout, .app-layout { grid-template-columns: 1fr; } .auth-intro { display: none; } .field-row { grid-template-columns: 1fr; } }
     </style>
@@ -68,10 +69,10 @@
       <section class="auth-intro">
         <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
         <div class="intro-copy">
-          <p class="eyebrow">Voz e ofertas em tempo real</p>
-          <h1>O anúncio certo,<br>na hora exata,<br><span>para vender mais.</span></h1>
+          <p class="eyebrow">Clonagem e Roteiros Comerciais</p>
+          <h1>O anúncio certo,<br>na sua voz exata,<br><span>para vender mais.</span></h1>
         </div>
-        <div class="intro-foot"><span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;"></span> Sistema com IA ElevenLabs e Neon DB</div>
+        <div class="intro-foot"><span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;"></span> Conectado com ElevenLabs & Neon</div>
       </section>
 
       <section class="auth-panel">
@@ -96,14 +97,14 @@
       <aside class="sidebar">
         <div>
           <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
-          <p class="eyebrow" style="margin-top: 15px;">Histórico do dia</p>
+          <p class="eyebrow" style="margin-top: 15px;">Histórico de Anúncios</p>
           <div id="listaHistorico" class="history-list"><span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span></div>
         </div>
         <div>
           <div id="bloco-master" class="hidden" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 12px;">
-            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Cadastrar Voz (ElevenLabs)</button>
+            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Subir e Clonar Voz</button>
+            <button id="btn-gerenciar-vozes" class="button button-ghost" style="font-size: 0.85rem;">📂 Gerenciar Vozes Salvas</button>
             <button id="btn-adicionar-usuario" class="button button-ghost" style="font-size: 0.85rem;">+ Incluir usuário</button>
-            <button id="btn-gerenciar-usuarios" class="button button-ghost" style="font-size: 0.85rem;">Gerenciar usuários</button>
           </div>
           <button id="btn-sair" class="button button-ghost" style="width: 100%; font-size: 0.85rem;">Sair</button>
         </div>
@@ -116,20 +117,20 @@
         </div>
 
         <div class="preview-box">
-          <h3 style="margin:0 0 10px; font-family:'Manrope';">Preview do anúncio</h3>
-          <p id="preview-texto" style="margin:0; color:var(--muted); line-height:1.6;">Preencha os campos abaixo para gerar o roteiro comercial.</p>
+          <h3 style="margin:0 0 10px; font-family:'Manrope';">Roteiro do Anúncio</h3>
+          <p id="preview-texto" style="margin:0; color:var(--muted); line-height:1.6;">O anúncio que você gerar ou escrever será lido pela voz clonada.</p>
         </div>
 
         <div class="ad-panel">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-            <h3 style="margin:0; font-family:'Manrope';">Gerar anúncio comercial</h3>
-            <button id="btn-gerar-audio" type="button" class="button button-primary">🎙️ Gerar e Ouvir Locução IA</button>
+            <h3 style="margin:0; font-family:'Manrope';">Criar Anúncio de Loja</h3>
+            <button id="btn-gerar-audio" type="button" class="button button-primary">🎙️ Narrar Texto com a Voz Escolhida</button>
           </div>
 
           <form id="form-anuncio" class="ad-form">
             <div class="field-row">
               <label class="field">Nome do produto<input id="input-produto" placeholder="Ex.: Smart TV 55\""></label>
-              <label class="field">Selecionar Voz Cadastrada
+              <label class="field">Escolher Voz para Narrar
                 <select id="select-voz">
                   <option value="">Voz padrão do navegador (TTS)</option>
                 </select>
@@ -142,11 +143,11 @@
             <div class="field-row">
               <label class="field" style="grid-column: span 2;">Oferta<input id="input-oferta" placeholder="Ex.: 35% OFF"></label>
             </div>
-            <label class="field">Texto do anúncio<textarea id="input-texto-anuncio"></textarea></label>
+            <label class="field">Texto completo que a voz irá narrar<textarea id="input-texto-anuncio"></textarea></label>
             
             <div class="ad-actions">
-              <button id="btn-gerar-anuncio" type="button" class="button button-ghost">Gerar Roteiro de Texto</button>
-              <button id="btn-salvar-anuncio" type="button" class="button button-primary">Salvar Anúncio</button>
+              <button id="btn-gerar-anuncio" type="button" class="button button-ghost">Gerar Roteiro Sugerido</button>
+              <button id="btn-salvar-anuncio" type="button" class="button button-primary">Salvar Anúncio no Banco</button>
             </div>
             <p id="anuncio-message" class="form-message"></p>
           </form>
@@ -154,24 +155,36 @@
       </section>
     </main>
 
-    <!-- MODAL PARA CADASTRAR VOZ COM VOICE ID -->
+    <!-- MODAL: CLONAR NOVA VOZ POR ÁUDIO -->
     <div id="modal-criar-voz" class="modal-backdrop hidden">
       <div class="modal">
-        <h3>Cadastrar Voz (ElevenLabs)</h3>
+        <h3>Subir Áudio para Clonar Voz</h3>
+        <p style="font-size:0.85rem; color:var(--muted); margin-top:-10px;">Suba um áudio com voz limpa (10 a 60 segundos) para a IA aprender o tom.</p>
         <form id="form-criar-voz" class="form-stack">
-          <label class="field">Nome da Voz<input id="voz-nome" required placeholder="Ex.: Locutor Comercial João"></label>
-          <label class="field">Estilo / Descrição<input id="voz-tipo" placeholder="Ex.: Varejo Animado"></label>
-          <label class="field">ElevenLabs Voice ID<input id="voz-audio-id" required placeholder="Ex.: 21m00Tcm4TlvDq8ikWAM"></label>
+          <label class="field">Nome do Locutor / Voz<input id="voz-nome" required placeholder="Ex.: Locutor João Varejo"></label>
+          <label class="field">Tipo / Estilo<input id="voz-tipo" placeholder="Ex.: Animado / Varejo"></label>
+          <label class="field">Arquivo de Áudio (.mp3 ou .wav)<input id="voz-arquivo" type="file" accept="audio/*" required></label>
           <div class="row">
             <button type="button" id="cancelar-voz" class="button button-ghost">Cancelar</button>
-            <button type="submit" class="button button-primary">Salvar Voz</button>
+            <button type="submit" class="button button-primary" id="btn-enviar-voz">Clonar e Salvar</button>
           </div>
           <p id="voz-modal-message" class="form-message"></p>
         </form>
       </div>
     </div>
 
-    <!-- MODAL DE CRIAR USUÁRIO -->
+    <!-- MODAL: GERENCIAR E EXCLUIR VOZES -->
+    <div id="modal-gerenciar-vozes" class="modal-backdrop hidden">
+      <div class="modal">
+        <h3>Vozes Clonadas</h3>
+        <div id="lista-vozes-cadastradas" style="display:flex; flex-direction:column; gap:10px; margin-top:15px; max-height:300px; overflow-y:auto;"></div>
+        <div style="margin-top:20px; text-align:right;">
+          <button type="button" id="fechar-gerenciar-vozes" class="button button-ghost">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CRIAR USUÁRIO -->
     <div id="modal-criar-usuario" class="modal-backdrop hidden">
       <div class="modal">
         <h3>Incluir usuário</h3>
@@ -192,7 +205,7 @@
     <script>
       let modoRegistro = false;
       let usuarioAtual = null;
-      let vozesDisponiveis = [];
+      let vozesCarregadas = [];
 
       const authForm = document.getElementById('auth-form');
       const authTitle = document.getElementById('auth-title');
@@ -207,6 +220,11 @@
       const btnAdicionarVoz = document.getElementById('btn-adicionar-voz');
       const cancelarVoz = document.getElementById('cancelar-voz');
       const vozModalMessage = document.getElementById('voz-modal-message');
+
+      const modalGerenciarVozes = document.getElementById('modal-gerenciar-vozes');
+      const btnGerenciarVozes = document.getElementById('btn-gerenciar-vozes');
+      const fecharGerenciarVozes = document.getElementById('fechar-gerenciar-vozes');
+      const listaVozesCadastradas = document.getElementById('lista-vozes-cadastradas');
 
       function setMessage(el, text, color = 'var(--muted)') {
         if (!el) return;
@@ -261,48 +279,105 @@
           const res = await fetch('/api/vozes');
           const data = await res.json();
           if (data.sucesso) {
-            vozesDisponiveis = data.vozes;
+            vozesCarregadas = data.vozes;
             selectVoz.innerHTML = '<option value="">Voz padrão do navegador (TTS)</option>';
             data.vozes.forEach(v => {
               const opt = document.createElement('option');
-              opt.value = v.id; 
-              opt.dataset.voiceid = v.audio_data; // Armazena o Voice ID da ElevenLabs
-              opt.textContent = `${v.nome} (${v.tipo_locucao || 'Padrão'})`;
+              opt.value = v.id;
+              opt.dataset.voiceid = v.voice_id_eleven;
+              opt.textContent = `${v.nome} (${v.tipo_locucao || 'Clonada'})`;
               selectVoz.appendChild(opt);
             });
           }
         } catch (err) { console.error('Erro ao carregar vozes', err); }
       }
 
+      // MODAIS DE VOZ
       btnAdicionarVoz.addEventListener('click', () => modalCriarVoz.classList.remove('hidden'));
       cancelarVoz.addEventListener('click', () => modalCriarVoz.classList.add('hidden'));
 
+      // UPLOAD DO ÁUDIO PARA CLONAGEM NA ELEVENLABS
       formCriarVoz.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nome = document.getElementById('voz-nome').value.trim();
         const tipo_locucao = document.getElementById('voz-tipo').value.trim() || 'Padrão';
-        const audio_data = document.getElementById('voz-audio-id').value.trim(); // Voice ID
+        const fileInput = document.getElementById('voz-arquivo').files[0];
+        const btnSalvar = document.getElementById('btn-enviar-voz');
 
-        try {
-          const res = await fetch('/api/vozes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, tipo_locucao, audio_data, usuario_id: usuarioAtual.id })
-          });
-          const data = await res.json();
-          if (data.sucesso) {
-            setMessage(vozModalMessage, 'Voz salva com sucesso!', 'var(--success)');
-            formCriarVoz.reset();
-            carregarVozes();
-            setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
-          } else {
-            setMessage(vozModalMessage, data.mensagem, 'var(--danger)');
+        if (!fileInput) return;
+
+        btnSalvar.disabled = true;
+        setMessage(vozModalMessage, 'Enviando áudio para clonagem na ElevenLabs... Aguarde.', 'var(--primary)');
+
+        const reader = new FileReader();
+        reader.onload = async function() {
+          const base64Audio = reader.result;
+          try {
+            const res = await fetch('/api/clonar-voz', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nome, tipo_locucao, audio_base64: base64Audio, usuario_id: usuarioAtual.id })
+            });
+            const data = await res.json();
+            if (res.ok && data.sucesso) {
+              setMessage(vozModalMessage, 'Voz clonada com sucesso e pronta para uso!', 'var(--success)');
+              formCriarVoz.reset();
+              await carregarVozes();
+              setTimeout(() => modalCriarVoz.classList.add('hidden'), 1200);
+            } else {
+              setMessage(vozModalMessage, data.mensagem || 'Erro ao clonar voz.', 'var(--danger)');
+            }
+          } catch (err) {
+            setMessage(vozModalMessage, 'Erro de conexão no upload.', 'var(--danger)');
+          } finally {
+            btnSalvar.disabled = false;
           }
-        } catch (err) {
-          setMessage(vozModalMessage, 'Erro ao salvar voz.', 'var(--danger)');
-        }
+        };
+        reader.readAsDataURL(fileInput);
       });
 
+      // GERENCIADOR DE VOZES (LISTAR E EXCLUIR)
+      btnGerenciarVozes.addEventListener('click', () => {
+        modalGerenciarVozes.classList.remove('hidden');
+        renderizarListaVozes();
+      });
+      fecharGerenciarVozes.addEventListener('click', () => modalGerenciarVozes.classList.add('hidden'));
+
+      function renderizarListaVozes() {
+        listaVozesCadastradas.innerHTML = '';
+        if (vozesCarregadas.length === 0) {
+          listaVozesCadastradas.innerHTML = '<span style="color:var(--muted); font-size:0.85rem;">Nenhuma voz clonada cadastrada.</span>';
+          return;
+        }
+
+        vozesCarregadas.forEach(v => {
+          const item = document.createElement('div');
+          item.style = 'display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px;';
+          item.innerHTML = `
+            <div>
+              <strong>${v.nome}</strong><br>
+              <small style="color:var(--muted);">${v.tipo_locucao || 'Clonada'}</small>
+            </div>
+            <button class="button button-danger" style="padding:6px 10px; font-size:0.75rem;" onclick="removerVoz(${v.id})">Excluir</button>
+          `;
+          listaVozesCadastradas.appendChild(item);
+        });
+      }
+
+      window.removerVoz = async function(id) {
+        if (!confirm('Deseja realmente excluir esta voz clonada?')) return;
+        try {
+          const res = await fetch(`/api/vozes/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            await carregarVozes();
+            renderizarListaVozes();
+          }
+        } catch (e) {
+          alert('Erro ao excluir voz.');
+        }
+      };
+
+      // GERAR TEXTO
       document.getElementById('btn-gerar-anuncio').addEventListener('click', () => {
         const prod = document.getElementById('input-produto').value || 'Produto';
         const orig = document.getElementById('input-valor-original').value || '0,00';
@@ -314,7 +389,7 @@
         document.getElementById('preview-texto').textContent = texto;
       });
 
-      // Botão de Gerar e Ouvir Áudio (ElevenLabs com prioridade)
+      // NARRAR TEXTO COM A VOZ CLONADA (OU NAVEGADOR)
       document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
         const selectedOption = selectVoz.options[selectVoz.selectedIndex];
         const voiceId = selectedOption ? selectedOption.dataset.voiceid : null;
@@ -322,13 +397,12 @@
         const msgEl = document.getElementById('anuncio-message');
 
         if (!texto) {
-          setMessage(msgEl, 'Escreva ou gere um texto antes de reproduzir.', 'var(--danger)');
+          setMessage(msgEl, 'Escreva ou gere um roteiro antes de narrar.', 'var(--danger)');
           return;
         }
 
-        // Se uma voz da ElevenLabs foi selecionada no select
         if (voiceId && voiceId.trim() !== '') {
-          setMessage(msgEl, 'Gerando locução com IA (ElevenLabs)...', 'var(--muted)');
+          setMessage(msgEl, 'Narrando texto com a voz clonada... Aguarde.', 'var(--primary)');
           try {
             const res = await fetch('/api/gerar-locucao', {
               method: 'POST',
@@ -339,19 +413,18 @@
             if (res.ok && data.sucesso && data.audio_data) {
               const audio = new Audio(data.audio_data);
               audio.play();
-              setMessage(msgEl, 'Locução gerada e reproduzida com sucesso!', 'var(--success)');
+              setMessage(msgEl, 'Locução narrada com sucesso na voz clonada!', 'var(--success)');
               return;
             } else {
-              throw new Error(data.mensagem || 'Erro na resposta da API');
+              throw new Error(data.mensagem || 'Falha na IA');
             }
           } catch(e) {
-            console.error(e);
-            setMessage(msgEl, 'Erro na ElevenLabs. Verifique o Voice ID.', 'var(--danger)');
+            setMessage(msgEl, 'Erro ao narrar com a voz clonada: ' + e.message, 'var(--danger)');
             return;
           }
         }
 
-        // Caso nenhuma voz da ElevenLabs esteja selecionada, usa o navegador
+        // Fallback TTS
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(texto);
           utterance.lang = 'pt-BR';
@@ -361,11 +434,12 @@
         }
       });
 
-      // Botão de Salvar Anúncio
+      // SALVAR ANÚNCIO NO BANCO
       document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
         const produto = document.getElementById('input-produto').value.trim();
         const texto = document.getElementById('input-texto-anuncio').value.trim();
-        const vozIdSelecionada = selectVoz.value ? Number(selectVoz.value) : null;
+        const valorSelecionado = selectVoz.value;
+        const vozIdSelecionada = (valorSelecionado && !isNaN(Number(valorSelecionado))) ? Number(valorSelecionado) : null;
         const msgEl = document.getElementById('anuncio-message');
 
         if (!produto || !texto) {
@@ -381,7 +455,7 @@
               produto, 
               texto, 
               voz_id: vozIdSelecionada, 
-              usuario_id: usuarioAtual.id 
+              usuario_id: usuarioAtual ? usuarioAtual.id : null 
             })
           });
           const data = await res.json();
@@ -392,7 +466,6 @@
             setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
           }
         } catch (err) {
-          console.error(err);
           setMessage(msgEl, 'Erro de conexão ao salvar anúncio.', 'var(--danger)');
         }
       });
@@ -404,11 +477,21 @@
         if (data.sucesso && data.anuncios.length > 0) {
           lista.innerHTML = data.anuncios.map(a => `
             <div class="history-item">
-              <span><b>${a.produto}</b><br><small>${new Date(a.created_at).toLocaleDateString('pt-BR')}</small></span>
+              <div>
+                <b>${a.produto}</b><br>
+                <small style="color:var(--muted);">${a.voz_nome ? '🎙️ ' + a.voz_nome : 'Voz Navegador'}</small>
+              </div>
+              <button class="button button-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="excluirAnuncio(${a.id})">x</button>
             </div>
           `).join('');
         }
       }
+
+      window.excluirAnuncio = async function(id) {
+        if (!confirm('Deseja excluir este anúncio?')) return;
+        await fetch(`/api/anuncios/${id}`, { method: 'DELETE' });
+        carregarHistorico();
+      };
 
       document.getElementById('btn-sair').addEventListener('click', () => {
         localStorage.removeItem('syncstore_usuario');
