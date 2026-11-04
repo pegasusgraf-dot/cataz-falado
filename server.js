@@ -9,7 +9,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Chave da API Gemini atualizada
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6IRvVrF-JMe5yGT5WbQORWpcsqpIV1Q0w-NSpk2KJ2DjQ';
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -28,7 +27,6 @@ function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
   return res.status(500).json({ sucesso: false, mensagem });
 }
 
-// Converte PCM cru retornado pelo Gemini em arquivo WAV executável no navegador
 function pcmToWavBase64(pcmBuffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16) {
   const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
   const blockAlign = (numChannels * bitsPerSample) / 8;
@@ -40,7 +38,7 @@ function pcmToWavBase64(pcmBuffer, sampleRate = 24000, numChannels = 1, bitsPerS
   buffer.write('WAVE', 8);
   buffer.write('fmt ', 12);
   buffer.writeUInt32LE(16, 16);
-  buffer.writeUInt16LE(1, 20); // PCM format
+  buffer.writeUInt16LE(1, 20);
   buffer.writeUInt16LE(numChannels, 22);
   buffer.writeUInt32LE(sampleRate, 24);
   buffer.writeUInt32LE(byteRate, 28);
@@ -206,7 +204,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- VOZES ---
+// --- ROTAS DE VOZES ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -269,7 +267,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTEIRO COM GEMINI (COM SUPORTE A FALLBACK CONTRA ALTA DEMANDA) ---
+// --- ROTEIRO COM GEMINI ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
@@ -322,16 +320,16 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
   return res.json({ sucesso: true, roteiro: fallbackText, aviso: 'Gerado via modelo reserva: ' + ultimoErro });
 });
 
-// --- NARRAÇÃO COM A VOZ SELECIONADA ---
+// --- ROTA DE GERAÇÃO DE LOCUÇÃO COM A VOZ SELECIONADA ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id, tipo_voz } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
 
   try {
-    let geminiVoiceName = 'Puck'; // Padrão: Varejo enérgico
+    let geminiVoiceName = 'Puck';
     let estiloPrompt = 'com tom alegre, enérgico e vendedor de rádio de ofertas';
 
-    // 1. Vozes diretas do select
+    // 1. Caso tenha selecionado as vozes do select
     if (tipo_voz) {
       const v = String(tipo_voz).toLowerCase();
       if (v === 'fenrir' || v === 'grave') {
@@ -348,7 +346,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
         estiloPrompt = 'com voz de locutor jovem, dinâmico e animado de varejo';
       }
     } 
-    // 2. Vozes salvas no Neon
+    // 2. Caso tenha selecionado voz do banco Neon
     else if (voz_id && pool) {
       const vozEncontrada = await pool.query(
         'SELECT nome, tipo_locucao FROM vozes WHERE id = $1',
@@ -419,24 +417,9 @@ app.post('/api/gerar-locucao', async (req, res) => {
       });
     }
 
-    // Fallback leve se o motor de áudio estiver indisponível
-    const encodedText = encodeURIComponent(texto.substring(0, 200));
-    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
-    const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-
-    if (response.ok) {
-      const arrayBuffer = await response.arrayBuffer();
-      const audioFallback = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
-      return res.json({
-        sucesso: true,
-        audio_data: audioFallback,
-        voz_utilizada: 'Fallback Padrão'
-      });
-    }
-
-    throw new Error('Não foi possível gerar a locução.');
+    throw new Error('Não foi possível gerar a locução com a voz selecionada.');
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao narrar texto: ' + error.message });
+    return res.status(500).json({ sucesso: false, mensagem: error.message });
   }
 });
 
