@@ -267,4 +267,134 @@ Dados da oferta:
 
 Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem comentários.`;
 
-    const url = `
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const geminiRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }]
+      })
+    });
+
+    const data = await geminiRes.json();
+    const roteiro = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!roteiro) {
+      throw new Error(data.error?.message || 'Falha na resposta do Gemini.');
+    }
+
+    return res.json({ sucesso: true, roteiro: roteiro.trim() });
+  } catch (err) {
+    console.error('Erro no Gemini:', err);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro na API Gemini: ' + err.message });
+  }
+});
+
+// --- LOCUÇÃO / REPRODUÇÃO ---
+app.post('/api/gerar-locucao', async (req, res) => {
+  const { texto, voz_id } = req.body || {};
+  if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
+
+  try {
+    if (voz_id && pool) {
+      const vozEncontrada = await pool.query(
+        'SELECT COALESCE(arquivo_base64, audio_data) AS audio FROM vozes WHERE id = $1', 
+        [Number(voz_id)]
+      );
+      if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].audio) {
+        return res.json({ sucesso: true, audio_data: vozEncontrada.rows[0].audio });
+      }
+    }
+
+    const encodedText = encodeURIComponent(texto.substring(0, 200));
+    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
+
+    const response = await fetch(googleTtsUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+
+    if (!response.ok) {
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar locução padrão.' });
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const audioBase64 = `data:audio/mpeg;base64,${buffer.toString('base64')}`;
+
+    return res.json({ sucesso: true, audio_data: audioBase64 });
+  } catch (error) {
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao processar locução.' });
+  }
+});
+
+// --- ANÚNCIOS ---
+app.get('/api/anuncios', async (req, res) => {
+  if (!pool) return bancoIndisponivel(res);
+  try {
+    const lista = await pool.query(`
+      SELECT a.*, v.nome AS voz_nome, u.nome AS usuario_nome
+      FROM anuncios a
+      LEFT JOIN vozes v ON v.id = a.voz_id
+      LEFT JOIN usuarios u ON u.id = a.usuario_id
+      ORDER BY a.id DESC
+    `);
+    return res.json({ sucesso: true, anuncios: lista.rows });
+  } catch (error) {
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar anúncios.' });
+  }
+});
+
+app.post('/api/anuncios', async (req, res) => {
+  if (!pool) return bancoIndisponivel(res);
+  const { produto, texto, voz_id, usuario_id, audio_data } = req.body || {};
+
+  if (!produto || !texto) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Produto e texto são obrigatórios.' });
+  }
+
+  try {
+    let idUsuarioValido = null;
+    if (usuario_id && !isNaN(Number(usuario_id))) {
+      const checaUser = await pool.query('SELECT id FROM usuarios WHERE id = $1', [Number(usuario_id)]);
+      if (checaUser.rows.length > 0) idUsuarioValido = checaUser.rows[0].id;
+    }
+
+    let idVozValida = null;
+    if (voz_id && !isNaN(Number(voz_id))) {
+      const checaVoz = await pool.query('SELECT id FROM vozes WHERE id = $1', [Number(voz_id)]);
+      if (checaVoz.rows.length > 0) idVozValida = checaVoz.rows[0].id;
+    }
+
+    const item = await pool.query(
+      `INSERT INTO anuncios (produto, texto, voz_id, usuario_id, audio_data) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [
+        String(produto).trim(),
+        String(texto).trim(),
+        idVozValida,
+        idUsuarioValido,
+        audio_data || null
+      ]
+    );
+    return res.status(201).json({ sucesso: true, anuncio: item.rows[0] });
+  } catch (error) {
+    console.error('Erro ao salvar anúncio:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar anúncio no banco.' });
+  }
+});
+
+app.delete('/api/anuncios/:id', async (req, res) => {
+  if (!pool) return bancoIndisponivel(res);
+  try {
+    await pool.query('DELETE FROM anuncios WHERE id = $1', [req.params.id]);
+    return res.json({ sucesso: true });
+  } catch (error) {
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover anúncio.' });
+  }
+});
+
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.use((req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});
