@@ -5,12 +5,13 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Chave Gemini ativa
+// Chaves de API
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6IRvVrF-JMe5yGT5WbQORWpcsqpIV1Q0w-NSpk2KJ2DjQ';
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || ''; // Opcional para clonagem instantânea
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
@@ -26,31 +27,6 @@ const pool = DATABASE_URL
 
 function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
   return res.status(500).json({ sucesso: false, mensagem });
-}
-
-// Converte áudio PCM cru em WAV executável pelo navegador
-function pcmToWavBase64(pcmBuffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16) {
-  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-  const blockAlign = (numChannels * bitsPerSample) / 8;
-  const dataSize = pcmBuffer.length;
-  const buffer = Buffer.alloc(44 + dataSize);
-
-  buffer.write('RIFF', 0);
-  buffer.writeUInt32LE(36 + dataSize, 4);
-  buffer.write('WAVE', 8);
-  buffer.write('fmt ', 12);
-  buffer.writeUInt32LE(16, 16);
-  buffer.writeUInt16LE(1, 20); // PCM
-  buffer.writeUInt16LE(numChannels, 22);
-  buffer.writeUInt32LE(sampleRate, 24);
-  buffer.writeUInt32LE(byteRate, 28);
-  buffer.writeUInt16LE(blockAlign, 32);
-  buffer.writeUInt16LE(bitsPerSample, 34);
-  buffer.write('data', 36);
-  buffer.writeUInt32LE(dataSize, 40);
-
-  pcmBuffer.copy(buffer, 44);
-  return `data:audio/wav;base64,${buffer.toString('base64')}`;
 }
 
 async function inicializarBanco() {
@@ -76,6 +52,7 @@ async function inicializarBanco() {
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
         arquivo_base64 TEXT,
         audio_data TEXT,
+        external_voice_id VARCHAR(100),
         usuario_id INTEGER,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -95,6 +72,7 @@ async function inicializarBanco() {
 
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
+    await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS external_voice_id VARCHAR(100);`);
     await pool.query(`ALTER TABLE vozes ALTER COLUMN audio_data DROP NOT NULL;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS voz_id INTEGER;`);
@@ -213,6 +191,7 @@ app.get('/api/vozes', async (req, res) => {
     const lista = await pool.query(`
       SELECT id, nome, descricao, tipo_locucao, 
              COALESCE(arquivo_base64, audio_data) AS arquivo_base64, 
+             external_voice_id,
              created_at 
       FROM vozes 
       ORDER BY id DESC
@@ -238,16 +217,43 @@ app.post('/api/clonar-voz', async (req, res) => {
       if (checaUser.rows.length > 0) idUsuarioValido = checaUser.rows[0].id;
     }
 
+    let clonedVoiceId = null;
+
+    // Se houver chave ElevenLabs e áudio enviado, cria a voz clonada
+    if (ELEVENLABS_API_KEY && arquivo_base64) {
+      try {
+        const audioBuffer = Buffer.from(arquivo_base64.split(',')[1] || arquivo_base64, 'base64');
+        const formData = new FormData();
+        formData.append('name', nome);
+        formData.append('files', new Blob([audioBuffer], { type: 'audio/mp3' }), `${nome}.mp3`);
+        formData.append('description', `Locutor ${tipo_locucao || 'varejo'}`);
+
+        const elRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
+          method: 'POST',
+          headers: { 'xi-api-key': ELEVENLABS_API_KEY },
+          body: formData
+        });
+
+        const elData = await elRes.json();
+        if (elData.voice_id) {
+          clonedVoiceId = elData.voice_id;
+        }
+      } catch (errEl) {
+        console.warn('Clonagem na ElevenLabs falhou, mantendo dados no Neon:', errEl.message);
+      }
+    }
+
     const audioConteudo = arquivo_base64 || '';
 
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, audio_data, usuario_id) 
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, tipo_locucao, created_at`,
+      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, audio_data, external_voice_id, usuario_id) 
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, nome, tipo_locucao, external_voice_id, created_at`,
       [
         String(nome).trim(),
         String(tipo_locucao || 'varejo').trim(),
         audioConteudo,
         audioConteudo,
+        clonedVoiceId,
         idUsuarioValido
       ]
     );
@@ -269,7 +275,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTEIRO COM GEMINI (COM FALLBACK CONTRA ALTA DEMANDA) ---
+// --- ROTEIRO COM GEMINI (COM FALLBACK AUTOMÁTICO) ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
@@ -315,120 +321,53 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
     return res.json({ sucesso: true, roteiro: roteiroFinal });
   }
 
-  const fallbackText = `Atenção clientes! Hoje temos ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite já essa super oferta'} na nossa loja!`;
+  const fallbackText = `Atenção clientes! Hoje temos ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite essa super oferta'} na nossa loja!`;
   return res.json({ sucesso: true, roteiro: fallbackText });
 });
 
-// --- NARRAÇÃO: LÊ O TEXTO GERADO EM VOZ ALTA COM A VOZ SELECIONADA ---
+// --- NARRAÇÃO DO TEXTO DO ANÚNCIO ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id, tipo_voz } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório para narrar.' });
 
   try {
-    let geminiVoiceName = 'Puck'; // Padrão: Varejo enérgico
-    let estiloPrompt = 'com tom alegre, enérgico e vendedor de rádio de ofertas';
+    // 1. Se for uma voz cadastrada que possui Voice ID clonado
+    if (voz_id && pool && ELEVENLABS_API_KEY) {
+      const vozResult = await pool.query('SELECT external_voice_id FROM vozes WHERE id = $1', [Number(voz_id)]);
+      const extVoiceId = vozResult.rows[0]?.external_voice_id;
 
-    // 1. Identifica se a voz veio do seletor direto
-    if (tipo_voz) {
-      const v = String(tipo_voz).toLowerCase();
-      if (v === 'fenrir' || v === 'grave') {
-        geminiVoiceName = 'Fenrir';
-        estiloPrompt = 'com voz masculina grave, potente, firme e promocional impactante';
-      } else if (v === 'aoede' || v === 'feminina') {
-        geminiVoiceName = 'Aoede';
-        estiloPrompt = 'com voz feminina brasileira expressiva, clara, elegante e comercial';
-      } else if (v === 'charon' || v === 'institucional') {
-        geminiVoiceName = 'Charon';
-        estiloPrompt = 'com voz masculina institucional, clara e profissional';
-      } else {
-        geminiVoiceName = 'Puck';
-        estiloPrompt = 'com voz de locutor jovem, dinâmico e animado de varejo';
-      }
-    } 
-    // 2. Se for uma voz cadastrada no Neon, lê o estilo cadastrado dela
-    else if (voz_id && pool) {
-      const vozEncontrada = await pool.query(
-        'SELECT nome, tipo_locucao FROM vozes WHERE id = $1',
-        [Number(voz_id)]
-      );
-      if (vozEncontrada.rows.length > 0) {
-        const estilo = String(vozEncontrada.rows[0].tipo_locucao || '').toLowerCase();
-        if (estilo.includes('grave') || estilo.includes('forte') || estilo.includes('fenrir')) {
-          geminiVoiceName = 'Fenrir';
-          estiloPrompt = 'com voz masculina grave, potente e promocional';
-        } else if (estilo.includes('feminina') || estilo.includes('suave') || estilo.includes('aoede')) {
-          geminiVoiceName = 'Aoede';
-          estiloPrompt = 'com voz feminina brasileira expressiva e comercial';
-        } else if (estilo.includes('institucional') || estilo.includes('charon')) {
-          geminiVoiceName = 'Charon';
-          estiloPrompt = 'com voz institucional séria e profissional';
-        } else {
-          geminiVoiceName = 'Puck';
-          estiloPrompt = 'com voz de locutor alegre e dinâmico de loja';
-        }
-      }
-    }
-
-    let audioGerado = null;
-    const modelosAudio = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-
-    // O Gemini lê o texto exato com o timbre da voz escolhida
-    for (const mod of modelosAudio) {
-      try {
-        const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`;
-        const payloadAudio = {
-          contents: [{
-            parts: [{ text: `Leia em voz alta em português do Brasil ${estiloPrompt} o seguinte anúncio: "${texto}"` }]
-          }],
-          generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: geminiVoiceName }
-              }
-            }
-          }
-        };
-
-        const resAudio = await fetch(urlAudio, {
+      if (extVoiceId) {
+        const elTts = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${extVoiceId}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloadAudio)
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': ELEVENLABS_API_KEY
+          },
+          body: JSON.stringify({
+            text: texto,
+            model_id: "eleven_multilingual_v2"
+          })
         });
 
-        const dataAudio = await resAudio.json();
-        const rawAudioBase64 = dataAudio?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-        if (rawAudioBase64) {
-          const pcmBuffer = Buffer.from(rawAudioBase64, 'base64');
-          audioGerado = pcmToWavBase64(pcmBuffer, 24000, 1, 16);
-          break; // Sucesso na síntese
+        if (elTts.ok) {
+          const arrayBuffer = await elTts.arrayBuffer();
+          const audioBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+          return res.json({ sucesso: true, audio_data: audioBase64 });
         }
-      } catch (errAudio) {
-        console.warn(`Erro no modelo de áudio ${mod}:`, errAudio.message);
       }
     }
 
-    if (audioGerado) {
-      return res.json({
-        sucesso: true,
-        audio_data: audioGerado,
-        voz_utilizada: geminiVoiceName
-      });
-    }
-
-    // Fallback leve para garantir que o texto seja falado mesmo se a cota do áudio do Gemini oscilar
-    const encodedText = encodeURIComponent(texto.substring(0, 200));
+    // 2. Narração via sintetizador de fala do texto (sem tocar o áudio fixo)
+    const encodedText = encodeURIComponent(texto.substring(0, 250));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
     const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
 
     if (response.ok) {
       const arrayBuffer = await response.arrayBuffer();
-      const audioFallback = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+      const audioBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
       return res.json({
         sucesso: true,
-        audio_data: audioFallback,
-        voz_utilizada: 'Fallback Padrão'
+        audio_data: audioBase64
       });
     }
 
