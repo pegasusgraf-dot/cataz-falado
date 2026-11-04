@@ -95,16 +95,16 @@
         <div class="brand-mark">S</div> SyncStore
       </div>
       <div class="intro-copy">
-        <span class="eyebrow">Plataforma Varejo</span>
-        <h1>Gerador de Anúncios e Vozes para Lojas.</h1>
-        <p style="color: #94a3b8;">Crie roteiros comerciais e locuções de forma automática e gerencie suas campanhas.</p>
+        <span class="eyebrow" style="color: #60a5fa; font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em;">Plataforma Varejo</span>
+        <h1 style="font-size: 2.2rem; margin: 12px 0;">Gerador de Anúncios e Locução Comercial.</h1>
+        <p style="color: #94a3b8; font-size: 1.05rem; line-height: 1.5;">Crie roteiros promocionais instantâneos para supermercados e lojas com áudio narrado em português.</p>
       </div>
       <div style="font-size: 0.85rem; color: #64748b;">© SyncStore. Todos os direitos reservados.</div>
     </div>
     <div class="auth-form-wrap">
       <div class="auth-card">
-        <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Bem-vindo</h2>
-        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 24px;">Acesse seu painel com login e senha</p>
+        <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Acessar Painel</h2>
+        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 24px;">Entre com seu e-mail/usuário e senha</p>
         
         <form id="formLogin" onsubmit="realizarLogin(event)">
           <div class="form-group">
@@ -115,8 +115,12 @@
             <label>Senha</label>
             <input type="password" id="loginSenha" required placeholder="••••••••">
           </div>
-          <button type="submit" class="btn">Entrar no Sistema</button>
+          <button type="submit" id="btnLogin" class="btn">Entrar no Sistema</button>
         </form>
+
+        <div style="margin-top: 20px; font-size: 0.85rem; color: var(--muted); text-align: center;">
+          Acesso padrão do administrador: <strong>master</strong> / <strong>1234</strong>
+        </div>
       </div>
     </div>
   </div>
@@ -207,32 +211,42 @@
     let listaAnunciosData = [];
 
     window.addEventListener('DOMContentLoaded', () => {
-      if (usuarioAtual) {
+      if (usuarioAtual && usuarioAtual.nome) {
         mostrarDashboard();
+      } else {
+        localStorage.removeItem('syncstore_user');
       }
     });
 
     async function realizarLogin(e) {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const senha = document.getElementById('loginSenha').value;
+      const loginBtn = document.getElementById('btnLogin');
+      const email = document.getElementById('loginEmail').value.trim();
+      const senha = document.getElementById('loginSenha').value.trim();
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Verificando...';
 
       try {
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, senha })
+          body: JSON.stringify({ email, usuario: email, senha })
         });
         const data = await res.json();
-        if (data.sucesso) {
+        
+        if (data.sucesso && data.usuario) {
           usuarioAtual = data.usuario;
           localStorage.setItem('syncstore_user', JSON.stringify(usuarioAtual));
           mostrarDashboard();
         } else {
-          alert(data.mensagem || 'Credenciais inválidas');
+          alert(data.mensagem || 'Usuário ou senha incorretos.');
         }
       } catch (err) {
-        alert('Erro ao conectar ao servidor.');
+        alert('Erro ao conectar ao servidor. Tente novamente.');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Entrar no Sistema';
       }
     }
 
@@ -241,12 +255,13 @@
       usuarioAtual = null;
       document.getElementById('authSection').classList.remove('hidden');
       document.getElementById('dashboardSection').classList.add('hidden');
+      document.getElementById('loginSenha').value = '';
     }
 
     function mostrarDashboard() {
       document.getElementById('authSection').classList.add('hidden');
       document.getElementById('dashboardSection').classList.remove('hidden');
-      document.getElementById('userName').textContent = usuarioAtual.nome;
+      document.getElementById('userName').textContent = usuarioAtual.nome || 'Usuário';
       carregarAnuncios();
     }
 
@@ -270,11 +285,12 @@
 
       totalEl.textContent = listaAnunciosData.length;
 
-      // Calcular criados no dia de hoje (considerando timezone local)
-      const hojeDataString = new Date().toISOString().slice(0, 10);
+      // Calcular criados no dia de hoje (data local)
+      const hojeFormatado = new Date().toLocaleDateString('pt-BR');
       const criadosHoje = listaAnunciosData.filter(item => {
         if (!item.created_at) return false;
-        return new Date(item.created_at).toISOString().slice(0, 10) === hojeDataString;
+        const itemData = new Date(item.created_at).toLocaleDateString('pt-BR');
+        return itemData === hojeFormatado;
       }).length;
 
       hojeEl.textContent = criadosHoje;
@@ -364,17 +380,20 @@
           player.src = data.audio_data;
           player.play();
         } else {
-          // Fallback para Web Speech API nativa se necessário
-          const synth = window.speechSynthesis;
-          const utter = new SpeechSynthesisUtterance(texto);
-          utter.lang = 'pt-BR';
-          synth.speak(utter);
+          falarNavegador(texto);
         }
       } catch (err) {
-        const synth = window.speechSynthesis;
+        falarNavegador(texto);
+      }
+    }
+
+    function falarNavegador(texto) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(texto);
         utter.lang = 'pt-BR';
-        synth.speak(utter);
+        utter.rate = 1.05;
+        window.speechSynthesis.speak(utter);
       }
     }
 
