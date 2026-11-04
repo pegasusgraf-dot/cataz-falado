@@ -1,459 +1,1181 @@
 <!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#2563eb">
-  <title>SyncStore | Gerador de Anúncios</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#2563eb">
+    <title>SyncStore | Gerador de Anúncios</title>
+    <meta name="description" content="Sistema profissional para criação e reprodução de anúncios comerciais e voz de loja.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --success: #16a34a;
-      --danger: #dc2626;
-    }
-    * { box-sizing: border-box; }
-    body, html {
-      margin: 0; min-height: 100vh;
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg); color: var(--text);
-    }
-    .hidden { display: none !important; }
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --success: #16a34a;
+        --success-dark: #15803d;
+        --danger: #dc2626;
+        --shadow: rgba(15, 23, 42, 0.12);
+      }
 
-    /* AUTH LAYOUT */
-    .auth-layout { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; width: 100%; }
-    .auth-intro { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 60px 48px; display: flex; flex-direction: column; justify-content: space-between; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.3rem; font-family: 'Manrope', sans-serif; }
-    .brand-mark { background: var(--primary); color: white; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 800; }
-    .auth-form-wrap { display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: #fff; }
-    .auth-card { width: 100%; max-width: 400px; }
+      * { box-sizing: border-box; }
 
-    /* DASHBOARD */
-    .dashboard { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: #fff; padding: 16px 24px; border-radius: 12px; border: 1px solid var(--border); }
-    
-    /* STATS CARDS */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
-    .stat-title { font-size: 0.85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-    .stat-value { font-size: 2rem; font-weight: 800; font-family: 'Manrope', sans-serif; color: var(--text); }
-    .stat-value.primary { color: var(--primary); }
-    .stat-value.success { color: var(--success); }
+      body, html {
+        margin: 0;
+        min-height: 100vh;
+        font-family: 'DM Sans', 'Segoe UI', Tahoma, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
 
-    /* GRID PRINCIPAL */
-    .main-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; }
-    @media(max-width: 900px) {
-      .auth-layout { grid-template-columns: 1fr; }
-      .auth-intro { display: none; }
-      .main-grid { grid-template-columns: 1fr; }
-    }
+      .hidden { display: none !important; }
 
-    .card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 24px; }
-    .card h2 { font-size: 1.2rem; font-weight: 700; margin: 0 0 16px 0; font-family: 'Manrope', sans-serif; }
+      .auth-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 100vh;
+        width: 100%;
+      }
 
-    .form-group { margin-bottom: 16px; }
-    label { display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 6px; }
-    input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; font-family: inherit; }
-    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); }
-    
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #fff; border: none; padding: 12px 18px; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; }
-    .btn:hover { background: var(--primary-dark); }
-    .btn-secondary { background: #e2e8f0; color: #1e293b; }
-    .btn-secondary:hover { background: #cbd5e1; }
-    .btn-danger { background: #fee2e2; color: var(--danger); }
-    .btn-danger:hover { background: #fecaca; }
+      .auth-intro {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #ffffff;
+        padding: 60px 48px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
 
-    /* LISTA DE ANÚNCIOS */
-    .anuncios-list { display: flex; flex-direction: column; gap: 14px; max-height: 600px; overflow-y: auto; }
-    .anuncio-item { border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: #fafafa; }
-    .anuncio-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    .anuncio-produto { font-weight: 700; font-size: 1.05rem; }
-    .anuncio-data { font-size: 0.8rem; color: var(--muted); }
-    .anuncio-texto { font-size: 0.95rem; color: #334155; margin: 8px 0 12px 0; line-height: 1.4; }
-    .anuncio-actions { display: flex; gap: 8px; align-items: center; }
-    .btn-listen { background: #dbeafe; color: var(--primary); border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-listen:hover { background: #bfdbfe; }
-    .btn-delete-item { background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 4px; }
-    .btn-delete-item:hover { color: var(--danger); }
-  </style>
-</head>
-<body>
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 1.25rem;
+        font-family: 'Manrope', sans-serif;
+      }
 
-  <!-- LOGIN / CADASTRO -->
-  <div id="authSection" class="auth-layout">
-    <div class="auth-intro">
-      <div class="brand">
-        <div class="brand-mark">S</div> SyncStore
-      </div>
-      <div class="intro-copy">
-        <span class="eyebrow" style="color: #60a5fa; font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em;">Plataforma Varejo</span>
-        <h1 style="font-size: 2.2rem; margin: 12px 0;">Gerador de Anúncios e Locução Comercial.</h1>
-        <p style="color: #94a3b8; font-size: 1.05rem; line-height: 1.5;">Crie roteiros promocionais instantâneos para supermercados e lojas com áudio narrado em português.</p>
-      </div>
-      <div style="font-size: 0.85rem; color: #64748b;">© SyncStore. Todos os direitos reservados.</div>
-    </div>
-    <div class="auth-form-wrap">
-      <div class="auth-card">
-        <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Acessar Painel</h2>
-        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 24px;">Entre com seu e-mail/usuário e senha</p>
-        
-        <form id="formLogin" onsubmit="realizarLogin(event)">
-          <div class="form-group">
-            <label>Usuário ou E-mail</label>
-            <input type="text" id="loginEmail" required placeholder="Digite seu usuário ou email">
+      .brand-mark {
+        background: var(--primary);
+        color: white;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+      }
+
+      .brand-period { color: var(--primary); }
+
+      .intro-copy h1 {
+        font-family: 'Manrope', sans-serif;
+        font-size: clamp(2.2rem, 4vw, 3.2rem);
+        line-height: 1.15;
+        margin: 20px 0;
+      }
+
+      .intro-copy h1 span { color: #60a5fa; }
+      .eyebrow {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+
+      .intro-note { color: #cbd5e1; font-size: 1.05rem; }
+      .intro-foot {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px #22c55e;
+      }
+
+      .auth-panel {
+        background: var(--card);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+      }
+
+      .auth-box {
+        width: 100%;
+        max-width: 380px;
+      }
+
+      .form-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      label.field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text);
+      }
+
+      input, select, textarea {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1.5px solid #cbd5e1;
+        font-size: 1rem;
+        background: #fff;
+        font-family: inherit;
+        transition: 0.2s;
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      }
+
+      .button {
+        border: none;
+        border-radius: 12px;
+        padding: 14px 20px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s;
+        font-family: inherit;
+      }
+
+      .button-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+      }
+
+      .button-primary:hover { transform: translateY(-1px); }
+      .button-wide { width: 100%; }
+      .button-ghost {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        color: var(--text);
+      }
+      .button-danger {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+      }
+
+      .form-message {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+        margin-top: 10px;
+        min-height: 20px;
+      }
+
+      .app-layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        min-height: 100vh;
+        width: 100%;
+      }
+
+      .sidebar {
+        background: #f1f5f9;
+        border-right: 1px solid #e2e8f0;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .history-list, .user-list {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .history-item, .user-item {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        transition: 0.2s;
+      }
+
+      .history-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .history-item-main {
+        flex: 1;
+        background: transparent;
+        border: none;
+        text-align: left;
+        padding: 0;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .history-item:hover, .user-item:hover {
+        border-color: var(--primary);
+        background: #f0fdf4;
+      }
+
+      .dashboard-main {
+        padding: 40px;
+        overflow-y: auto;
+        max-width: 920px;
+      }
+
+      .preview-box {
+        margin-top: 24px;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        border-left: 6px solid var(--primary);
+        border-radius: 14px;
+        padding: 20px;
+      }
+
+      .filter-bar {
+        margin-top: 24px;
+        display: flex;
+        align-items: end;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .filter-field {
+        flex: 1;
+        min-width: 180px;
+      }
+
+      .ad-panel {
+        margin-top: 28px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+      }
+
+      .ad-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+      }
+
+      .ad-form {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .ad-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .metric-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+      }
+
+      .metric-card h3 {
+        margin: 0 0 8px;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .metric-card strong {
+        font-size: 1.8rem;
+        display: block;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modal {
+        width: min(460px, 100%);
+        background: white;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 30px 70px rgba(15, 23, 42, 0.25);
+      }
+
+      .modal h3 {
+        margin: 0 0 20px;
+        font-family: 'Manrope', sans-serif;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .row > * { flex: 1; }
+
+      @media (max-width: 768px) {
+        .auth-layout, .app-layout { grid-template-columns: 1fr; }
+        .auth-intro { display: none; }
+        .field-row { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main id="auth-screen" class="auth-layout">
+      <section class="auth-intro">
+        <div class="brand">
+          <span class="brand-mark">S</span>
+          <span>SyncStore<span class="brand-period">.</span></span>
+        </div>
+
+        <div class="intro-copy">
+          <p class="eyebrow">Voz e ofertas em tempo real</p>
+          <h1>O anúncio certo,<br>na hora exata,<br><span>para vender mais.</span></h1>
+          <p class="intro-note">Sistema inteligente de locução e gerenciamento de ofertas comerciais.</p>
+        </div>
+
+        <div class="intro-foot">
+          <span class="status-dot"></span> Sintetizador de voz pronto para uso
+        </div>
+      </section>
+
+      <section class="auth-panel">
+        <div class="auth-box">
+          <div class="brand" style="color:var(--text);">
+            <span class="brand-mark">A</span>
+            <span>anúncios<span class="brand-period">.</span></span>
           </div>
-          <div class="form-group">
-            <label>Senha</label>
-            <input type="password" id="loginSenha" required placeholder="••••••••">
+
+          <p class="eyebrow" id="auth-eyebrow" style="margin-top: 15px;">PAINEL COMERCIAL</p>
+          <h2 id="auth-title" style="font-family:'Manrope'; margin: 5px 0 8px;">Acesse sua conta</h2>
+          <p class="muted" id="auth-description" style="color:var(--muted); font-size:0.95rem;">
+            Entre para gerar e gerenciar suas locuções.
+          </p>
+
+          <form id="auth-form" class="form-stack">
+            <label class="field" id="nome-field" hidden>
+              Nome completo
+              <input id="input-nome" placeholder="Nome do operador">
+            </label>
+
+            <label class="field" id="email-field">
+              E-mail / Usuário
+              <input id="input-email" required placeholder="master ou operador@loja.com">
+            </label>
+
+            <label class="field">
+              Senha
+              <input id="input-senha" type="password" required placeholder="Sua senha">
+            </label>
+
+            <label class="field" id="tipo-field" hidden>
+              Tipo de usuário
+              <select id="input-tipo">
+                <option value="comum">Comum</option>
+                <option value="master">Master</option>
+              </select>
+            </label>
+
+            <button id="auth-submit-button" class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
+            <p class="form-message" id="auth-message" role="status"></p>
+          </form>
+
+          <div style="margin-top: 20px; text-align: center; font-size: 0.85rem;">
+            <a href="#" id="link-alternar" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+              Primeiro acesso? Cadastrar
+            </a>
           </div>
-          <button type="submit" id="btnLogin" class="btn">Entrar no Sistema</button>
+        </div>
+      </section>
+    </main>
+
+    <main id="app-screen" class="app-layout hidden">
+      <aside class="sidebar">
+        <div>
+          <div class="brand">
+            <span class="brand-mark">S</span>
+            <span>SyncStore<span class="brand-period">.</span></span>
+          </div>
+
+          <p class="eyebrow" style="margin-top: 15px;">Histórico do dia</p>
+          <div style="font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;">
+            Clique para repetir o áudio:
+          </div>
+
+          <div id="listaHistorico" class="history-list">
+            <span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado.</span>
+          </div>
+        </div>
+
+        <div>
+          <div id="bloco-master" class="hidden" style="display:flex; flex-direction:column; gap:12px; margin-bottom: 12px;">
+            <button id="btn-adicionar-usuario" class="button button-primary" style="width: 100%; font-size: 0.85rem;">
+              + Incluir usuário
+            </button>
+            <button id="btn-gerenciar-usuarios" class="button button-ghost" style="width: 100%; font-size: 0.85rem;">
+              Gerenciar usuários
+            </button>
+          </div>
+
+          <button id="btn-sair" class="button button-ghost" style="width: 100%; font-size: 0.85rem;">
+            Sair
+          </button>
+        </div>
+      </aside>
+
+      <section class="dashboard-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div>
+            <p class="eyebrow" style="margin-top: 0;">Dashboard</p>
+            <h2 id="saudacao" style="margin: 0; font-family:'Manrope';">Bem-vindo ao painel</h2>
+          </div>
+
+          <div id="badge-usuario" style="background: #e0f2fe; color: #0f172a; border-radius: 999px; padding: 8px 12px; font-weight:700; font-size:0.8rem;">
+            Operador ativo
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <label class="field filter-field">
+            Filtrar anúncios por dia
+            <input id="filtro-data-anuncio" type="date">
+          </label>
+          <button id="btn-limpar-filtro" type="button" class="button button-ghost">Limpar filtro</button>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="metric-card">
+            <h3>Campanhas</h3>
+            <strong id="metric-campanhas">0</strong>
+          </div>
+
+          <div class="metric-card">
+            <h3>Locações do dia</h3>
+            <strong id="metric-locucao-dia">0</strong>
+          </div>
+
+          <div class="metric-card">
+            <h3>Registros no filtro</h3>
+            <strong id="metric-filtro">0</strong>
+          </div>
+        </div>
+
+        <div class="preview-box">
+          <h3 style="margin:0 0 10px; font-family:'Manrope';">Preview do anúncio</h3>
+          <p id="preview-texto" style="margin: 0; color: var(--muted); line-height:1.6;">
+            Exemplo de script: “Olá, cliente! Hoje temos promoção especial em eletrônicos com desconto de até 40%.”
+          </p>
+        </div>
+
+        <div class="ad-panel">
+          <div class="ad-header">
+            <h3 style="margin:0; font-family:'Manrope';">Gerar anúncio comercial</h3>
+            <button id="btn-gerar-audio" type="button" class="button button-ghost">🔊 Reproduzir áudio</button>
+          </div>
+
+          <form id="form-anuncio" class="ad-form">
+            <div class="field-row">
+              <label class="field">
+                Nome do produto
+                <input id="input-produto" placeholder="Ex.: Smart TV 55\"">
+              </label>
+
+              <label class="field">
+                Valor original
+                <input id="input-valor-original" placeholder="Ex.: 4599.90">
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                Valor promocional
+                <input id="input-valor-promocional" placeholder="Ex.: 2999.90">
+              </label>
+
+              <label class="field">
+                Oferta
+                <input id="input-oferta" placeholder="Ex.: 35% OFF">
+              </label>
+            </div>
+
+            <label class="field">
+              Texto do anúncio
+              <textarea id="input-texto-anuncio" placeholder="O texto será gerado automaticamente ou você pode editar aqui."></textarea>
+            </label>
+
+            <div class="ad-actions">
+              <button id="btn-gerar-anuncio" type="button" class="button button-primary">Gerar anúncio</button>
+              <button id="btn-salvar-anuncio" type="button" class="button button-ghost">Salvar anúncio</button>
+            </div>
+
+            <p id="anuncio-message" class="form-message" role="status"></p>
+          </form>
+        </div>
+
+        <div id="lista-usuarios" class="hidden" style="margin-top: 26px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom: 12px; flex-wrap: wrap;">
+            <h3 style="margin:0; font-family:'Manrope';">Gerenciar usuários</h3>
+            <span id="contador-usuarios" style="color: var(--muted); font-size:0.85rem;">0 usuários</span>
+          </div>
+          <div id="user-list" class="user-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <div id="modal-criar-usuario" class="modal-backdrop hidden">
+      <div class="modal">
+        <h3>Incluir usuário</h3>
+
+        <form id="form-criar-usuario" class="form-stack">
+          <label class="field">
+            Nome completo
+            <input id="novo-nome" required placeholder="Ex.: Maria da Silva">
+          </label>
+
+          <label class="field">
+            E-mail
+            <input id="novo-email" type="email" required placeholder="usuario@loja.com">
+          </label>
+
+          <label class="field">
+            Senha
+            <input id="novo-senha" type="password" required placeholder="Crie uma senha">
+          </label>
+
+          <label class="field">
+            Tipo
+            <select id="novo-tipo">
+              <option value="comum">Comum</option>
+              <option value="master">Master</option>
+            </select>
+          </label>
+
+          <div class="row">
+            <button type="button" id="cancelar-usuario" class="button button-ghost" style="flex:1;">Cancelar</button>
+            <button type="submit" class="button button-primary" style="flex:1;">Salvar</button>
+          </div>
+
+          <p id="modal-message" class="form-message" role="status"></p>
         </form>
-
-        <div style="margin-top: 20px; font-size: 0.85rem; color: var(--muted); text-align: center;">
-          Acesso padrão do administrador: <strong>master</strong> / <strong>1234</strong>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DASHBOARD PRINCIPAL -->
-  <div id="dashboardSection" class="dashboard hidden">
-    
-    <!-- BARRA SUPERIOR -->
-    <div class="top-bar">
-      <div class="brand">
-        <div class="brand-mark">S</div> SyncStore | Painel de Anúncios
-      </div>
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <span id="userName" style="font-weight: 600; font-size: 0.95rem;"></span>
-        <button onclick="logout()" class="btn-secondary" style="border:none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">Sair</button>
       </div>
     </div>
 
-    <!-- CARDS DE MÉTRICAS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-title">Total de Anúncios Feitos</div>
-        <div class="stat-value primary" id="totalAnuncios">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Gerados no Dia de Hoje</div>
-        <div class="stat-value success" id="anunciosHoje">0</div>
-      </div>
-    </div>
+    <script>
+      const authTitle = document.getElementById('auth-title');
+      const authDescription = document.getElementById('auth-description');
+      const authEyebrow = document.getElementById('auth-eyebrow');
+      const authMessage = document.getElementById('auth-message');
+      const nomeField = document.getElementById('nome-field');
+      const tipoField = document.getElementById('tipo-field');
+      const inputNome = document.getElementById('input-nome');
+      const inputEmail = document.getElementById('input-email');
+      const inputSenha = document.getElementById('input-senha');
+      const inputTipo = document.getElementById('input-tipo');
+      const authForm = document.getElementById('auth-form');
+      const authSubmitButton = document.getElementById('auth-submit-button');
+      const linkAlternar = document.getElementById('link-alternar');
+      const authScreen = document.getElementById('auth-screen');
+      const appScreen = document.getElementById('app-screen');
+      const blocoMaster = document.getElementById('bloco-master');
+      const saudacao = document.getElementById('saudacao');
+      const badgeUsuario = document.getElementById('badge-usuario');
+      const userList = document.getElementById('user-list');
+      const listaUsuarios = document.getElementById('lista-usuarios');
+      const contadorUsuarios = document.getElementById('contador-usuarios');
+      const listaHistorico = document.getElementById('listaHistorico');
+      const previewTexto = document.getElementById('preview-texto');
+      const inputProduto = document.getElementById('input-produto');
+      const inputValorOriginal = document.getElementById('input-valor-original');
+      const inputValorPromocional = document.getElementById('input-valor-promocional');
+      const inputOferta = document.getElementById('input-oferta');
+      const inputTextoAnuncio = document.getElementById('input-texto-anuncio');
+      const anuncioMessage = document.getElementById('anuncio-message');
+      const filtroDataAnuncio = document.getElementById('filtro-data-anuncio');
+      const metricCampanhas = document.getElementById('metric-campanhas');
+      const metricLocucaoDia = document.getElementById('metric-locucao-dia');
+      const metricFiltro = document.getElementById('metric-filtro');
+      const btnGerarAudio = document.getElementById('btn-gerar-audio');
+      const btnGerarAnuncio = document.getElementById('btn-gerar-anuncio');
+      const btnSalvarAnuncio = document.getElementById('btn-salvar-anuncio');
+      const btnLimparFiltro = document.getElementById('btn-limpar-filtro');
+      const btnAdicionarUsuario = document.getElementById('btn-adicionar-usuario');
+      const btnGerenciarUsuarios = document.getElementById('btn-gerenciar-usuarios');
+      const btnSair = document.getElementById('btn-sair');
 
-    <!-- ÁREA PRINCIPAL -->
-    <div class="main-grid">
-      
-      <!-- CRIAR ANÚNCIO -->
-      <div class="card">
-        <h2>📢 Novo Anúncio</h2>
-        
-        <div class="form-group">
-          <label>Nome do Produto</label>
-          <input type="text" id="prodNome" placeholder="Ex: Picanha Bovina Fatiada">
-        </div>
+      const modalCriarUsuario = document.getElementById('modal-criar-usuario');
+      const modalMessage = document.getElementById('modal-message');
+      const formCriarUsuario = document.getElementById('form-criar-usuario');
+      const inputNovoNome = document.getElementById('novo-nome');
+      const inputNovoEmail = document.getElementById('novo-email');
+      const inputNovoSenha = document.getElementById('novo-senha');
+      const inputNovoTipo = document.getElementById('novo-tipo');
+      const cancelarUsuario = document.getElementById('cancelar-usuario');
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div class="form-group">
-            <label>De (R$)</label>
-            <input type="text" id="prodPrecoDe" placeholder="49,90">
-          </div>
-          <div class="form-group">
-            <label>Por (R$)</label>
-            <input type="text" id="prodPrecoPor" placeholder="34,90">
-          </div>
-        </div>
+      let modoRegistro = false;
+      let usuarioAtual = null;
+      let ultimoTextoGerado = '';
+      let anunciosCarregados = [];
 
-        <div class="form-group">
-          <label>Destaque / Oferta</label>
-          <input type="text" id="prodDestaque" placeholder="Ex: Oferta Relâmpago / Só Hoje">
-        </div>
-
-        <button onclick="gerarRoteiro()" class="btn btn-secondary" style="margin-bottom: 16px;">✨ Gerar Roteiro Comercial</button>
-
-        <div class="form-group">
-          <label>Texto da Locução</label>
-          <textarea id="textoLocucao" rows="3" placeholder="O roteiro gerado aparecerá aqui..."></textarea>
-        </div>
-
-        <div style="display: flex; gap: 10px;">
-          <button onclick="ouvirPrevia()" class="btn btn-secondary" style="flex: 1;">🔊 Ouvir Prévia</button>
-          <button onclick="salvarAnuncio()" class="btn" style="flex: 1.5;">💾 Salvar Anúncio</button>
-        </div>
-      </div>
-
-      <!-- LISTA DE ANÚNCIOS COM BOTÃO DE OUVIR -->
-      <div class="card">
-        <h2>📋 Histórico de Anúncios</h2>
-        <div id="listaAnuncios" class="anuncios-list">
-          <p style="color: var(--muted); font-size: 0.9rem;">Carregando anúncios...</p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- PLAYER DE ÁUDIO OCULTO PARA EXECUÇÃO -->
-  <audio id="globalAudioPlayer" style="display: none;"></audio>
-
-  <script>
-    let usuarioAtual = JSON.parse(localStorage.getItem('syncstore_user') || 'null');
-    let listaAnunciosData = [];
-
-    window.addEventListener('DOMContentLoaded', () => {
-      if (usuarioAtual && usuarioAtual.nome) {
-        mostrarDashboard();
-      } else {
-        localStorage.removeItem('syncstore_user');
+      function setMessage(el, text, color = 'var(--muted)') {
+        el.textContent = text;
+        el.style.color = color;
       }
-    });
 
-    async function realizarLogin(e) {
-      e.preventDefault();
-      const loginBtn = document.getElementById('btnLogin');
-      const email = document.getElementById('loginEmail').value.trim();
-      const senha = document.getElementById('loginSenha').value.trim();
+      function atualizarBotaoAuth() {
+        authSubmitButton.innerHTML = modoRegistro
+          ? 'Cadastrar <span aria-hidden="true">✓</span>'
+          : 'Entrar <span aria-hidden="true">↗</span>';
+      }
 
-      loginBtn.disabled = true;
-      loginBtn.textContent = 'Verificando...';
+      function alternarModoRegistro(event) {
+        event.preventDefault();
+        modoRegistro = !modoRegistro;
 
-      try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, usuario: email, senha })
-        });
-        const data = await res.json();
-        
-        if (data.sucesso && data.usuario) {
-          usuarioAtual = data.usuario;
-          localStorage.setItem('syncstore_user', JSON.stringify(usuarioAtual));
-          mostrarDashboard();
+        if (modoRegistro) {
+          authTitle.textContent = 'Crie sua conta';
+          authDescription.textContent = 'Cadastre um operador para começar a usar o painel.';
+          authEyebrow.textContent = 'CADASTRO';
+          nomeField.hidden = false;
+          tipoField.hidden = true;
+          linkAlternar.textContent = 'Já tem conta? Entrar';
+          setMessage(authMessage, '');
         } else {
-          alert(data.mensagem || 'Usuário ou senha incorretos.');
+          authTitle.textContent = 'Acesse sua conta';
+          authDescription.textContent = 'Entre para gerar e gerenciar suas locuções.';
+          authEyebrow.textContent = 'PAINEL COMERCIAL';
+          nomeField.hidden = true;
+          tipoField.hidden = true;
+          linkAlternar.textContent = 'Primeiro acesso? Cadastrar';
+          setMessage(authMessage, '');
         }
-      } catch (err) {
-        alert('Erro ao conectar ao servidor. Tente novamente.');
-      } finally {
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Entrar no Sistema';
+
+        atualizarBotaoAuth();
       }
-    }
 
-    function logout() {
-      localStorage.removeItem('syncstore_user');
-      usuarioAtual = null;
-      document.getElementById('authSection').classList.remove('hidden');
-      document.getElementById('dashboardSection').classList.add('hidden');
-      document.getElementById('loginSenha').value = '';
-    }
+      function formatarMoeda(valor) {
+        const numero = Number(String(valor).replace(/[^\d,.-]/g, '').replace(',', '.'));
+        if (Number.isNaN(numero)) return 'R$ 0,00';
+        return new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(numero);
+      }
 
-    function mostrarDashboard() {
-      document.getElementById('authSection').classList.add('hidden');
-      document.getElementById('dashboardSection').classList.remove('hidden');
-      document.getElementById('userName').textContent = usuarioAtual.nome || 'Usuário';
-      carregarAnuncios();
-    }
+      function gerarTextoAnuncio() {
+        const produto = (inputProduto.value || 'Produto').trim() || 'Produto';
+        const valorOriginal = inputValorOriginal.value.trim() || 'R$ 0,00';
+        const valorPromocional = inputValorPromocional.value.trim() || 'R$ 0,00';
+        const oferta = inputOferta.value.trim() || 'Oferta especial';
 
-    async function carregarAnuncios() {
-      try {
-        const res = await fetch('/api/anuncios');
-        const data = await res.json();
-        if (data.sucesso) {
-          listaAnunciosData = data.anuncios || [];
-          renderizarListaEMetricas();
+         const texto = `Olá, cliente! Hoje temos ${produto} de ${formatarMoeda(valorOriginal)} Por apenas ${formatarMoeda(valorPromocional)}. ${oferta} pra voce cliente clube de vantagens aproveite! uma oportunidade imperdível.`;
+        inputTextoAnuncio.value = texto;
+        ultimoTextoGerado = texto;
+        previewTexto.textContent = texto;
+        setMessage(anuncioMessage, 'Anúncio gerado com sucesso!', 'var(--success)');
+        return texto;
+      }
+
+      function atualizarMetricas() {
+        const total = anunciosCarregados.length;
+        const hoje = new Date();
+        const dataHoje = hoje.toISOString().slice(0, 10);
+        const hojeCount = anunciosCarregados.filter((item) => {
+          if (!item.created_at) return false;
+          return new Date(item.created_at).toISOString().slice(0, 10) === dataHoje;
+        }).length;
+
+        const filtroAtual = filtroDataAnuncio.value;
+        const itensAtivos = filtroAtual
+          ? anunciosCarregados.filter((item) => {
+              if (!item.created_at) return false;
+              return new Date(item.created_at).toISOString().slice(0, 10) === filtroAtual;
+            })
+          : anunciosCarregados;
+
+        metricCampanhas.textContent = String(total);
+        metricLocucaoDia.textContent = String(hojeCount);
+        metricFiltro.textContent = String(itensAtivos.length);
+      }
+
+      function mostrarTelaApp(usuario) {
+        usuarioAtual = usuario;
+        const isMaster = String(usuario?.tipo || '').toLowerCase() === 'master';
+
+        authScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+        saudacao.textContent = `Bem-vindo, ${usuario?.nome || 'usuário'}`;
+        badgeUsuario.textContent = isMaster ? 'Master ativo' : 'Operador ativo';
+        blocoMaster.classList.toggle('hidden', !isMaster);
+
+        listarHistoricoAnuncios();
+        if (isMaster) {
+          listaUsuarios.classList.add('hidden');
         }
-      } catch (err) {
-        console.error('Erro ao buscar anúncios:', err);
-      }
-    }
-
-    function renderizarListaEMetricas() {
-      const container = document.getElementById('listaAnuncios');
-      const totalEl = document.getElementById('totalAnuncios');
-      const hojeEl = document.getElementById('anunciosHoje');
-
-      totalEl.textContent = listaAnunciosData.length;
-
-      // Calcular criados no dia de hoje (data local)
-      const hojeFormatado = new Date().toLocaleDateString('pt-BR');
-      const criadosHoje = listaAnunciosData.filter(item => {
-        if (!item.created_at) return false;
-        const itemData = new Date(item.created_at).toLocaleDateString('pt-BR');
-        return itemData === hojeFormatado;
-      }).length;
-
-      hojeEl.textContent = criadosHoje;
-
-      if (listaAnunciosData.length === 0) {
-        container.innerHTML = '<p style="color: var(--muted); font-size: 0.9rem;">Nenhum anúncio gerado ainda.</p>';
-        return;
       }
 
-      container.innerHTML = listaAnunciosData.map(item => {
-        const dataFormatada = item.created_at 
-          ? new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-          : '';
-
-        return `
-          <div class="anuncio-item">
-            <div class="anuncio-header">
-              <span class="anuncio-produto">${escapeHtml(item.produto)}</span>
-              <span class="anuncio-data">${dataFormatada}</span>
-            </div>
-            <div class="anuncio-texto">${escapeHtml(item.texto)}</div>
-            <div class="anuncio-actions">
-              <button class="btn-listen" onclick="ouvirAudioDirect('${escapeHtml(item.texto)}', '${item.audio_data || ''}')">
-                ▶ Ouvir Áudio
-              </button>
-              <button class="btn-delete-item" title="Excluir" onclick="deletarAnuncio(${item.id})">🗑️</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    async function gerarRoteiro() {
-      const produto = document.getElementById('prodNome').value.trim();
-      const valorOriginal = document.getElementById('prodPrecoDe').value.trim();
-      const valorPromocional = document.getElementById('prodPrecoPor').value.trim();
-      const oferta = document.getElementById('prodDestaque').value.trim();
-
-      if (!produto) {
-        alert('Informe o nome do produto.');
-        return;
+      function mostrarTelaLogin() {
+        appScreen.classList.add('hidden');
+        authScreen.classList.remove('hidden');
+        usuarioAtual = null;
+        localStorage.removeItem('syncstore_usuario');
       }
 
-      try {
-        const res = await fetch('/api/gerar-roteiro-ia', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ produto, valorOriginal, valorPromocional, oferta })
-        });
-        const data = await res.json();
-        if (data.sucesso) {
-          document.getElementById('textoLocucao').value = data.roteiro;
+      function aplicarFiltroAnuncios() {
+        const filtroAtual = filtroDataAnuncio.value;
+        let itens = anunciosCarregados;
+
+        if (filtroAtual) {
+          itens = anunciosCarregados.filter((item) => {
+            if (!item.created_at) return false;
+            return new Date(item.created_at).toISOString().slice(0, 10) === filtroAtual;
+          });
         }
-      } catch (err) {
-        alert('Erro ao gerar roteiro.');
-      }
-    }
 
-    async function ouvirPrevia() {
-      const texto = document.getElementById('textoLocucao').value.trim();
-      if (!texto) {
-        alert('Digite ou gere um texto para ouvir.');
-        return;
-      }
-      ouvirAudioDirect(texto);
-    }
+        listaHistorico.innerHTML = '';
 
-    async function ouvirAudioDirect(texto, audioBase64Gravado = '') {
-      const player = document.getElementById('globalAudioPlayer');
-
-      // Se já tiver áudio salvo direto, toca ele
-      if (audioBase64Gravado && audioBase64Gravado.startsWith('data:audio')) {
-        player.src = audioBase64Gravado;
-        player.play();
-        return;
-      }
-
-      // Senão, gera na hora a síntese de voz
-      try {
-        const res = await fetch('/api/gerar-locucao', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto })
-        });
-        const data = await res.json();
-        if (data.sucesso && data.audio_data) {
-          player.src = data.audio_data;
-          player.play();
-        } else {
-          falarNavegador(texto);
+        if (!itens.length) {
+          listaHistorico.innerHTML = '<span style="color: var(--muted); font-size: 0.85rem;">Nenhum anúncio gerado para o período selecionado.</span>';
+          atualizarMetricas();
+          return;
         }
-      } catch (err) {
-        falarNavegador(texto);
-      }
-    }
 
-    function falarNavegador(texto) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(texto);
-        utter.lang = 'pt-BR';
-        utter.rate = 1.05;
-        window.speechSynthesis.speak(utter);
-      }
-    }
+        itens.forEach((anuncio) => {
+          const row = document.createElement('div');
+          row.className = 'history-item';
 
-    async function salvarAnuncio() {
-      const produto = document.getElementById('prodNome').value.trim();
-      const texto = document.getElementById('textoLocucao').value.trim();
+          const botoes = document.createElement('div');
+          botoes.style.display = 'flex';
+          botoes.style.alignItems = 'center';
+          botoes.style.gap = '8px';
 
-      if (!produto || !texto) {
-        alert('Preencha o nome do produto e o texto do anúncio.');
-        return;
-      }
+          const botaoMain = document.createElement('button');
+          botaoMain.type = 'button';
+          botaoMain.className = 'history-item-main';
+          botaoMain.textContent = `${anuncio.produto || 'Produto'} • ${anuncio.created_at ? new Date(anuncio.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}`;
+          botaoMain.addEventListener('click', () => {
+            inputProduto.value = anuncio.produto || '';
+            inputTextoAnuncio.value = anuncio.texto || '';
+            ultimoTextoGerado = anuncio.texto || '';
+            previewTexto.textContent = anuncio.texto || 'Exemplo de script';
+            setMessage(anuncioMessage, 'Anúncio carregado para reprodução.', 'var(--success)');
+          });
 
-      try {
-        const res = await fetch('/api/anuncios', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            produto,
-            texto,
-            usuario_id: usuarioAtual?.id || null
-          })
+          const botaoExcluir = document.createElement('button');
+          botaoExcluir.type = 'button';
+          botaoExcluir.className = 'button button-danger';
+          botaoExcluir.style.padding = '8px 10px';
+          botaoExcluir.style.fontSize = '0.72rem';
+          botaoExcluir.textContent = 'Excluir';
+          botaoExcluir.addEventListener('click', () => excluirAnuncio(anuncio.id));
+
+          botoes.appendChild(botaoMain);
+          botoes.appendChild(botaoExcluir);
+          row.appendChild(botoes);
+          listaHistorico.appendChild(row);
         });
 
-        const data = await res.json();
-        if (data.sucesso) {
-          alert('Anúncio salvo com sucesso!');
-          document.getElementById('prodNome').value = '';
-          document.getElementById('prodPrecoDe').value = '';
-          document.getElementById('prodPrecoPor').value = '';
-          document.getElementById('prodDestaque').value = '';
-          document.getElementById('textoLocucao').value = '';
-          carregarAnuncios();
-        } else {
-          alert('Erro ao salvar anúncio.');
+        atualizarMetricas();
+      }
+
+      async function listarHistoricoAnuncios() {
+        try {
+          const resposta = await fetch('/api/anuncios');
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao buscar anúncios');
+          }
+
+          anunciosCarregados = dados.anuncios || [];
+          aplicarFiltroAnuncios();
+        } catch (error) {
+          console.error(error);
+          listaHistorico.innerHTML = '<span style="color: var(--danger); font-size: 0.85rem;">Não foi possível carregar anúncios.</span>';
+          atualizarMetricas();
         }
-      } catch (err) {
-        alert('Erro de conexão ao salvar.');
       }
-    }
 
-    async function deletarAnuncio(id) {
-      if (!confirm('Deseja excluir este anúncio?')) return;
-      try {
-        const res = await fetch(`/api/anuncios/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.sucesso) carregarAnuncios();
-      } catch (err) {
-        alert('Erro ao excluir anúncio.');
+      async function listarUsuarios() {
+        try {
+          const resposta = await fetch('/api/usuarios');
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao buscar usuários');
+          }
+
+          const usuarios = dados.usuarios || [];
+          contadorUsuarios.textContent = `${usuarios.length} usuários`;
+          listaUsuarios.classList.remove('hidden');
+          userList.innerHTML = '';
+
+          if (!usuarios.length) {
+            userList.innerHTML = '<div style="color: var(--muted); padding: 10px;">Nenhum usuário cadastrado.</div>';
+            return;
+          }
+
+          usuarios.forEach((usuario) => {
+            const item = document.createElement('div');
+            item.className = 'user-item';
+            item.innerHTML = `
+              <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                <div>
+                  <strong>${usuario.nome || 'Usuário'}</strong><br>
+                  <span style="color: var(--muted);">${usuario.email}</span>
+                </div>
+                <span style="padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight:700; background: ${usuario.status === 'aprovado' ? '#dcfce7' : '#fef3c7'}; color: ${usuario.status === 'aprovado' ? '#166534' : '#92400e'};">
+                  ${usuario.status || 'pendente'}
+                </span>
+              </div>
+              <div style="display:flex; gap:8px; margin-top: 10px; flex-wrap: wrap;">
+                <button data-acao="aprovado" data-id="${usuario.id}" class="button button-primary" style="padding: 8px 10px; font-size: 0.75rem;">Aprovar</button>
+                <button data-acao="rejeitado" data-id="${usuario.id}" class="button button-ghost" style="padding: 8px 10px; font-size: 0.75rem;">Rejeitar</button>
+                <button data-acao="excluir" data-id="${usuario.id}" class="button button-danger" style="padding: 8px 10px; font-size: 0.75rem;">Excluir</button>
+              </div>
+            `;
+
+            userList.appendChild(item);
+          });
+
+          userList.querySelectorAll('button[data-id]').forEach((botao) => {
+            botao.addEventListener('click', async () => {
+              const id = botao.dataset.id;
+              const acao = botao.dataset.acao;
+
+              if (acao === 'excluir') {
+                await excluirUsuario(id);
+                return;
+              }
+
+              await atualizarStatusUsuario(id, acao);
+            });
+          });
+        } catch (error) {
+          console.error(error);
+          userList.innerHTML = '<div style="color: var(--danger); padding: 10px;">Não foi possível carregar os usuários.</div>';
+        }
       }
-    }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-  </script>
-</body>
+      function alternarListaUsuarios() {
+        const visivel = !listaUsuarios.classList.contains('hidden');
+        if (visivel) {
+          listaUsuarios.classList.add('hidden');
+          return;
+        }
+        listarUsuarios();
+      }
+
+      async function atualizarStatusUsuario(id, status) {
+        try {
+          const resposta = await fetch(`/api/usuarios/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+          });
+
+          const dados = await resposta.json();
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao atualizar status');
+          }
+
+          await listarUsuarios();
+        } catch (error) {
+          console.error(error);
+          setMessage(modalMessage, 'Não foi possível atualizar o status do usuário.', 'var(--danger)');
+        }
+      }
+
+      async function excluirUsuario(id) {
+        const confirmado = window.confirm('Deseja realmente excluir este usuário?');
+        if (!confirmado) return;
+
+        try {
+          const resposta = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao excluir usuário');
+          }
+
+          await listarUsuarios();
+          setMessage(modalMessage, 'Usuário excluído com sucesso!', 'var(--success)');
+        } catch (error) {
+          console.error(error);
+          setMessage(modalMessage, error.message || 'Erro ao excluir usuário.', 'var(--danger)');
+        }
+      }
+
+      async function excluirAnuncio(id) {
+        const confirmado = window.confirm('Deseja excluir este áudio salvo?');
+        if (!confirmado) return;
+
+        try {
+          const resposta = await fetch(`/api/anuncios/${id}`, { method: 'DELETE' });
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao excluir áudio');
+          }
+
+          anunciosCarregados = (anunciosCarregados || []).filter((item) => item.id !== id);
+          aplicarFiltroAnuncios();
+          setMessage(anuncioMessage, 'Áudio excluído com sucesso!', 'var(--success)');
+        } catch (error) {
+          console.error(error);
+          setMessage(anuncioMessage, error.message || 'Erro ao excluir áudio.', 'var(--danger)');
+        }
+      }
+
+      function abrirModalUsuario() {
+        modalCriarUsuario.classList.remove('hidden');
+        modalMessage.textContent = '';
+      }
+
+      function fecharModalUsuario() {
+        modalCriarUsuario.classList.add('hidden');
+        formCriarUsuario.reset();
+        modalMessage.textContent = '';
+      }
+
+      async function criarUsuario(event) {
+        event.preventDefault();
+        const nome = inputNovoNome.value.trim();
+        const email = inputNovoEmail.value.trim();
+        const senha = inputNovoSenha.value.trim();
+        const tipo = inputNovoTipo.value;
+
+        if (!nome || !email || !senha) {
+          setMessage(modalMessage, 'Preencha nome, e-mail e senha.', 'var(--danger)');
+          return;
+        }
+
+        try {
+          const resposta = await fetch('/api/usuarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, email, senha, tipo })
+          });
+
+          const dados = await resposta.json();
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao cadastrar usuário');
+          }
+
+          setMessage(modalMessage, 'Usuário incluído com sucesso!', 'var(--success)');
+          formCriarUsuario.reset();
+          await listarUsuarios();
+          setTimeout(fecharModalUsuario, 700);
+        } catch (error) {
+          setMessage(modalMessage, error.message, 'var(--danger)');
+        }
+      }
+
+      async function salvarAnuncio() {
+        const produto = inputProduto.value.trim();
+        const texto = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
+        const usuarioId = usuarioAtual?.id || null;
+
+        if (!produto || !texto) {
+          setMessage(anuncioMessage, 'Preencha o nome do produto e o texto do anúncio.', 'var(--danger)');
+          return;
+        }
+
+        try {
+          const resposta = await fetch('/api/anuncios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ produto, texto, usuario_id: usuarioId })
+          });
+
+          const dados = await resposta.json();
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Erro ao salvar anúncio');
+          }
+
+          setMessage(anuncioMessage, 'Anúncio salvo com sucesso!', 'var(--success)');
+          await listarHistoricoAnuncios();
+        } catch (error) {
+          console.error(error);
+          setMessage(anuncioMessage, error.message || 'Erro ao salvar anúncio.', 'var(--danger)');
+        }
+      }
+
+      function reproduzirAudio() {
+        const mensagem = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
+        if (!mensagem) {
+          setMessage(anuncioMessage, 'Gere ou escreva um anúncio antes de reproduzir.', 'var(--danger)');
+          return;
+        }
+
+        if (!('speechSynthesis' in window)) {
+          setMessage(anuncioMessage, 'Seu navegador não suporta reprodução por voz.', 'var(--danger)');
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(mensagem);
+        utterance.lang = 'pt-BR';
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utterance);
+        setMessage(anuncioMessage, 'Reproduzindo áudio...', 'var(--success)');
+      }
+
+      async function realizarLogin(event) {
+        event.preventDefault();
+
+        const usuario = inputEmail.value.trim();
+        const senha = inputSenha.value.trim();
+
+        if (!usuario || !senha) {
+          setMessage(authMessage, 'Preencha usuário e senha.', 'var(--danger)');
+          return;
+        }
+
+        setMessage(authMessage, 'Entrando...', 'var(--muted)');
+
+        try {
+          if (modoRegistro) {
+            const nome = inputNome.value.trim();
+            const tipo = 'comum';
+
+            if (!nome) {
+              setMessage(authMessage, 'Informe o nome completo.', 'var(--danger)');
+              return;
+            }
+
+            const resposta = await fetch('/api/usuarios', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nome, email: usuario, senha, tipo })
+            });
+
+            const dados = await resposta.json();
+            if (!resposta.ok || !dados.sucesso) {
+              throw new Error(dados.mensagem || 'Erro ao cadastrar usuário.');
+            }
+
+            setMessage(authMessage, 'Cadastro realizado com sucesso! Agora faça login.', 'var(--success)');
+            modoRegistro = false;
+            alternarModoRegistro({ preventDefault() {} });
+            inputEmail.value = usuario;
+            inputSenha.value = '';
+            inputNome.value = '';
+            return;
+          }
+
+          const resposta = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: usuario, senha })
+          });
+
+          const dados = await resposta.json();
+
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.mensagem || 'Usuário ou senha incorretos.');
+          }
+
+          localStorage.setItem('syncstore_usuario', JSON.stringify(dados.usuario));
+          setMessage(authMessage, 'Login realizado com sucesso!', 'var(--success)');
+
+          setTimeout(() => {
+            mostrarTelaApp(dados.usuario);
+          }, 500);
+        } catch (error) {
+          console.error(error);
+          setMessage(authMessage, error.message || 'Erro ao conectar com o servidor.', 'var(--danger)');
+        }
+      }
+
+      btnGerarAnuncio.addEventListener('click', gerarTextoAnuncio);
+      btnSalvarAnuncio.addEventListener('click', salvarAnuncio);
+      btnGerarAudio.addEventListener('click', reproduzirAudio);
+      btnLimparFiltro.addEventListener('click', () => {
+        filtroDataAnuncio.value = '';
+        aplicarFiltroAnuncios();
+      });
+      filtroDataAnuncio.addEventListener('change', aplicarFiltroAnuncios);
+      btnAdicionarUsuario.addEventListener('click', abrirModalUsuario);
+      btnGerenciarUsuarios.addEventListener('click', alternarListaUsuarios);
+      btnSair.addEventListener('click', mostrarTelaLogin);
+      cancelarUsuario.addEventListener('click', fecharModalUsuario);
+      formCriarUsuario.addEventListener('submit', criarUsuario);
+      authForm.addEventListener('submit', realizarLogin);
+      linkAlternar.addEventListener('click', alternarModoRegistro);
+      atualizarBotaoAuth();
+
+      const usuarioSalvo = localStorage.getItem('syncstore_usuario');
+      if (usuarioSalvo) {
+        try {
+          const usuario = JSON.parse(usuarioSalvo);
+          mostrarTelaApp(usuario);
+        } catch (error) {
+          localStorage.removeItem('syncstore_usuario');
+        }
+      }
+    </script>
+  </body>
 </html>
