@@ -19,9 +19,7 @@
         --text: #0f172a;
         --muted: #475569;
         --success: #16a34a;
-        --success-dark: #15803d;
         --danger: #dc2626;
-        --shadow: rgba(15, 23, 42, 0.12);
       }
       * { box-sizing: border-box; }
       body, html {
@@ -36,7 +34,6 @@
       .brand-mark { background: var(--primary); color: white; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
       .brand-period { color: var(--primary); }
       .intro-copy h1 { font-family: 'Manrope', sans-serif; font-size: clamp(2.2rem, 4vw, 3.2rem); line-height: 1.15; margin: 20px 0; }
-      .intro-copy h1 span { color: #60a5fa; }
       .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #94a3b8; }
       .auth-panel { background: var(--card); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; }
       .auth-box { width: 100%; max-width: 380px; }
@@ -47,28 +44,21 @@
       input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12); }
       .button { border: none; border-radius: 12px; padding: 14px 20px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; }
       .button-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25); }
-      .button-primary:hover { transform: translateY(-1px); }
       .button-wide { width: 100%; }
       .button-ghost { background: #f8fafc; border: 1px solid #cbd5e1; color: var(--text); }
-      .button-danger { background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; }
       .form-message { font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 10px; min-height: 20px; }
       .app-layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; width: 100%; }
       .sidebar { background: #f1f5f9; border-right: 1px solid #e2e8f0; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; }
-      .history-list, .user-list { max-height: calc(100vh - 350px); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-      .history-item, .user-item { background: #fff; border: 1px solid #cbd5e1; padding: 12px; border-radius: 10px; font-size: 0.85rem; }
-      .history-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-      .history-item-main { flex: 1; background: transparent; border: none; text-align: left; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+      .history-list { max-height: calc(100vh - 350px); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+      .history-item { background: #fff; border: 1px solid #cbd5e1; padding: 12px; border-radius: 10px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
       .dashboard-main { padding: 40px; overflow-y: auto; max-width: 920px; }
       .preview-box { margin-top: 24px; background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); border-left: 6px solid var(--primary); border-radius: 14px; padding: 20px; }
       .ad-panel { margin-top: 28px; background: white; border: 1px solid #e2e8f0; border-radius: 18px; padding: 24px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04); }
-      .ad-form { display: flex; flex-direction: column; gap: 18px; }
       .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-      .ad-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+      .ad-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
       .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
       .modal { width: min(460px, 100%); background: white; border-radius: 18px; padding: 24px; box-shadow: 0 30px 70px rgba(15, 23, 42, 0.25); }
-      .modal h3 { margin: 0 0 20px; font-family: 'Manrope', sans-serif; }
-      .row { display: flex; gap: 10px; }
-      .row > * { flex: 1; }
+      .row { display: flex; gap: 10px; } .row > * { flex: 1; }
       @media (max-width: 768px) { .auth-layout, .app-layout { grid-template-columns: 1fr; } .auth-intro { display: none; } .field-row { grid-template-columns: 1fr; } }
     </style>
   </head>
@@ -135,17 +125,17 @@
         </div>
 
         <div class="ad-panel">
-          <div class="ad-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
             <h3 style="margin:0; font-family:'Manrope';">Gerar anúncio comercial</h3>
-            <button id="btn-gerar-audio" type="button" class="button button-ghost">🔊 Reproduzir Áudio</button>
+            <button id="btn-gerar-audio" type="button" class="button button-ghost">🔊 Reproduzir Áudio / Locução</button>
           </div>
 
           <form id="form-anuncio" class="ad-form">
             <div class="field-row">
               <label class="field">Nome do produto<input id="input-produto" placeholder="Ex.: Smart TV 55\""></label>
-              <label class="field">Selecionar Tipo/Voz de Loja
+              <label class="field">Selecionar Voz / Tipo de Locução
                 <select id="select-voz">
-                  <option value="">Voz padrão do navegador</option>
+                  <option value="">Voz padrão do navegador (TTS)</option>
                 </select>
               </label>
             </div>
@@ -154,9 +144,10 @@
               <label class="field">Valor promocional<input id="input-valor-promocional" placeholder="Ex.: 2999.90"></label>
             </div>
             <div class="field-row">
-              <label class="field">Oferta<input id="input-oferta" placeholder="Ex.: 35% OFF"></label>
+              <label class="field" style="grid-column: span 2;">Oferta<input id="input-oferta" placeholder="Ex.: 35% OFF"></label>
             </div>
             <label class="field">Texto do anúncio<textarea id="input-texto-anuncio"></textarea></label>
+            
             <div class="ad-actions">
               <button id="btn-gerar-anuncio" type="button" class="button button-primary">Gerar Roteiro</button>
               <button id="btn-salvar-anuncio" type="button" class="button button-ghost">Salvar Anúncio</button>
@@ -177,8 +168,8 @@
       <div class="modal">
         <h3>Subir Nova Voz (Áudio)</h3>
         <form id="form-criar-voz" class="form-stack">
-          <label class="field">Nome da Locução / Locutor<input id="voz-nome" required placeholder="Ex.: Voz Padrão Supermercado"></label>
-          <label class="field">Estilo / Tipo<input id="voz-tipo" placeholder="Ex.: Dinâmico / Varejo / Calmo"></label>
+          <label class="field">Nome da Locução / Locutor<input id="voz-nome" required placeholder="Ex.: Locutor Comercial João"></label>
+          <label class="field">Estilo / Tipo<input id="voz-tipo" placeholder="Ex.: Dinâmico / Varejo"></label>
           <label class="field">Arquivo de Áudio (.mp3 ou .wav)<input id="voz-arquivo" type="file" accept="audio/*" required></label>
           <div class="row">
             <button type="button" id="cancelar-voz" class="button button-ghost">Cancelar</button>
@@ -210,7 +201,6 @@
     <script>
       let modoRegistro = false;
       let usuarioAtual = null;
-      let listaVozesCarregadas = [];
 
       const authForm = document.getElementById('auth-form');
       const authTitle = document.getElementById('auth-title');
@@ -231,7 +221,6 @@
         el.style.color = color;
       }
 
-      // Alternar Login/Cadastro
       document.getElementById('link-alternar').addEventListener('click', (e) => {
         e.preventDefault();
         modoRegistro = !modoRegistro;
@@ -255,154 +244,4 @@
 
         const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email, senha }) });
         const data = await res.json();
-        if (data.sucesso) {
-          usuarioAtual = data.usuario;
-          localStorage.setItem('syncstore_usuario', JSON.stringify(usuarioAtual));
-          entrarNoApp();
-        } else {
-          setMessage(authMessage, data.mensagem, 'var(--danger)');
-        }
-      });
-
-      function entrarNoApp() {
-        authScreen.classList.add('hidden');
-        appScreen.classList.remove('hidden');
-        document.getElementById('saudacao').textContent = `Bem-vindo, ${usuarioAtual.nome}`;
-        const isMaster = usuarioAtual.tipo === 'master';
-        document.getElementById('bloco-master').classList.toggle('hidden', !isMaster);
-        carregarVozes();
-        carregarHistorico();
-      }
-
-      async function carregarVozes() {
-        try {
-          const res = await fetch('/api/vozes');
-          const data = await res.json();
-          if (data.sucesso) {
-            listaVozesCarregadas = data.vozes;
-            selectVoz.innerHTML = '<option value="">Voz padrão do navegador (TTS)</option>';
-            data.vozes.forEach(v => {
-              const opt = document.createElement('option');
-              opt.value = v.id;
-              opt.textContent = `${v.nome} (${v.tipo_locucao || 'Padrão'})`;
-              selectVoz.appendChild(opt);
-            });
-          }
-        } catch (err) { console.error('Erro ao carregar vozes', err); }
-      }
-
-      // Upload de Voz
-      btnAdicionarVoz.addEventListener('click', () => modalCriarVoz.classList.remove('hidden'));
-      cancelarVoz.addEventListener('click', () => modalCriarVoz.classList.add('hidden'));
-
-      formCriarVoz.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nome = document.getElementById('voz-nome').value.trim();
-        const tipo_locucao = document.getElementById('voz-tipo').value.trim() || 'Padrão';
-        const arquivoInput = document.getElementById('voz-arquivo').files[0];
-
-        if (!arquivoInput) return;
-
-        const reader = new FileReader();
-        reader.onload = async function() {
-          const base64Audio = reader.result; // String Base64 do áudio
-          try {
-            const res = await fetch('/api/vozes', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ nome, tipo_locucao, audio_data: base64Audio, usuario_id: usuarioAtual.id })
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-              setMessage(vozModalMessage, 'Voz salva com sucesso no Neon DB!', 'var(--success)');
-              formCriarVoz.reset();
-              carregarVozes();
-              setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
-            } else {
-              setMessage(vozModalMessage, data.mensagem, 'var(--danger)');
-            }
-          } catch (err) {
-            setMessage(vozModalMessage, 'Erro ao enviar arquivo.', 'var(--danger)');
-          }
-        };
-        reader.readAsDataURL(arquivoInput);
-      });
-
-      // Geração de Anúncio
-      document.getElementById('btn-gerar-anuncio').addEventListener('click', () => {
-        const prod = document.getElementById('input-produto').value || 'Produto';
-        const orig = document.getElementById('input-valor-original').value || '0,00';
-        const promo = document.getElementById('input-valor-promocional').value || '0,00';
-        const oferta = document.getElementById('input-oferta').value || 'Imperdível';
-        
-        const texto = `Olá, cliente! Hoje temos ${prod} de R$ ${orig} por apenas R$ ${promo}. ${oferta}, aproveite essa oportunidade exclusiva em nossa loja!`;
-        document.getElementById('input-texto-anuncio').value = texto;
-        document.getElementById('preview-texto').textContent = texto;
-      });
-
-      // Reprodução (Se houver voz do Neon selecionada, toca o arquivo gravado. Senão, usa o sintetizador padrão)
-      document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
-        const vozId = selectVoz.value;
-        const texto = document.getElementById('input-texto-anuncio').value;
-
-        if (vozId) {
-          try {
-            const res = await fetch(`/api/vozes/${vozId}/audio`);
-            const data = await res.json();
-            if (data.sucesso && data.audio_data) {
-              const audio = new Audio(data.audio_data);
-              audio.play();
-              return;
-            }
-          } catch(e) { console.error('Erro ao reproduzir voz customizada'); }
-        }
-
-        // Fallback: Sintetizador padrão do navegador
-        if ('speechSynthesis' in window && texto) {
-          const utterance = new SpeechSynthesisUtterance(texto);
-          utterance.lang = 'pt-BR';
-          speechSynthesis.speak(utterance);
-        }
-      });
-
-      // Salvar Anúncio
-      document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
-        const produto = document.getElementById('input-produto').value;
-        const texto = document.getElementById('input-texto-anuncio').value;
-        const voz_id = selectVoz.value ? Number(selectVoz.value) : null;
-
-        const res = await fetch('/api/anuncios', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ produto, texto, voz_id, usuario_id: usuarioAtual.id })
-        });
-        const data = await res.json();
-        if (data.sucesso) {
-          setMessage(document.getElementById('anuncio-message'), 'Anúncio salvo com sucesso!', 'var(--success)');
-          carregarHistorico();
-        }
-      });
-
-      async function carregarHistorico() {
-        const res = await fetch('/api/anuncios');
-        const data = await res.json();
-        const lista = document.getElementById('listaHistorico');
-        if (data.sucesso && data.anuncios.length > 0) {
-          lista.innerHTML = data.anuncios.map(a => `
-            <div class="history-item">
-              <span><b>${a.produto}</b><br><small>${a.voz_nome ? '🎙️ ' + a.voz_nome : 'Voz Padrão'}</small></span>
-            </div>
-          `).join('');
-        }
-      }
-
-      document.getElementById('btn-sair').addEventListener('click', () => {
-        localStorage.removeItem('syncstore_usuario');
-        location.reload();
-      });
-
-      const salvo = localStorage.getItem('syncstore_usuario');
-      if (salvo) { usuarioAtual = JSON.parse(salvo); entrarNoApp(); }
-    </script>
-  </body>
-</html>
+        if (data.su
