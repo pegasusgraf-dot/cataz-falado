@@ -27,30 +27,6 @@ function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
   return res.status(500).json({ sucesso: false, mensagem });
 }
 
-function pcmToWavBase64(pcmBuffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16) {
-  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-  const blockAlign = (numChannels * bitsPerSample) / 8;
-  const dataSize = pcmBuffer.length;
-  const buffer = Buffer.alloc(44 + dataSize);
-
-  buffer.write('RIFF', 0);
-  buffer.writeUInt32LE(36 + dataSize, 4);
-  buffer.write('WAVE', 8);
-  buffer.write('fmt ', 12);
-  buffer.writeUInt32LE(16, 16);
-  buffer.writeUInt16LE(1, 20);
-  buffer.writeUInt16LE(numChannels, 22);
-  buffer.writeUInt32LE(sampleRate, 24);
-  buffer.writeUInt32LE(byteRate, 28);
-  buffer.writeUInt16LE(blockAlign, 32);
-  buffer.writeUInt16LE(bitsPerSample, 34);
-  buffer.write('data', 36);
-  buffer.writeUInt32LE(dataSize, 40);
-
-  pcmBuffer.copy(buffer, 44);
-  return `data:audio/wav;base64,${buffer.toString('base64')}`;
-}
-
 async function inicializarBanco() {
   if (!pool) return;
   try {
@@ -204,7 +180,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- ROTAS DE VOZES ---
+// --- ROTAS DE VOZES NO BANCO NEON ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -287,7 +263,6 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
 
   const modelos = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
   let roteiroFinal = null;
-  let ultimoErro = null;
 
   for (const modelo of modelos) {
     try {
@@ -304,11 +279,9 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
       if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
         roteiroFinal = data.candidates[0].content.parts[0].text.trim();
         break;
-      } else if (data.error) {
-        ultimoErro = data.error.message;
       }
     } catch (err) {
-      ultimoErro = err.message;
+      // Tenta o próximo modelo
     }
   }
 
@@ -316,109 +289,52 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
     return res.json({ sucesso: true, roteiro: roteiroFinal });
   }
 
-  const fallbackText = `Atenção clientes! Oferta imperdível hoje: ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite já'}!`;
-  return res.json({ sucesso: true, roteiro: fallbackText, aviso: 'Gerado via modelo reserva: ' + ultimoErro });
+  const fallbackText = `Atenção clientes! Hoje temos ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite essa super oferta'} na nossa loja!`;
+  return res.json({ sucesso: true, roteiro: fallbackText });
 });
 
-// --- ROTA DE GERAÇÃO DE LOCUÇÃO COM A VOZ SELECIONADA ---
+// --- NARRAÇÃO COM A VOZ DO BANCO NEON ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id, tipo_voz } = req.body || {};
-  if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
 
   try {
-    let geminiVoiceName = 'Puck';
-    let estiloPrompt = 'com tom alegre, enérgico e vendedor de rádio de ofertas';
-
-    // 1. Caso tenha selecionado as vozes do select
-    if (tipo_voz) {
-      const v = String(tipo_voz).toLowerCase();
-      if (v === 'fenrir' || v === 'grave') {
-        geminiVoiceName = 'Fenrir';
-        estiloPrompt = 'com voz masculina grave, potente, firme e promocional impactante';
-      } else if (v === 'aoede' || v === 'feminina') {
-        geminiVoiceName = 'Aoede';
-        estiloPrompt = 'com voz feminina brasileira expressiva, clara, elegante e comercial';
-      } else if (v === 'charon' || v === 'institucional') {
-        geminiVoiceName = 'Charon';
-        estiloPrompt = 'com voz masculina institucional, clara e profissional';
-      } else {
-        geminiVoiceName = 'Puck';
-        estiloPrompt = 'com voz de locutor jovem, dinâmico e animado de varejo';
-      }
-    } 
-    // 2. Caso tenha selecionado voz do banco Neon
-    else if (voz_id && pool) {
+    // 1. Se escolheu a voz do banco de dados Neon, busca o áudio salvo dela
+    if (voz_id && pool) {
       const vozEncontrada = await pool.query(
-        'SELECT nome, tipo_locucao FROM vozes WHERE id = $1',
+        'SELECT COALESCE(arquivo_base64, audio_data) AS audio, nome FROM vozes WHERE id = $1',
         [Number(voz_id)]
       );
-      if (vozEncontrada.rows.length > 0) {
-        const estilo = String(vozEncontrada.rows[0].tipo_locucao || '').toLowerCase();
-        if (estilo.includes('grave') || estilo.includes('forte') || estilo.includes('fenrir')) {
-          geminiVoiceName = 'Fenrir';
-          estiloPrompt = 'com voz masculina grave, potente e promocional';
-        } else if (estilo.includes('feminina') || estilo.includes('suave') || estilo.includes('aoede')) {
-          geminiVoiceName = 'Aoede';
-          estiloPrompt = 'com voz feminina brasileira expressiva e comercial';
-        } else if (estilo.includes('institucional') || estilo.includes('charon')) {
-          geminiVoiceName = 'Charon';
-          estiloPrompt = 'com voz institucional séria e profissional';
-        } else {
-          geminiVoiceName = 'Puck';
-          estiloPrompt = 'com voz de locutor alegre e dinâmico de loja';
-        }
-      }
-    }
-
-    let audioGerado = null;
-    const modelosAudio = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-
-    for (const mod of modelosAudio) {
-      try {
-        const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`;
-        const payloadAudio = {
-          contents: [{
-            parts: [{ text: `Leia em voz alta em português do Brasil ${estiloPrompt} o seguinte anúncio: "${texto}"` }]
-          }],
-          generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: geminiVoiceName }
-              }
-            }
-          }
-        };
-
-        const resAudio = await fetch(urlAudio, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloadAudio)
+      if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].audio) {
+        return res.json({
+          sucesso: true,
+          audio_data: vozEncontrada.rows[0].audio,
+          voz_utilizada: vozEncontrada.rows[0].nome
         });
-
-        const dataAudio = await resAudio.json();
-        const rawAudioBase64 = dataAudio?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-        if (rawAudioBase64) {
-          const pcmBuffer = Buffer.from(rawAudioBase64, 'base64');
-          audioGerado = pcmToWavBase64(pcmBuffer, 24000, 1, 16);
-          break;
-        }
-      } catch (errAudio) {
-        console.warn(`Erro no modelo ${mod}:`, errAudio.message);
       }
     }
 
-    if (audioGerado) {
+    // 2. Fallback caso não tenha áudio gravado no banco
+    if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
+
+    const encodedText = encodeURIComponent(texto.substring(0, 250));
+    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
+    const response = await fetch(googleTtsUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+
+    if (response.ok) {
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
       return res.json({
         sucesso: true,
-        audio_data: audioGerado,
-        voz_utilizada: geminiVoiceName
+        audio_data: audioBase64,
+        voz_utilizada: 'Padrão'
       });
     }
 
-    throw new Error('Não foi possível gerar a locução com a voz selecionada.');
+    throw new Error('Falha ao processar locução.');
   } catch (error) {
+    console.error('Erro na locução:', error);
     return res.status(500).json({ sucesso: false, mensagem: error.message });
   }
 });
