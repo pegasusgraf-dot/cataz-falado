@@ -102,7 +102,7 @@
         </div>
         <div>
           <div id="bloco-master" class="hidden" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 12px;">
-            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Nova Voz / Locutor</button>
+            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Subir Áudio / Nova Voz</button>
             <button id="btn-gerenciar-vozes" class="button button-ghost" style="font-size: 0.85rem;">📂 Gerenciar Vozes Salvas</button>
             <button id="btn-gerenciar-usuarios" class="button button-ghost" style="font-size: 0.85rem;">👥 Validar Usuários</button>
             <button id="btn-adicionar-usuario" class="button button-ghost" style="font-size: 0.85rem;">+ Incluir usuário</button>
@@ -156,13 +156,14 @@
       </section>
     </main>
 
-    <!-- MODAL: CADASTRAR VOZ -->
+    <!-- MODAL: SUBIR ÁUDIO E CADASTRAR VOZ (COM INPUT DE ARQUIVO) -->
     <div id="modal-criar-voz" class="modal-backdrop hidden">
       <div class="modal">
-        <h3>Cadastrar Nova Voz</h3>
+        <h3>Cadastrar Nova Voz com Amostra</h3>
         <form id="form-criar-voz" class="form-stack">
           <label class="field">Nome do Locutor / Voz<input id="voz-nome" required placeholder="Ex.: Locutor João Varejo"></label>
           <label class="field">Tipo / Estilo<input id="voz-tipo" placeholder="Ex.: Animado / Varejo"></label>
+          <label class="field">Arquivo de Áudio (.mp3 ou .wav)<input id="voz-arquivo" type="file" accept="audio/*"></label>
           <div class="row">
             <button type="button" id="cancelar-voz" class="button button-ghost">Cancelar</button>
             <button type="submit" class="button button-primary" id="btn-enviar-voz">Salvar Voz</button>
@@ -397,34 +398,48 @@
       btnAdicionarVoz.addEventListener('click', () => modalCriarVoz.classList.remove('hidden'));
       cancelarVoz.addEventListener('click', () => modalCriarVoz.classList.add('hidden'));
 
+      // UPLOAD DE VOZ COM SUPORTE A ARQUIVO
       formCriarVoz.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nome = document.getElementById('voz-nome').value.trim();
         const tipo_locucao = document.getElementById('voz-tipo').value.trim() || 'Padrão';
+        const fileInput = document.getElementById('voz-arquivo').files[0];
         const btnSalvar = document.getElementById('btn-enviar-voz');
 
         btnSalvar.disabled = true;
         setMessage(vozModalMessage, 'Salvando voz...', 'var(--primary)');
 
-        try {
-          const res = await fetch('/api/clonar-voz', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, tipo_locucao, usuario_id: usuarioAtual.id })
-          });
-          const data = await res.json();
-          if (res.ok && data.sucesso) {
-            setMessage(vozModalMessage, 'Voz salva com sucesso!', 'var(--success)');
-            formCriarVoz.reset();
-            await carregarVozes();
-            setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
-          } else {
-            setMessage(vozModalMessage, data.mensagem || 'Erro ao salvar voz.', 'var(--danger)');
+        const enviarDados = async (base64Audio = null) => {
+          try {
+            const res = await fetch('/api/clonar-voz', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nome, tipo_locucao, arquivo_base64: base64Audio, usuario_id: usuarioAtual.id })
+            });
+            const data = await res.json();
+            if (res.ok && data.sucesso) {
+              setMessage(vozModalMessage, 'Voz salva com sucesso!', 'var(--success)');
+              formCriarVoz.reset();
+              await carregarVozes();
+              setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
+            } else {
+              setMessage(vozModalMessage, data.mensagem || 'Erro ao salvar voz.', 'var(--danger)');
+            }
+          } catch (err) {
+            setMessage(vozModalMessage, 'Erro de conexão.', 'var(--danger)');
+          } finally {
+            btnSalvar.disabled = false;
           }
-        } catch (err) {
-          setMessage(vozModalMessage, 'Erro de conexão.', 'var(--danger)');
-        } finally {
-          btnSalvar.disabled = false;
+        };
+
+        if (fileInput) {
+          const reader = new FileReader();
+          reader.onload = async function() {
+            await enviarDados(reader.result);
+          };
+          reader.readAsDataURL(fileInput);
+        } else {
+          await enviarDados(null);
         }
       });
 
