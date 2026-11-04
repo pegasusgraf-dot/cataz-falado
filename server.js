@@ -65,7 +65,7 @@ async function inicializarBanco() {
       );
     `);
 
-    // Garante as colunas caso as tabelas já existam
+    // Garante as colunas necessárias caso as tabelas já existam
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS voz_id INTEGER;`);
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
@@ -204,7 +204,7 @@ app.post('/api/clonar-voz', async (req, res) => {
     return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
   } catch (error) {
     console.error('Erro ao salvar voz:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar voz.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar voz no banco.' });
   }
 });
 
