@@ -28,7 +28,7 @@ function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
   return res.status(500).json({ sucesso: false, mensagem });
 }
 
-// Converte PCM cru retornado pelo Gemini em arquivo WAV compatível com o navegador
+// Converte PCM cru retornado pelo Gemini em arquivo WAV executável no navegador
 function pcmToWavBase64(pcmBuffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16) {
   const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
   const blockAlign = (numChannels * bitsPerSample) / 8;
@@ -287,7 +287,6 @@ Dados da oferta:
 
 Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem explicações.`;
 
-  // Modelos ordenados por prioridade caso algum esteja com alta demanda
   const modelos = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
   let roteiroFinal = null;
   let ultimoErro = null;
@@ -306,7 +305,7 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
       const data = await geminiRes.json();
       if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
         roteiroFinal = data.candidates[0].content.parts[0].text.trim();
-        break; // Sucesso, sai do loop
+        break;
       } else if (data.error) {
         ultimoErro = data.error.message;
       }
@@ -319,7 +318,6 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
     return res.json({ sucesso: true, roteiro: roteiroFinal });
   }
 
-  // Fallback local se todos os servidores do Google estiverem sobrecarregados
   const fallbackText = `Atenção clientes! Oferta imperdível hoje: ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite já'}!`;
   return res.json({ sucesso: true, roteiro: fallbackText, aviso: 'Gerado via modelo reserva: ' + ultimoErro });
 });
@@ -406,7 +404,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
         if (rawAudioBase64) {
           const pcmBuffer = Buffer.from(rawAudioBase64, 'base64');
           audioGerado = pcmToWavBase64(pcmBuffer, 24000, 1, 16);
-          break; // Sucesso, sai do loop
+          break;
         }
       } catch (errAudio) {
         console.warn(`Erro no modelo ${mod}:`, errAudio.message);
