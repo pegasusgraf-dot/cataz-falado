@@ -285,32 +285,48 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
   }
 });
 
-// --- NARRAÇÃO COM O NARRADOR SELECIONADO VIA GEMINI AUDIO ---
+// --- NARRAÇÃO COM A VOZ SELECIONADA NO DROPDOWN ---
 app.post('/api/gerar-locucao', async (req, res) => {
-  const { texto, voz_id } = req.body || {};
+  const { texto, voz_id, tipo_voz } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
 
   try {
-    let locutorEstilo = 'enérgico de rádio de varejo';
-    let geminiVoiceName = 'Puck'; // Voz padrão masculina enérgica
+    let geminiVoiceName = 'Puck'; // Padrão: Varejo enérgico
+    let descricaoEstilo = 'locutor de rádio comercial de varejo';
 
-    // Se selecionou uma voz, identifica o estilo/nome para ajustar o narrador
-    if (voz_id && pool) {
+    // 1. Caso o usuário tenha selecionado um timbre direto do Gemini
+    if (tipo_voz) {
+      const v = String(tipo_voz).toLowerCase();
+      if (v === 'fenrir' || v === 'grave') {
+        geminiVoiceName = 'Fenrir';
+        descricaoEstilo = 'locutor com voz grave, firme e promocional impactante';
+      } else if (v === 'aoede' || v === 'feminina') {
+        geminiVoiceName = 'Aoede';
+        descricaoEstilo = 'locutora comercial feminina, elegante e expressiva';
+      } else if (v === 'charon' || v === 'institucional') {
+        geminiVoiceName = 'Charon';
+        descricaoEstilo = 'locutor institucional, claro e profissional';
+      } else {
+        geminiVoiceName = 'Puck';
+        descricaoEstilo = 'locutor dinâmico e alegre de varejo e ofertas';
+      }
+    } 
+    // 2. Caso o usuário tenha selecionado uma voz cadastrada no Neon
+    else if (voz_id && pool) {
       const vozEncontrada = await pool.query(
         'SELECT nome, tipo_locucao FROM vozes WHERE id = $1',
         [Number(voz_id)]
       );
       if (vozEncontrada.rows.length > 0) {
         const v = vozEncontrada.rows[0];
-        locutorEstilo = `${v.nome} (${v.tipo_locucao || 'varejo'})`;
+        const estilo = String(v.tipo_locucao || '').toLowerCase();
+        descricaoEstilo = `${v.nome} (${v.tipo_locucao || 'varejo'})`;
 
-        // Alterna o timbre conforme o tipo cadastrado
-        const tipoLower = String(v.tipo_locucao || '').toLowerCase();
-        if (tipoLower.includes('grave') || tipoLower.includes('impactante')) {
+        if (estilo.includes('grave') || estilo.includes('forte')) {
           geminiVoiceName = 'Fenrir';
-        } else if (tipoLower.includes('feminina') || tipoLower.includes('suave')) {
+        } else if (estilo.includes('feminina') || estilo.includes('suave')) {
           geminiVoiceName = 'Aoede';
-        } else if (tipoLower.includes('institucional')) {
+        } else if (estilo.includes('institucional')) {
           geminiVoiceName = 'Charon';
         } else {
           geminiVoiceName = 'Puck';
@@ -320,12 +336,12 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     let audioGerado = null;
 
-    // 1. O Gemini narra o texto diretamente usando o timbre da voz escolhida
+    // Síntese direta de áudio usando o motor Multimodal Audio do Gemini
     try {
       const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
       const payloadAudio = {
         contents: [{
-          parts: [{ text: `Leia com voz de locutor comercial em português do Brasil (${locutorEstilo}): "${texto}"` }]
+          parts: [{ text: `Leia em português do Brasil com interpretação de ${descricaoEstilo}: "${texto}"` }]
         }],
         generationConfig: {
           responseModalities: ["AUDIO"],
@@ -349,10 +365,10 @@ app.post('/api/gerar-locucao', async (req, res) => {
         audioGerado = `data:audio/wav;base64,${inlineAudio}`;
       }
     } catch (e) {
-      console.warn('Falha na síntese Gemini Audio:', e.message);
+      console.warn('Fallback ativado por erro no Gemini Audio:', e.message);
     }
 
-    // 2. Fallback caso a API de áudio demore ou falhe
+    // Fallback: caso o modelo de áudio esteja sem cota ou indisponível
     if (!audioGerado) {
       const encodedText = encodeURIComponent(texto.substring(0, 200));
       const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
@@ -365,7 +381,8 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     return res.json({
       sucesso: true,
-      audio_data: audioGerado
+      audio_data: audioGerado,
+      voz_utilizada: geminiVoiceName
     });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Falha ao narrar texto: ' + error.message });
