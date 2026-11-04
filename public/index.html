@@ -432,6 +432,14 @@
               <input id="input-senha" type="password" required placeholder="Sua senha">
             </label>
 
+            <label class="field" id="tipo-field" hidden>
+              Tipo de usuário
+              <select id="input-tipo">
+                <option value="comum">Comum</option>
+                <option value="master">Master</option>
+              </select>
+            </label>
+
             <button id="auth-submit-button" class="button button-primary button-wide" type="submit">Entrar <span aria-hidden="true">↗</span></button>
             <p class="form-message" id="auth-message" role="status"></p>
           </form>
