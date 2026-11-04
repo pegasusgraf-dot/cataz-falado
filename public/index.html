@@ -156,7 +156,7 @@
       </section>
     </main>
 
-    <!-- MODAL: SUBIR ÁUDIO E CADASTRAR VOZ (COM INPUT DE ARQUIVO) -->
+    <!-- MODAL: SUBIR ÁUDIO E CADASTRAR VOZ -->
     <div id="modal-criar-voz" class="modal-backdrop hidden">
       <div class="modal">
         <h3>Cadastrar Nova Voz com Amostra</h3>
@@ -398,7 +398,7 @@
       btnAdicionarVoz.addEventListener('click', () => modalCriarVoz.classList.remove('hidden'));
       cancelarVoz.addEventListener('click', () => modalCriarVoz.classList.add('hidden'));
 
-      // UPLOAD DE VOZ COM SUPORTE A ARQUIVO
+      // CADASTRO DE VOZ COM UPLOAD DE ÁUDIO CORRIGIDO
       formCriarVoz.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nome = document.getElementById('voz-nome').value.trim();
