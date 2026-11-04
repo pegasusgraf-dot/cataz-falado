@@ -5,8 +5,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Aumentando o limite para permitir upload de arquivos de áudio em Base64
-app.use(express.json({ limit: '10mb' }));
+// Aumentando o limite para permitir upload de arquivos de áudio maiores em Base64
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -192,7 +193,6 @@ app.get('/api/vozes', async (req, res) => {
   }
 });
 
-// Rota para buscar o áudio bruto de uma voz específica para reprodução
 app.get('/api/vozes/:id/audio', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -273,6 +273,7 @@ app.post('/api/anuncios', async (req, res) => {
 
 app.delete('/api/anuncios/:id', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
+  const { id } = req.params;
   try {
     await pool.query('DELETE FROM anuncios WHERE id = $1', [id]);
     return res.json({ sucesso: true });
