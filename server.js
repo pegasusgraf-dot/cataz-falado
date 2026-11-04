@@ -41,13 +41,14 @@ async function inicializarBanco() {
       );
     `);
 
+    // Tabela ajustada para aceitar o cadastro de vozes locais com arquivo
     await pool.query(`
       CREATE TABLE IF NOT EXISTS vozes (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(100) NOT NULL,
         descricao VARCHAR(255),
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
-        voice_id_eleven VARCHAR(150) NOT NULL,
+        arquivo_url TEXT,
         usuario_id INTEGER REFERENCES usuarios(id),
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -154,13 +155,14 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- GERENCIAMENTO DE VOZES LOCAL (NEON) ---
+// --- GERENCIAMENTO DE VOZES (NEON) ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
-    const r = await pool.query('SELECT id, nome, descricao, tipo_locucao, voice_id_eleven, created_at FROM vozes ORDER BY id DESC');
+    const r = await pool.query('SELECT id, nome, descricao, tipo_locucao, created_at FROM vozes ORDER BY id DESC');
     return res.json({ sucesso: true, vozes: r.rows });
   } catch (error) {
+    console.error('Erro ao buscar vozes:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar vozes.' });
   }
 });
@@ -174,12 +176,10 @@ app.post('/api/clonar-voz', async (req, res) => {
   }
 
   try {
-    // Salvando registro simulado/local no Neon para modo gratuito
-    const dummyId = 'voz_gratuita_' + Date.now();
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, tipo_locucao, voice_id_eleven, usuario_id)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [nome, tipo_locucao || 'Padrão Gratuito', dummyId, usuario_id ? Number(usuario_id) : null]
+      `INSERT INTO vozes (nome, tipo_locucao, usuario_id)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [nome, tipo_locucao || 'Padrão', usuario_id ? Number(usuario_id) : null]
     );
 
     return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
