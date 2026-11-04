@@ -244,4 +244,167 @@
 
         const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ email, senha }) });
         const data = await res.json();
-        if (data.su
+        if (data.sucesso) {
+          usuarioAtual = data.usuario;
+          localStorage.setItem('syncstore_usuario', JSON.stringify(usuarioAtual));
+          entrarNoApp();
+        } else {
+          setMessage(authMessage, data.mensagem, 'var(--danger)');
+        }
+      });
+
+      function entrarNoApp() {
+        authScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+        document.getElementById('saudacao').textContent = `Bem-vindo, ${usuarioAtual.nome}`;
+        const isMaster = usuarioAtual.tipo === 'master';
+        document.getElementById('bloco-master').classList.toggle('hidden', !isMaster);
+        carregarVozes();
+        carregarHistorico();
+      }
+
+      async function carregarVozes() {
+        try {
+          const res = await fetch('/api/vozes');
+          const data = await res.json();
+          if (data.sucesso) {
+            selectVoz.innerHTML = '<option value="">Voz padrão do navegador (TTS)</option>';
+            data.vozes.forEach(v => {
+              const opt = document.createElement('option');
+              opt.value = v.id;
+              opt.textContent = `${v.nome} (${v.tipo_locucao || 'Padrão'})`;
+              selectVoz.appendChild(opt);
+            });
+          }
+        } catch (err) { console.error('Erro ao carregar vozes', err); }
+      }
+
+      btnAdicionarVoz.addEventListener('click', () => modalCriarVoz.classList.remove('hidden'));
+      cancelarVoz.addEventListener('click', () => modalCriarVoz.classList.add('hidden'));
+
+      formCriarVoz.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById('voz-nome').value.trim();
+        const tipo_locucao = document.getElementById('voz-tipo').value.trim() || 'Padrão';
+        const arquivoInput = document.getElementById('voz-arquivo').files[0];
+
+        if (!arquivoInput) return;
+
+        const reader = new FileReader();
+        reader.onload = async function() {
+          const base64Audio = reader.result;
+          try {
+            const res = await fetch('/api/vozes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nome, tipo_locucao, audio_data: base64Audio, usuario_id: usuarioAtual.id })
+            });
+            const data = await res.json();
+            if (data.sucesso) {
+              setMessage(vozModalMessage, 'Voz salva com sucesso no Neon DB!', 'var(--success)');
+              formCriarVoz.reset();
+              carregarVozes();
+              setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
+            } else {
+              setMessage(vozModalMessage, data.mensagem, 'var(--danger)');
+            }
+          } catch (err) {
+            setMessage(vozModalMessage, 'Erro ao enviar arquivo.', 'var(--danger)');
+          }
+        };
+        reader.readAsDataURL(arquivoInput);
+      });
+
+      document.getElementById('btn-gerar-anuncio').addEventListener('click', () => {
+        const prod = document.getElementById('input-produto').value || 'Produto';
+        const orig = document.getElementById('input-valor-original').value || '0,00';
+        const promo = document.getElementById('input-valor-promocional').value || '0,00';
+        const oferta = document.getElementById('input-oferta').value || 'Imperdível';
+        
+        const texto = `Olá, cliente! Hoje temos ${prod} de R$ ${orig} por apenas R$ ${promo}. ${oferta}, aproveite essa oportunidade exclusiva em nossa loja!`;
+        document.getElementById('input-texto-anuncio').value = texto;
+        document.getElementById('preview-texto').textContent = texto;
+      });
+
+      // Lógica de reprodução:
+      // Se houver uma voz de áudio carregada do banco selecionada, você pode optar por ouvir a amostra da voz/vinheta 
+      // ou utilizar o sintetizador de texto do navegador para falar o texto digitado.
+      document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
+        const vozId = selectVoz.value;
+        const texto = document.getElementById('input-texto-anuncio').value;
+        const msgEl = document.getElementById('anuncio-message');
+
+        // Se uma voz gravada foi selecionada, toca o áudio base da voz
+        if (vozId) {
+          try {
+            const res = await fetch(`/api/vozes/${vozId}/audio`);
+            const data = await res.json();
+            if (data.sucesso && data.audio_data) {
+              const audio = new Audio(data.audio_data);
+              audio.play();
+              setMessage(msgEl, `Reproduzindo amostra da voz: ${data.nome}`, 'var(--success)');
+              return;
+            }
+          } catch(e) { console.error('Erro ao reproduzir voz customizada'); }
+        }
+
+        // Caso contrário, usa o sintetizador padrão do navegador para ler o texto do anúncio
+        if ('speechSynthesis' in window && texto) {
+          const utterance = new SpeechSynthesisUtterance(texto);
+          utterance.lang = 'pt-BR';
+          speechSynthesis.cancel();
+          speechSynthesis.speak(utterance);
+          setMessage(msgEl, 'Reproduzindo locução sintetizada...', 'var(--success)');
+        } else {
+          setMessage(msgEl, 'Escreva ou gere um texto para reproduzir.', 'var(--danger)');
+        }
+      });
+
+      document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
+        const produto = document.getElementById('input-produto').value;
+        const texto = document.getElementById('input-texto-anuncio').value;
+        const voz_id = selectVoz.value ? Number(selectVoz.value) : null;
+        const msgEl = document.getElementById('anuncio-message');
+
+        if (!produto || !texto) {
+          setMessage(msgEl, 'Preencha o produto e o texto do anúncio.', 'var(--danger)');
+          return;
+        }
+
+        const res = await fetch('/api/anuncios', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ produto, texto, voz_id, usuario_id: usuarioAtual.id })
+        });
+        const data = await res.json();
+        if (data.sucesso) {
+          setMessage(msgEl, 'Anúncio salvo com sucesso!', 'var(--success)');
+          carregarHistorico();
+        } else {
+          setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
+        }
+      });
+
+      async function carregarHistorico() {
+        const res = await fetch('/api/anuncios');
+        const data = await res.json();
+        const lista = document.getElementById('listaHistorico');
+        if (data.sucesso && data.anuncios.length > 0) {
+          lista.innerHTML = data.anuncios.map(a => `
+            <div class="history-item">
+              <span><b>${a.produto}</b><br><small>${a.voz_nome ? '🎙️ ' + a.voz_nome : 'Voz Padrão'}</small></span>
+            </div>
+          `).join('');
+        }
+      }
+
+      document.getElementById('btn-sair').addEventListener('click', () => {
+        localStorage.removeItem('syncstore_usuario');
+        location.reload();
+      });
+
+      const salvo = localStorage.getItem('syncstore_usuario');
+      if (salvo) { usuarioAtual = JSON.parse(salvo); entrarNoApp(); }
+    </script>
+  </body>
+</html>
