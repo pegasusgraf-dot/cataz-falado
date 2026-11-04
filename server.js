@@ -156,7 +156,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- GERENCIAMENTO DE VOZES (COM SUPORTE A UPLOAD DE ÁUDIO) ---
+// --- GERENCIAMENTO DE VOZES ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
