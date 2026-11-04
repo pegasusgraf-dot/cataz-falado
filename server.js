@@ -202,7 +202,7 @@ app.get('/api/vozes', async (req, res) => {
   }
 });
 
-// CLONA A VOZ USANDO ELEVENLABS E SALVA NO NEON
+// CLONAGEM NA ELEVENLABS COM TRATAMENTO DE BUFFER
 app.post('/api/clonar-voz', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   const { nome, tipo_locucao, arquivo_base64, usuario_id } = req.body || {};
@@ -220,29 +220,36 @@ app.post('/api/clonar-voz', async (req, res) => {
 
     let clonedVoiceId = null;
 
-    // Envia amostra de MP3 para a ElevenLabs para criar o clone instantâneo
     if (arquivo_base64 && ELEVENLABS_API_KEY) {
       try {
-        const audioBuffer = Buffer.from(arquivo_base64.split(',')[1] || arquivo_base64, 'base64');
+        const base64Data = arquivo_base64.includes(',') ? arquivo_base64.split(',')[1] : arquivo_base64;
+        const audioBuffer = Buffer.from(base64Data, 'base64');
+
         const formData = new FormData();
         formData.append('name', nome);
-        formData.append('files', new Blob([audioBuffer], { type: 'audio/mpeg' }), `${nome}.mp3`);
+        
+        // Constrói o Blob do arquivo de áudio com mimetype exato
+        const fileBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+        formData.append('files', fileBlob, `${nome}.mp3`);
         formData.append('description', `Locutor ${tipo_locucao || 'varejo'}`);
 
         const elRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
           method: 'POST',
-          headers: { 'xi-api-key': ELEVENLABS_API_KEY },
+          headers: {
+            'xi-api-key': ELEVENLABS_API_KEY
+          },
           body: formData
         });
 
         const elData = await elRes.json();
-        if (elData.voice_id) {
+        if (elRes.ok && elData.voice_id) {
           clonedVoiceId = elData.voice_id;
-        } else if (elData.detail) {
-          console.warn('ElevenLabs clone detail:', elData.detail);
+          console.log(`[ElevenLabs] Voz clonada com sucesso! Voice ID: ${clonedVoiceId}`);
+        } else {
+          console.warn('[ElevenLabs] Falha ao adicionar voz:', elData);
         }
       } catch (errEl) {
-        console.warn('Erro ElevenLabs clone:', errEl.message);
+        console.warn('[ElevenLabs] Erro na requisição de clonagem:', errEl.message);
       }
     }
 
@@ -260,7 +267,12 @@ app.post('/api/clonar-voz', async (req, res) => {
         idUsuarioValido
       ]
     );
-    return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
+
+    return res.status(201).json({ 
+      sucesso: true, 
+      voz: novaVoz.rows[0],
+      clonado_na_nuvem: Boolean(clonedVoiceId)
+    });
   } catch (error) {
     console.error('Erro ao salvar voz no Neon:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar voz: ' + error.message });
@@ -316,7 +328,7 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
         break;
       }
     } catch (err) {
-      // Tenta o próximo
+      // Tenta próximo modelo
     }
   }
 
@@ -328,7 +340,7 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
   return res.json({ sucesso: true, roteiro: fallbackText });
 });
 
-// --- NARRAÇÃO DO TEXTO DO ANÚNCIO (USA A VOZ CLONADA DA ELEVENLABS) ---
+// --- NARRAÇÃO COM ELEVENLABS OU FALLBACK ROBUSTO ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório para narrar.' });
@@ -344,7 +356,8 @@ app.post('/api/gerar-locucao', async (req, res) => {
       }
     }
 
-    const voiceToUse = externalVoiceId || 'pNInz6obpgDQGcFmaJgB'; // Adam como voz padrão
+    // Se a voz clonada existir, usa ela. Caso contrário, usa a voz comercial 'Adam'
+    const voiceToUse = externalVoiceId || 'pNInz6obpgDQGcFmaJgB';
 
     if (ELEVENLABS_API_KEY) {
       try {
@@ -358,8 +371,8 @@ app.post('/api/gerar-locucao', async (req, res) => {
             text: texto,
             model_id: "eleven_multilingual_v2",
             voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.8
+              stability: 0.45,
+              similarity_boost: 0.85
             }
           })
         });
@@ -370,14 +383,14 @@ app.post('/api/gerar-locucao', async (req, res) => {
           return res.json({ sucesso: true, audio_data: audioBase64 });
         } else {
           const elErr = await elRes.json();
-          console.warn('ElevenLabs TTS warning:', elErr);
+          console.warn('[ElevenLabs TTS] Erro retornado:', elErr);
         }
       } catch (errElTts) {
-        console.warn('Falha ElevenLabs TTS:', errElTts.message);
+        console.warn('[ElevenLabs TTS] Erro de conexão:', errElTts.message);
       }
     }
 
-    // 2. Fallback de contingência
+    // 2. Fallback de contingência caso a ElevenLabs atinja cota
     const encodedText = encodeURIComponent(texto.substring(0, 250));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
     const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
