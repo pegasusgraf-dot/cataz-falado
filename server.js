@@ -1,13 +1,9 @@
 const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Configuração do cliente Gemini SDK
-const ai = new GoogleGenAI({});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -52,7 +48,7 @@ async function inicializarBanco() {
         descricao VARCHAR(255),
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
         arquivo_base64 TEXT,
-        usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+        usuario_id INTEGER,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -62,9 +58,9 @@ async function inicializarBanco() {
         id SERIAL PRIMARY KEY,
         produto VARCHAR(200) NOT NULL,
         texto TEXT NOT NULL,
-        voz_id INTEGER REFERENCES vozes(id) ON DELETE SET NULL,
+        voz_id INTEGER,
         audio_data TEXT,
-        usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+        usuario_id INTEGER,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -180,7 +176,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- GERENCIAMENTO DE VOZES NO NEON ---
+// --- VOZES ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -203,9 +199,7 @@ app.post('/api/clonar-voz', async (req, res) => {
     let idUsuarioValido = null;
     if (usuario_id && !isNaN(Number(usuario_id))) {
       const checaUser = await pool.query('SELECT id FROM usuarios WHERE id = $1', [Number(usuario_id)]);
-      if (checaUser.rows.length > 0) {
-        idUsuarioValido = checaUser.rows[0].id;
-      }
+      if (checaUser.rows.length > 0) idUsuarioValido = checaUser.rows[0].id;
     }
 
     const novaVoz = await pool.query(
@@ -236,45 +230,59 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- GERAR ROTEIRO COM GEMINI AI ---
+// --- ROTEIRO COM GEMINI (FETCH DIRETO - NÃO DEPENDE DE INSTALAR PACOTE) ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
   if (!produto) {
-    return res.status(400).json({ sucesso: false, mensagem: 'Informe ao menos o nome do produto.' });
+    return res.status(400).json({ sucesso: false, mensagem: 'Informe o nome do produto.' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ sucesso: false, mensagem: 'GEMINI_API_KEY não configurada na Vercel.' });
   }
 
   try {
-    const prompt = `Você é um locutor profissional de rádio de varejo e supermercados.
-Crie um texto de chamada promocional curto, impactante, direto e vendedora (máximo 45 palavras).
+    const promptText = `Você é um locutor profissional de rádio de supermercado e varejo.
+Crie um texto de chamada promocional curto, impactante e vendedora (máximo 40 palavras).
 Dados da oferta:
 - Produto: ${produto}
 - De: R$ ${valorOriginal || 'Preço normal'}
 - Por: R$ ${valorPromocional || 'Super promoção'}
 - Oferta/Destaque: ${oferta || 'Imperdível'}
 
-Regra: Devolva apenas o texto da locução, pronto para ser falado no som da loja. Não coloque títulos, comentários nem aspas.`;
+Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem explicações.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const geminiRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }]
+      })
     });
 
-    const roteiroGerado = response.text ? response.text.trim() : '';
-    return res.json({ sucesso: true, roteiro: roteiroGerado });
+    const data = await geminiRes.json();
+    const roteiro = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!roteiro) {
+      throw new Error(data.error?.message || 'Falha na resposta do Gemini.');
+    }
+
+    return res.json({ sucesso: true, roteiro: roteiro.trim() });
   } catch (err) {
-    console.error('Erro na chamada Gemini:', err);
+    console.error('Erro no Gemini:', err);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro na API Gemini: ' + err.message });
   }
 });
 
-// --- SÍNTESE DE VOZ OU REPRODUÇÃO ---
+// --- LOCUÇÃO / REPRODUÇÃO ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
 
   try {
-    // Se o usuário selecionou uma voz salva com áudio MP3 no banco Neon
     if (voz_id && pool) {
       const vozEncontrada = await pool.query('SELECT arquivo_base64 FROM vozes WHERE id = $1', [Number(voz_id)]);
       if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].arquivo_base64) {
@@ -282,7 +290,6 @@ app.post('/api/gerar-locucao', async (req, res) => {
       }
     }
 
-    // Fallback: Sintetizador padrão gratuito (Google TTS)
     const encodedText = encodeURIComponent(texto.substring(0, 200));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
 
@@ -300,7 +307,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     return res.json({ sucesso: true, audio_data: audioBase64 });
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao processar locução: ' + error.message });
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao processar locução.' });
   }
 });
 
