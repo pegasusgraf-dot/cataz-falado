@@ -365,4 +365,58 @@
       document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
         const produto = document.getElementById('input-produto').value.trim();
         const texto = document.getElementById('input-texto-anuncio').value.trim();
-        const vozIdSelecionada = selectVoz.value ?
+        const vozIdSelecionada = selectVoz.value ? Number(selectVoz.value) : null;
+        const msgEl = document.getElementById('anuncio-message');
+
+        if (!produto || !texto) {
+          setMessage(msgEl, 'Preencha o nome do produto e o texto do anúncio.', 'var(--danger)');
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/anuncios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              produto, 
+              texto, 
+              voz_id: vozIdSelecionada, 
+              usuario_id: usuarioAtual.id 
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.sucesso) {
+            setMessage(msgEl, 'Anúncio salvo com sucesso no banco!', 'var(--success)');
+            carregarHistorico();
+          } else {
+            setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
+          }
+        } catch (err) {
+          console.error(err);
+          setMessage(msgEl, 'Erro de conexão ao salvar anúncio.', 'var(--danger)');
+        }
+      });
+
+      async function carregarHistorico() {
+        const res = await fetch('/api/anuncios');
+        const data = await res.json();
+        const lista = document.getElementById('listaHistorico');
+        if (data.sucesso && data.anuncios.length > 0) {
+          lista.innerHTML = data.anuncios.map(a => `
+            <div class="history-item">
+              <span><b>${a.produto}</b><br><small>${new Date(a.created_at).toLocaleDateString('pt-BR')}</small></span>
+            </div>
+          `).join('');
+        }
+      }
+
+      document.getElementById('btn-sair').addEventListener('click', () => {
+        localStorage.removeItem('syncstore_usuario');
+        location.reload();
+      });
+
+      const salvo = localStorage.getItem('syncstore_usuario');
+      if (salvo) { usuarioAtual = JSON.parse(salvo); entrarNoApp(); }
+    </script>
+  </body>
+</html>
