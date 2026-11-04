@@ -183,7 +183,6 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover usuário.' });
   }
 });
-
 // --- ROTAS DE VOZES ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
@@ -202,7 +201,7 @@ app.get('/api/vozes', async (req, res) => {
   }
 });
 
-// CLONAGEM NA ELEVENLABS COM TRATAMENTO DE BUFFER
+// CLONAGEM NA ELEVENLABS
 app.post('/api/clonar-voz', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   const { nome, tipo_locucao, arquivo_base64, usuario_id } = req.body || {};
@@ -227,29 +226,24 @@ app.post('/api/clonar-voz', async (req, res) => {
 
         const formData = new FormData();
         formData.append('name', nome);
-        
-        // Constrói o Blob do arquivo de áudio com mimetype exato
         const fileBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
         formData.append('files', fileBlob, `${nome}.mp3`);
         formData.append('description', `Locutor ${tipo_locucao || 'varejo'}`);
 
         const elRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
           method: 'POST',
-          headers: {
-            'xi-api-key': ELEVENLABS_API_KEY
-          },
+          headers: { 'xi-api-key': ELEVENLABS_API_KEY },
           body: formData
         });
 
         const elData = await elRes.json();
         if (elRes.ok && elData.voice_id) {
           clonedVoiceId = elData.voice_id;
-          console.log(`[ElevenLabs] Voz clonada com sucesso! Voice ID: ${clonedVoiceId}`);
         } else {
-          console.warn('[ElevenLabs] Falha ao adicionar voz:', elData);
+          console.warn('[ElevenLabs] Erro ao clonar:', elData);
         }
       } catch (errEl) {
-        console.warn('[ElevenLabs] Erro na requisição de clonagem:', errEl.message);
+        console.warn('[ElevenLabs] Exceção:', errEl.message);
       }
     }
 
@@ -290,7 +284,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTEIRO COM GEMINI (COM FALLBACK AUTOMÁTICO) ---
+// --- ROTEIRO COM GEMINI ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
@@ -327,9 +321,7 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
         roteiroFinal = data.candidates[0].content.parts[0].text.trim();
         break;
       }
-    } catch (err) {
-      // Tenta próximo modelo
-    }
+    } catch (err) {}
   }
 
   if (roteiroFinal) {
@@ -340,7 +332,7 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
   return res.json({ sucesso: true, roteiro: fallbackText });
 });
 
-// --- NARRAÇÃO COM ELEVENLABS OU FALLBACK ROBUSTO ---
+// --- NARRAÇÃO COM ELEVENLABS ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório para narrar.' });
@@ -348,7 +340,6 @@ app.post('/api/gerar-locucao', async (req, res) => {
   try {
     let externalVoiceId = null;
 
-    // 1. Busca no Neon se essa voz possui ID clonado na ElevenLabs
     if (voz_id && pool) {
       const vozResult = await pool.query('SELECT external_voice_id FROM vozes WHERE id = $1', [Number(voz_id)]);
       if (vozResult.rows.length > 0) {
@@ -356,7 +347,6 @@ app.post('/api/gerar-locucao', async (req, res) => {
       }
     }
 
-    // Se a voz clonada existir, usa ela. Caso contrário, usa a voz comercial 'Adam'
     const voiceToUse = externalVoiceId || 'pNInz6obpgDQGcFmaJgB';
 
     if (ELEVENLABS_API_KEY) {
@@ -386,11 +376,10 @@ app.post('/api/gerar-locucao', async (req, res) => {
           console.warn('[ElevenLabs TTS] Erro retornado:', elErr);
         }
       } catch (errElTts) {
-        console.warn('[ElevenLabs TTS] Erro de conexão:', errElTts.message);
+        console.warn('[ElevenLabs TTS] Falha:', errElTts.message);
       }
     }
 
-    // 2. Fallback de contingência caso a ElevenLabs atinja cota
     const encodedText = encodeURIComponent(texto.substring(0, 250));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
     const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -398,10 +387,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
     if (response.ok) {
       const arrayBuffer = await response.arrayBuffer();
       const audioBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
-      return res.json({
-        sucesso: true,
-        audio_data: audioBase64
-      });
+      return res.json({ sucesso: true, audio_data: audioBase64 });
     }
 
     throw new Error('Não foi possível narrar o texto.');
