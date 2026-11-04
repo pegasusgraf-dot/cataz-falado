@@ -102,7 +102,7 @@
         </div>
         <div>
           <div id="bloco-master" class="hidden" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 12px;">
-            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Subir Áudio / Nova Voz</button>
+            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Nova Voz / Perfil</button>
             <button id="btn-gerenciar-vozes" class="button button-ghost" style="font-size: 0.85rem;">📂 Gerenciar Vozes Salvas</button>
             <button id="btn-adicionar-usuario" class="button button-ghost" style="font-size: 0.85rem;">+ Incluir usuário</button>
           </div>
@@ -155,15 +155,13 @@
       </section>
     </main>
 
-    <!-- MODAL: SUBIR ÁUDIO E CADASTRAR VOZ -->
+    <!-- MODAL: CADASTRAR VOZ -->
     <div id="modal-criar-voz" class="modal-backdrop hidden">
       <div class="modal">
-        <h3>Subir Áudio para o Perfil de Voz</h3>
-        <p style="font-size:0.85rem; color:var(--muted); margin-top:-10px;">Envie uma amostra de áudio (MP3/WAV) do locutor para catalogar no sistema.</p>
+        <h3>Cadastrar Nova Voz / Perfil</h3>
         <form id="form-criar-voz" class="form-stack">
           <label class="field">Nome do Locutor / Voz<input id="voz-nome" required placeholder="Ex.: Locutor João Varejo"></label>
           <label class="field">Tipo / Estilo<input id="voz-tipo" placeholder="Ex.: Animado / Varejo"></label>
-          <label class="field">Arquivo de Áudio de Amostra<input id="voz-arquivo" type="file" accept="audio/*"></label>
           <div class="row">
             <button type="button" id="cancelar-voz" class="button button-ghost">Cancelar</button>
             <button type="submit" class="button button-primary" id="btn-enviar-voz">Salvar Voz</button>
@@ -184,7 +182,7 @@
       </div>
     </div>
 
-    <!-- MODAL: CRIAR USUÁRIO -->
+    <!-- MODAL: CRIAR USUÁRIO (RESTAURADO E FUNCIONANDO) -->
     <div id="modal-criar-usuario" class="modal-backdrop hidden">
       <div class="modal">
         <h3>Incluir usuário</h3>
@@ -195,9 +193,9 @@
           <label class="field">Tipo<select id="novo-tipo"><option value="comum">Comum</option><option value="master">Master</option></select></label>
           <div class="row">
             <button type="button" id="cancelar-usuario" class="button button-ghost">Cancelar</button>
-            <button type="submit" class="button button-primary">Salvar</button>
+            <button type="submit" class="button button-primary">Salvar Usuário</button>
           </div>
-          <p id="modal-message" class="form-message"></p>
+          <p id="modal-usuario-message" class="form-message"></p>
         </form>
       </div>
     </div>
@@ -206,6 +204,7 @@
       let modoRegistro = false;
       let usuarioAtual = null;
       let vozesCarregadas = [];
+      let ultimoAudioBase64 = null; // Armazena temporariamente o último áudio gerado
 
       const authForm = document.getElementById('auth-form');
       const authTitle = document.getElementById('auth-title');
@@ -225,6 +224,13 @@
       const btnGerenciarVozes = document.getElementById('btn-gerenciar-vozes');
       const fecharGerenciarVozes = document.getElementById('fechar-gerenciar-vozes');
       const listaVozesCadastradas = document.getElementById('lista-vozes-cadastradas');
+
+      // Elementos do Modal de Usuário
+      const modalCriarUsuario = document.getElementById('modal-criar-usuario');
+      const btnAdicionarUsuario = document.getElementById('btn-adicionar-usuario');
+      const cancelarUsuario = document.getElementById('cancelar-usuario');
+      const formCriarUsuario = document.getElementById('form-criar-usuario');
+      const modalUsuarioMessage = document.getElementById('modal-usuario-message');
 
       function setMessage(el, text, color = 'var(--muted)') {
         if (!el) return;
@@ -274,6 +280,36 @@
         carregarHistorico();
       }
 
+      // MODAL DE CRIAR USUÁRIO (CORRIGIDO)
+      btnAdicionarUsuario.addEventListener('click', () => modalCriarUsuario.classList.remove('hidden'));
+      cancelarUsuario.addEventListener('click', () => modalCriarUsuario.classList.add('hidden'));
+
+      formCriarUsuario.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById('novo-nome').value.trim();
+        const email = document.getElementById('novo-email').value.trim();
+        const senha = document.getElementById('novo-senha').value.trim();
+        const tipo = document.getElementById('novo-tipo').value;
+
+        try {
+          const res = await fetch('/api/usuarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, email, senha, tipo })
+          });
+          const data = await res.json();
+          if (res.ok && data.sucesso) {
+            setMessage(modalUsuarioMessage, 'Usuário cadastrado com sucesso!', 'var(--success)');
+            formCriarUsuario.reset();
+            setTimeout(() => modalCriarUsuario.classList.add('hidden'), 1000);
+          } else {
+            setMessage(modalUsuarioMessage, data.mensagem || 'Erro ao cadastrar.', 'var(--danger)');
+          }
+        } catch (err) {
+          setMessage(modalUsuarioMessage, 'Erro de conexão.', 'var(--danger)');
+        }
+      });
+
       async function carregarVozes() {
         try {
           const res = await fetch('/api/vozes');
@@ -301,7 +337,7 @@
         const btnSalvar = document.getElementById('btn-enviar-voz');
 
         btnSalvar.disabled = true;
-        setMessage(vozModalMessage, 'Salvando voz e arquivo...', 'var(--primary)');
+        setMessage(vozModalMessage, 'Salvando voz...', 'var(--primary)');
 
         try {
           const res = await fetch('/api/clonar-voz', {
@@ -376,6 +412,7 @@
         document.getElementById('preview-texto').textContent = texto;
       });
 
+      // GERAR ÁUDIO E GUARDAR NA VARIÁVEL GLOBAL PARA SALVAR NO BANCO
       document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
         const texto = document.getElementById('input-texto-anuncio').value.trim();
         const msgEl = document.getElementById('anuncio-message');
@@ -394,6 +431,7 @@
           });
           const data = await res.json();
           if (res.ok && data.sucesso && data.audio_data) {
+            ultimoAudioBase64 = data.audio_data;
             const audio = new Audio(data.audio_data);
             audio.play();
             setMessage(msgEl, 'Locução gerada e reproduzida com sucesso!', 'var(--success)');
@@ -405,6 +443,7 @@
         }
       });
 
+      // SALVAR ANÚNCIO INCLUINDO O ÁUDIO GERADO
       document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
         const produto = document.getElementById('input-produto').value.trim();
         const texto = document.getElementById('input-texto-anuncio').value.trim();
@@ -425,12 +464,13 @@
               produto, 
               texto, 
               voz_id: vozIdSelecionada, 
-              usuario_id: usuarioAtual ? usuarioAtual.id : null 
+              usuario_id: usuarioAtual ? usuarioAtual.id : null,
+              audio_data: ultimoAudioBase64 
             })
           });
           const data = await res.json();
           if (res.ok && data.sucesso) {
-            setMessage(msgEl, 'Anúncio salvo com sucesso no banco!', 'var(--success)');
+            setMessage(msgEl, 'Anúncio e áudio salvos com sucesso no banco!', 'var(--success)');
             carregarHistorico();
           } else {
             setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
@@ -451,11 +491,20 @@
                 <b>${a.produto}</b><br>
                 <small style="color:var(--muted);">${a.voz_nome ? '🎙️ ' + a.voz_nome : 'Locutor Padrão'}</small>
               </div>
-              <button class="button button-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="excluirAnuncio(${a.id})">x</button>
+              <div style="display:flex; gap:6px;">
+                ${a.audio_data ? `<button class="button button-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="reproduzirAudioHistorico('${a.audio_data}')">▶️ Ouvir</button>` : ''}
+                <button class="button button-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="excluirAnuncio(${a.id})">x</button>
+              </div>
             </div>
           `).join('');
         }
       }
+
+      window.reproduzirAudioHistorico = function(base64) {
+        if (!base64) return;
+        const audio = new Audio(base64);
+        audio.play();
+      };
 
       window.excluirAnuncio = async function(id) {
         if (!confirm('Deseja excluir este anúncio?')) return;
