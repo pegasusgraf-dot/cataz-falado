@@ -265,8 +265,8 @@
             selectVoz.innerHTML = '<option value="">Voz padrão do navegador (TTS)</option>';
             data.vozes.forEach(v => {
               const opt = document.createElement('option');
-              opt.value = v.id; // Salvamos o ID numérico da tabela do banco para o relacionamento correto
-              opt.dataset.voiceid = v.audio_data; // Guardamos o Voice ID da ElevenLabs no dataset
+              opt.value = v.id; 
+              opt.dataset.voiceid = v.audio_data; // Armazena o Voice ID da ElevenLabs
               opt.textContent = `${v.nome} (${v.tipo_locucao || 'Padrão'})`;
               selectVoz.appendChild(opt);
             });
@@ -314,11 +314,11 @@
         document.getElementById('preview-texto').textContent = texto;
       });
 
-      // Botão de Gerar e Ouvir Áudio (ElevenLabs ou Fallback)
+      // Botão de Gerar e Ouvir Áudio (ElevenLabs com prioridade)
       document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
         const selectedOption = selectVoz.options[selectVoz.selectedIndex];
         const voiceId = selectedOption ? selectedOption.dataset.voiceid : null;
-        const texto = document.getElementById('input-texto-anuncio').value;
+        const texto = document.getElementById('input-texto-anuncio').value.trim();
         const msgEl = document.getElementById('anuncio-message');
 
         if (!texto) {
@@ -326,7 +326,7 @@
           return;
         }
 
-        // Se uma voz da ElevenLabs foi selecionada
+        // Se uma voz da ElevenLabs foi selecionada no select
         if (voiceId && voiceId.trim() !== '') {
           setMessage(msgEl, 'Gerando locução com IA (ElevenLabs)...', 'var(--muted)');
           try {
@@ -346,11 +346,12 @@
             }
           } catch(e) {
             console.error(e);
-            setMessage(msgEl, 'Erro na ElevenLabs. Usando voz padrão do navegador.', 'var(--danger)');
+            setMessage(msgEl, 'Erro na ElevenLabs. Verifique o Voice ID.', 'var(--danger)');
+            return;
           }
         }
 
-        // Fallback: Voz padrão do navegador (TTS)
+        // Caso nenhuma voz da ElevenLabs esteja selecionada, usa o navegador
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(texto);
           utterance.lang = 'pt-BR';
@@ -360,62 +361,8 @@
         }
       });
 
-      // Botão de Salvar Anúncio corrigido
+      // Botão de Salvar Anúncio
       document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
         const produto = document.getElementById('input-produto').value.trim();
         const texto = document.getElementById('input-texto-anuncio').value.trim();
-        const vozIdSelecionada = selectVoz.value ? Number(selectVoz.value) : null;
-        const msgEl = document.getElementById('anuncio-message');
-
-        if (!produto || !texto) {
-          setMessage(msgEl, 'Preencha o nome do produto e o texto do anúncio.', 'var(--danger)');
-          return;
-        }
-
-        try {
-          const res = await fetch('/api/anuncios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              produto, 
-              texto, 
-              voz_id: vozIdSelecionada, 
-              usuario_id: usuarioAtual.id 
-            })
-          });
-          const data = await res.json();
-          if (res.ok && data.sucesso) {
-            setMessage(msgEl, 'Anúncio salvo com sucesso no banco!', 'var(--success)');
-            carregarHistorico();
-          } else {
-            setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
-          }
-        } catch (err) {
-          console.error(err);
-          setMessage(msgEl, 'Erro de conexão ao salvar anúncio.', 'var(--danger)');
-        }
-      });
-
-      async function carregarHistorico() {
-        const res = await fetch('/api/anuncios');
-        const data = await res.json();
-        const lista = document.getElementById('listaHistorico');
-        if (data.sucesso && data.anuncios.length > 0) {
-          lista.innerHTML = data.anuncios.map(a => `
-            <div class="history-item">
-              <span><b>${a.produto}</b><br><small>${new Date(a.created_at).toLocaleDateString('pt-BR')}</small></span>
-            </div>
-          `).join('');
-        }
-      }
-
-      document.getElementById('btn-sair').addEventListener('click', () => {
-        localStorage.removeItem('syncstore_usuario');
-        location.reload();
-      });
-
-      const salvo = localStorage.getItem('syncstore_usuario');
-      if (salvo) { usuarioAtual = JSON.parse(salvo); entrarNoApp(); }
-    </script>
-  </body>
-</html>
+        const vozIdSelecionada = selectVoz.value ?
