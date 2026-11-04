@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#2563eb">
     <title>SyncStore | Gerador de Anúncios</title>
-    <meta name="description" content="Sistema profissional para criação e reprodução de anúncios comerciais e voz de loja.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -64,18 +63,15 @@
   </head>
 
   <body>
-    <!-- TELA DE LOGIN / CADASTRO -->
+    <!-- TELA DE LOGIN -->
     <main id="auth-screen" class="auth-layout">
       <section class="auth-intro">
-        <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>SyncStore<span class="brand-period">.</span></span>
-        </div>
+        <div class="brand"><span class="brand-mark">S</span><span>SyncStore<span class="brand-period">.</span></span></div>
         <div class="intro-copy">
           <p class="eyebrow">Voz e ofertas em tempo real</p>
           <h1>O anúncio certo,<br>na hora exata,<br><span>para vender mais.</span></h1>
         </div>
-        <div class="intro-foot"><span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;"></span> Sistema conectado ao Neon DB</div>
+        <div class="intro-foot"><span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;"></span> Sistema com IA ElevenLabs e Neon DB</div>
       </section>
 
       <section class="auth-panel">
@@ -95,7 +91,7 @@
       </section>
     </main>
 
-    <!-- TELA DO APLICATIVO -->
+    <!-- TELA PRINCIPAL -->
     <main id="app-screen" class="app-layout hidden">
       <aside class="sidebar">
         <div>
@@ -105,7 +101,7 @@
         </div>
         <div>
           <div id="bloco-master" class="hidden" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 12px;">
-            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Subir Nova Voz</button>
+            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Cadastrar Voz (ElevenLabs)</button>
             <button id="btn-adicionar-usuario" class="button button-ghost" style="font-size: 0.85rem;">+ Incluir usuário</button>
             <button id="btn-gerenciar-usuarios" class="button button-ghost" style="font-size: 0.85rem;">Gerenciar usuários</button>
           </div>
@@ -127,13 +123,13 @@
         <div class="ad-panel">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
             <h3 style="margin:0; font-family:'Manrope';">Gerar anúncio comercial</h3>
-            <button id="btn-gerar-audio" type="button" class="button button-ghost">🔊 Reproduzir Áudio / Locução</button>
+            <button id="btn-gerar-audio" type="button" class="button button-primary">🎙️ Gerar e Ouvir Locução IA</button>
           </div>
 
           <form id="form-anuncio" class="ad-form">
             <div class="field-row">
               <label class="field">Nome do produto<input id="input-produto" placeholder="Ex.: Smart TV 55\""></label>
-              <label class="field">Selecionar Voz / Tipo de Locução
+              <label class="field">Selecionar Voz Cadastrada
                 <select id="select-voz">
                   <option value="">Voz padrão do navegador (TTS)</option>
                 </select>
@@ -149,28 +145,23 @@
             <label class="field">Texto do anúncio<textarea id="input-texto-anuncio"></textarea></label>
             
             <div class="ad-actions">
-              <button id="btn-gerar-anuncio" type="button" class="button button-primary">Gerar Roteiro</button>
+              <button id="btn-gerar-anuncio" type="button" class="button button-ghost">Gerar Roteiro de Texto</button>
               <button id="btn-salvar-anuncio" type="button" class="button button-ghost">Salvar Anúncio</button>
             </div>
             <p id="anuncio-message" class="form-message"></p>
           </form>
         </div>
-
-        <div id="lista-usuarios" class="hidden" style="margin-top: 26px;">
-          <h3 style="margin:0 0 12px; font-family:'Manrope';">Gerenciar usuários</h3>
-          <div id="user-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-        </div>
       </section>
     </main>
 
-    <!-- MODAL PARA UPLOAD DE VOZ -->
+    <!-- MODAL PARA CADASTRAR VOZ COM VOICE ID -->
     <div id="modal-criar-voz" class="modal-backdrop hidden">
       <div class="modal">
-        <h3>Subir Nova Voz (Áudio)</h3>
+        <h3>Cadastrar Voz (ElevenLabs)</h3>
         <form id="form-criar-voz" class="form-stack">
-          <label class="field">Nome da Locução / Locutor<input id="voz-nome" required placeholder="Ex.: Locutor Comercial João"></label>
-          <label class="field">Estilo / Tipo<input id="voz-tipo" placeholder="Ex.: Dinâmico / Varejo"></label>
-          <label class="field">Arquivo de Áudio (.mp3 ou .wav)<input id="voz-arquivo" type="file" accept="audio/*" required></label>
+          <label class="field">Nome da Voz<input id="voz-nome" required placeholder="Ex.: Locutor Comercial João"></label>
+          <label class="field">Estilo / Descrição<input id="voz-tipo" placeholder="Ex.: Varejo Animado"></label>
+          <label class="field">ElevenLabs Voice ID<input id="voz-audio-id" required placeholder="Ex.: 21m00Tcm4TlvDq8ikWAM"></label>
           <div class="row">
             <button type="button" id="cancelar-voz" class="button button-ghost">Cancelar</button>
             <button type="submit" class="button button-primary">Salvar Voz</button>
@@ -271,7 +262,7 @@
             selectVoz.innerHTML = '<option value="">Voz padrão do navegador (TTS)</option>';
             data.vozes.forEach(v => {
               const opt = document.createElement('option');
-              opt.value = v.id;
+              opt.value = v.audio_data; // Armazena o Voice ID da ElevenLabs direto no value
               opt.textContent = `${v.nome} (${v.tipo_locucao || 'Padrão'})`;
               selectVoz.appendChild(opt);
             });
@@ -286,33 +277,26 @@
         e.preventDefault();
         const nome = document.getElementById('voz-nome').value.trim();
         const tipo_locucao = document.getElementById('voz-tipo').value.trim() || 'Padrão';
-        const arquivoInput = document.getElementById('voz-arquivo').files[0];
+        const audio_data = document.getElementById('voz-audio-id').value.trim(); // Aqui salvamos o Voice ID da ElevenLabs
 
-        if (!arquivoInput) return;
-
-        const reader = new FileReader();
-        reader.onload = async function() {
-          const base64Audio = reader.result;
-          try {
-            const res = await fetch('/api/vozes', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ nome, tipo_locucao, audio_data: base64Audio, usuario_id: usuarioAtual.id })
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-              setMessage(vozModalMessage, 'Voz salva com sucesso no Neon DB!', 'var(--success)');
-              formCriarVoz.reset();
-              carregarVozes();
-              setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
-            } else {
-              setMessage(vozModalMessage, data.mensagem, 'var(--danger)');
-            }
-          } catch (err) {
-            setMessage(vozModalMessage, 'Erro ao enviar arquivo.', 'var(--danger)');
+        try {
+          const res = await fetch('/api/vozes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, tipo_locucao, audio_data, usuario_id: usuarioAtual.id })
+          });
+          const data = await res.json();
+          if (data.sucesso) {
+            setMessage(vozModalMessage, 'Voz salva com sucesso!', 'var(--success)');
+            formCriarVoz.reset();
+            carregarVozes();
+            setTimeout(() => modalCriarVoz.classList.add('hidden'), 1000);
+          } else {
+            setMessage(vozModalMessage, data.mensagem, 'var(--danger)');
           }
-        };
-        reader.readAsDataURL(arquivoInput);
+        } catch (err) {
+          setMessage(vozModalMessage, 'Erro ao salvar voz.', 'var(--danger)');
+        }
       });
 
       document.getElementById('btn-gerar-anuncio').addEventListener('click', () => {
@@ -326,44 +310,53 @@
         document.getElementById('preview-texto').textContent = texto;
       });
 
-      // Lógica de reprodução:
-      // Se houver uma voz de áudio carregada do banco selecionada, você pode optar por ouvir a amostra da voz/vinheta 
-      // ou utilizar o sintetizador de texto do navegador para falar o texto digitado.
+      // Gerar e reproduzir locução inteligente com ElevenLabs ou fallback TTS
       document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
-        const vozId = selectVoz.value;
+        const voiceId = selectVoz.value;
         const texto = document.getElementById('input-texto-anuncio').value;
         const msgEl = document.getElementById('anuncio-message');
 
-        // Se uma voz gravada foi selecionada, toca o áudio base da voz
-        if (vozId) {
+        if (!texto) {
+          setMessage(msgEl, 'Escreva ou gere um texto antes de reproduzir.', 'var(--danger)');
+          return;
+        }
+
+        // Se uma voz da ElevenLabs estiver selecionada
+        if (voiceId) {
+          setMessage(msgEl, 'Gerando locução com IA (ElevenLabs)...', 'var(--muted)');
           try {
-            const res = await fetch(`/api/vozes/${vozId}/audio`);
+            const res = await fetch('/api/gerar-locucao', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ texto, voice_id: voiceId })
+            });
             const data = await res.json();
             if (data.sucesso && data.audio_data) {
               const audio = new Audio(data.audio_data);
               audio.play();
-              setMessage(msgEl, `Reproduzindo amostra da voz: ${data.nome}`, 'var(--success)');
+              setMessage(msgEl, 'Locução gerada e reproduzida com sucesso!', 'var(--success)');
               return;
+            } else {
+              throw new Error(data.mensagem);
             }
-          } catch(e) { console.error('Erro ao reproduzir voz customizada'); }
+          } catch(e) {
+            setMessage(msgEl, 'Erro ao gerar com ElevenLabs. Usando voz padrão.', 'var(--danger)');
+          }
         }
 
-        // Caso contrário, usa o sintetizador padrão do navegador para ler o texto do anúncio
-        if ('speechSynthesis' in window && texto) {
+        // Fallback: Sintetizador padrão do navegador
+        if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(texto);
           utterance.lang = 'pt-BR';
           speechSynthesis.cancel();
           speechSynthesis.speak(utterance);
-          setMessage(msgEl, 'Reproduzindo locução sintetizada...', 'var(--success)');
-        } else {
-          setMessage(msgEl, 'Escreva ou gere um texto para reproduzir.', 'var(--danger)');
+          setMessage(msgEl, 'Reproduzindo locução padrão do navegador...', 'var(--success)');
         }
       });
 
       document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
         const produto = document.getElementById('input-produto').value;
         const texto = document.getElementById('input-texto-anuncio').value;
-        const voz_id = selectVoz.value ? Number(selectVoz.value) : null;
         const msgEl = document.getElementById('anuncio-message');
 
         if (!produto || !texto) {
@@ -374,7 +367,7 @@
         const res = await fetch('/api/anuncios', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ produto, texto, voz_id, usuario_id: usuarioAtual.id })
+          body: JSON.stringify({ produto, texto, usuario_id: usuarioAtual.id })
         });
         const data = await res.json();
         if (data.sucesso) {
@@ -392,7 +385,7 @@
         if (data.sucesso && data.anuncios.length > 0) {
           lista.innerHTML = data.anuncios.map(a => `
             <div class="history-item">
-              <span><b>${a.produto}</b><br><small>${a.voz_nome ? '🎙️ ' + a.voz_nome : 'Voz Padrão'}</small></span>
+              <span><b>${a.produto}</b><br><small>${new Date(a.created_at).toLocaleDateString('pt-BR')}</small></span>
             </div>
           `).join('');
         }
