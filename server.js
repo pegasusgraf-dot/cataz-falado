@@ -52,7 +52,6 @@ async function inicializarBanco() {
       );
     `);
 
-    // Atualizado para salvar o base64 do áudio gerado no histórico
     await pool.query(`
       CREATE TABLE IF NOT EXISTS anuncios (
         id SERIAL PRIMARY KEY,
@@ -100,7 +99,7 @@ app.post('/api/login', async (req, res) => {
 
     const u = r.rows[0];
     if (u.status !== 'aprovado' && u.tipo !== 'master') {
-      return res.status(403).json({ sucesso: false, mensagem: 'Conta pendente de aprovação.' });
+      return res.status(403).json({ sucesso: false, mensagem: 'Conta pendente de aprovação pelo Administrador.' });
     }
 
     return res.json({ sucesso: true, usuario: u });
@@ -124,8 +123,8 @@ app.post('/api/usuarios', async (req, res) => {
   const { nome, email, senha, tipo } = req.body || {};
   try {
     const novo = await pool.query(
-      `INSERT INTO usuarios (nome, email, senha, tipo, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, email, tipo, status`,
-      [String(nome).trim(), String(email).trim(), String(senha).trim(), String(tipo || 'comum').trim(), 'pendente']
+      `INSERT INTO usuarios (nome, email, senha, tipo, status) VALUES ($1, $2, $3, $4, 'aprovado') RETURNING id, nome, email, tipo, status`,
+      [String(nome).trim(), String(email).trim(), String(senha).trim(), String(tipo || 'comum').trim()]
     );
     return res.status(201).json({ sucesso: true, usuario: novo.rows[0] });
   } catch (error) {
@@ -133,13 +132,15 @@ app.post('/api/usuarios', async (req, res) => {
   }
 });
 
+// Rota para aprovar/rejeitar novos cadastros
 app.patch('/api/usuarios/:id/status', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
-    const att = await pool.query('UPDATE usuarios SET status = $1 WHERE id = $2 RETURNING *', [normalizarStatus(req.body.status), req.params.id]);
+    const statusNovo = normalizarStatus(req.body.status);
+    const att = await pool.query('UPDATE usuarios SET status = $1 WHERE id = $2 RETURNING id, nome, email, tipo, status', [statusNovo, req.params.id]);
     return res.json({ sucesso: true, usuario: att.rows[0] });
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar status.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar status do usuário.' });
   }
 });
 
@@ -197,7 +198,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- NARRAR TEXTO (GOOGLE TRANSLATE TTS) COM ROTA ROBUSTA ---
+// --- NARRAR TEXTO (GOOGLE TRANSLATE TTS) ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto } = req.body || {};
 
@@ -206,7 +207,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
   }
 
   try {
-    const encodedText = encodeURIComponent(texto.substring(0, 200)); // Limite seguro para a query do Google TTS
+    const encodedText = encodeURIComponent(texto.substring(0, 200));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
 
     const response = await fetch(googleTtsUrl, {
@@ -216,7 +217,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
     });
 
     if (!response.ok) {
-      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar áudio gratuito no Google TTS.' });
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar áudio no Google TTS.' });
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -226,7 +227,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
     return res.json({ sucesso: true, audio_data: audioBase64 });
   } catch (error) {
     console.error('Erro na locução:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha de conexão com o sintetizador de áudio.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha de conexão com o sintetizador.' });
   }
 });
 
