@@ -9,6 +9,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Chave Gemini ativa
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6IRvVrF-JMe5yGT5WbQORWpcsqpIV1Q0w-NSpk2KJ2DjQ';
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -25,6 +26,31 @@ const pool = DATABASE_URL
 
 function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
   return res.status(500).json({ sucesso: false, mensagem });
+}
+
+// Converte áudio PCM cru em WAV executável pelo navegador
+function pcmToWavBase64(pcmBuffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16) {
+  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+  const blockAlign = (numChannels * bitsPerSample) / 8;
+  const dataSize = pcmBuffer.length;
+  const buffer = Buffer.alloc(44 + dataSize);
+
+  buffer.write('RIFF', 0);
+  buffer.writeUInt32LE(36 + dataSize, 4);
+  buffer.write('WAVE', 8);
+  buffer.write('fmt ', 12);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20); // PCM
+  buffer.writeUInt16LE(numChannels, 22);
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(byteRate, 28);
+  buffer.writeUInt16LE(blockAlign, 32);
+  buffer.writeUInt16LE(bitsPerSample, 34);
+  buffer.write('data', 36);
+  buffer.writeUInt32LE(dataSize, 40);
+
+  pcmBuffer.copy(buffer, 44);
+  return `data:audio/wav;base64,${buffer.toString('base64')}`;
 }
 
 async function inicializarBanco() {
@@ -180,7 +206,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- ROTAS DE VOZES NO BANCO NEON ---
+// --- ROTAS DE VOZES ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -243,7 +269,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTEIRO COM GEMINI ---
+// --- ROTEIRO COM GEMINI (COM FALLBACK CONTRA ALTA DEMANDA) ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
@@ -289,53 +315,126 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
     return res.json({ sucesso: true, roteiro: roteiroFinal });
   }
 
-  const fallbackText = `Atenção clientes! Hoje temos ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite essa super oferta'} na nossa loja!`;
+  const fallbackText = `Atenção clientes! Hoje temos ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite já essa super oferta'} na nossa loja!`;
   return res.json({ sucesso: true, roteiro: fallbackText });
 });
 
-// --- NARRAÇÃO COM A VOZ DO BANCO NEON ---
+// --- NARRAÇÃO: LÊ O TEXTO GERADO EM VOZ ALTA COM A VOZ SELECIONADA ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id, tipo_voz } = req.body || {};
+  if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório para narrar.' });
 
   try {
-    // 1. Se escolheu a voz do banco de dados Neon, busca o áudio salvo dela
-    if (voz_id && pool) {
+    let geminiVoiceName = 'Puck'; // Padrão: Varejo enérgico
+    let estiloPrompt = 'com tom alegre, enérgico e vendedor de rádio de ofertas';
+
+    // 1. Identifica se a voz veio do seletor direto
+    if (tipo_voz) {
+      const v = String(tipo_voz).toLowerCase();
+      if (v === 'fenrir' || v === 'grave') {
+        geminiVoiceName = 'Fenrir';
+        estiloPrompt = 'com voz masculina grave, potente, firme e promocional impactante';
+      } else if (v === 'aoede' || v === 'feminina') {
+        geminiVoiceName = 'Aoede';
+        estiloPrompt = 'com voz feminina brasileira expressiva, clara, elegante e comercial';
+      } else if (v === 'charon' || v === 'institucional') {
+        geminiVoiceName = 'Charon';
+        estiloPrompt = 'com voz masculina institucional, clara e profissional';
+      } else {
+        geminiVoiceName = 'Puck';
+        estiloPrompt = 'com voz de locutor jovem, dinâmico e animado de varejo';
+      }
+    } 
+    // 2. Se for uma voz cadastrada no Neon, lê o estilo cadastrado dela
+    else if (voz_id && pool) {
       const vozEncontrada = await pool.query(
-        'SELECT COALESCE(arquivo_base64, audio_data) AS audio, nome FROM vozes WHERE id = $1',
+        'SELECT nome, tipo_locucao FROM vozes WHERE id = $1',
         [Number(voz_id)]
       );
-      if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].audio) {
-        return res.json({
-          sucesso: true,
-          audio_data: vozEncontrada.rows[0].audio,
-          voz_utilizada: vozEncontrada.rows[0].nome
-        });
+      if (vozEncontrada.rows.length > 0) {
+        const estilo = String(vozEncontrada.rows[0].tipo_locucao || '').toLowerCase();
+        if (estilo.includes('grave') || estilo.includes('forte') || estilo.includes('fenrir')) {
+          geminiVoiceName = 'Fenrir';
+          estiloPrompt = 'com voz masculina grave, potente e promocional';
+        } else if (estilo.includes('feminina') || estilo.includes('suave') || estilo.includes('aoede')) {
+          geminiVoiceName = 'Aoede';
+          estiloPrompt = 'com voz feminina brasileira expressiva e comercial';
+        } else if (estilo.includes('institucional') || estilo.includes('charon')) {
+          geminiVoiceName = 'Charon';
+          estiloPrompt = 'com voz institucional séria e profissional';
+        } else {
+          geminiVoiceName = 'Puck';
+          estiloPrompt = 'com voz de locutor alegre e dinâmico de loja';
+        }
       }
     }
 
-    // 2. Fallback caso não tenha áudio gravado no banco
-    if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
+    let audioGerado = null;
+    const modelosAudio = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
-    const encodedText = encodeURIComponent(texto.substring(0, 250));
-    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
-    const response = await fetch(googleTtsUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
+    // O Gemini lê o texto exato com o timbre da voz escolhida
+    for (const mod of modelosAudio) {
+      try {
+        const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`;
+        const payloadAudio = {
+          contents: [{
+            parts: [{ text: `Leia em voz alta em português do Brasil ${estiloPrompt} o seguinte anúncio: "${texto}"` }]
+          }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: geminiVoiceName }
+              }
+            }
+          }
+        };
 
-    if (response.ok) {
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+        const resAudio = await fetch(urlAudio, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloadAudio)
+        });
+
+        const dataAudio = await resAudio.json();
+        const rawAudioBase64 = dataAudio?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+        if (rawAudioBase64) {
+          const pcmBuffer = Buffer.from(rawAudioBase64, 'base64');
+          audioGerado = pcmToWavBase64(pcmBuffer, 24000, 1, 16);
+          break; // Sucesso na síntese
+        }
+      } catch (errAudio) {
+        console.warn(`Erro no modelo de áudio ${mod}:`, errAudio.message);
+      }
+    }
+
+    if (audioGerado) {
       return res.json({
         sucesso: true,
-        audio_data: audioBase64,
-        voz_utilizada: 'Padrão'
+        audio_data: audioGerado,
+        voz_utilizada: geminiVoiceName
       });
     }
 
-    throw new Error('Falha ao processar locução.');
+    // Fallback leve para garantir que o texto seja falado mesmo se a cota do áudio do Gemini oscilar
+    const encodedText = encodeURIComponent(texto.substring(0, 200));
+    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
+    const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+
+    if (response.ok) {
+      const arrayBuffer = await response.arrayBuffer();
+      const audioFallback = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+      return res.json({
+        sucesso: true,
+        audio_data: audioFallback,
+        voz_utilizada: 'Fallback Padrão'
+      });
+    }
+
+    throw new Error('Não foi possível narrar o texto.');
   } catch (error) {
-    console.error('Erro na locução:', error);
-    return res.status(500).json({ sucesso: false, mensagem: error.message });
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro na narração: ' + error.message });
   }
 });
 
