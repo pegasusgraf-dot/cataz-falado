@@ -5,12 +5,10 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurações de Payload
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Chave Gemini configurada
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBf4ITUYd-Dn95wzoFqYBt4LkMwcr3Ynls';
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -69,7 +67,6 @@ async function inicializarBanco() {
       );
     `);
 
-    // Remove travas NOT NULL de tabelas anteriores para não barrar upload
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE vozes ALTER COLUMN audio_data DROP NOT NULL;`);
@@ -246,7 +243,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTEIRO COM GEMINI 3.8 FLASH ---
+// --- ROTEIRO COM GEMINI ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
@@ -265,7 +262,7 @@ Dados da oferta:
 
 Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem explicações.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
     const geminiRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -288,38 +285,53 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
   }
 });
 
-// --- LOCUÇÃO COM GEMINI (AUDIO NATIVO OU SEQUÊNCIA DE VOZ) ---
+// --- NARRAÇÃO COM O NARRADOR SELECIONADO VIA GEMINI AUDIO ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
 
   try {
-    let audioLocutor = null;
+    let locutorEstilo = 'enérgico de rádio de varejo';
+    let geminiVoiceName = 'Puck'; // Voz padrão masculina enérgica
 
-    // Busca o arquivo MP3 que você subiu e salvou no Neon
+    // Se selecionou uma voz, identifica o estilo/nome para ajustar o narrador
     if (voz_id && pool) {
       const vozEncontrada = await pool.query(
-        'SELECT COALESCE(arquivo_base64, audio_data) AS audio FROM vozes WHERE id = $1',
+        'SELECT nome, tipo_locucao FROM vozes WHERE id = $1',
         [Number(voz_id)]
       );
-      if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].audio) {
-        audioLocutor = vozEncontrada.rows[0].audio;
+      if (vozEncontrada.rows.length > 0) {
+        const v = vozEncontrada.rows[0];
+        locutorEstilo = `${v.nome} (${v.tipo_locucao || 'varejo'})`;
+
+        // Alterna o timbre conforme o tipo cadastrado
+        const tipoLower = String(v.tipo_locucao || '').toLowerCase();
+        if (tipoLower.includes('grave') || tipoLower.includes('impactante')) {
+          geminiVoiceName = 'Fenrir';
+        } else if (tipoLower.includes('feminina') || tipoLower.includes('suave')) {
+          geminiVoiceName = 'Aoede';
+        } else if (tipoLower.includes('institucional')) {
+          geminiVoiceName = 'Charon';
+        } else {
+          geminiVoiceName = 'Puck';
+        }
       }
     }
 
-    // Tenta sintetizar áudio via Gemini Multimodal Audio
-    let audioNarradoBase64 = null;
+    let audioGerado = null;
+
+    // 1. O Gemini narra o texto diretamente usando o timbre da voz escolhida
     try {
-      const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
+      const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
       const payloadAudio = {
         contents: [{
-          parts: [{ text: `Leia com voz enérgica de locutor de rádio comercial de loja o seguinte texto: "${texto}"` }]
+          parts: [{ text: `Leia com voz de locutor comercial em português do Brasil (${locutorEstilo}): "${texto}"` }]
         }],
         generationConfig: {
           responseModalities: ["AUDIO"],
           speechConfig: {
             voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: "Puck" }
+              prebuiltVoiceConfig: { voiceName: geminiVoiceName }
             }
           }
         }
@@ -334,32 +346,29 @@ app.post('/api/gerar-locucao', async (req, res) => {
       const inlineAudio = dataAudio?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 
       if (inlineAudio) {
-        audioNarradoBase64 = `data:audio/wav;base64,${inlineAudio}`;
+        audioGerado = `data:audio/wav;base64,${inlineAudio}`;
       }
     } catch (e) {
-      console.warn('Fallback para Google TTS padrão:', e.message);
+      console.warn('Falha na síntese Gemini Audio:', e.message);
     }
 
-    // Fallback: caso o modelo de áudio esteja indisponível, usa síntese leve
-    if (!audioNarradoBase64) {
+    // 2. Fallback caso a API de áudio demore ou falhe
+    if (!audioGerado) {
       const encodedText = encodeURIComponent(texto.substring(0, 200));
       const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
       const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
       if (response.ok) {
         const arrayBuffer = await response.arrayBuffer();
-        audioNarradoBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+        audioGerado = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
       }
     }
 
-    // Retorna o áudio da narração e a vinheta/amostra do locutor cadastrado
     return res.json({
       sucesso: true,
-      audio_data: audioNarradoBase64 || audioLocutor,
-      audio_locutor: audioLocutor,
-      audio_narracao: audioNarradoBase64
+      audio_data: audioGerado
     });
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao processar locução: ' + error.message });
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao narrar texto: ' + error.message });
   }
 });
 
