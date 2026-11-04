@@ -5,7 +5,8 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '1mb' }));
+// Aumentando o limite para permitir upload de arquivos de áudio em Base64
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -44,11 +45,25 @@ async function inicializarBanco() {
       );
     `);
 
+    // Tabela para armazenar as vozes customizadas da loja
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS vozes (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(100) NOT NULL,
+        descricao VARCHAR(255),
+        tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
+        audio_data TEXT NOT NULL,
+        usuario_id INTEGER REFERENCES usuarios(id),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS anuncios (
         id SERIAL PRIMARY KEY,
         produto VARCHAR(200) NOT NULL,
         texto TEXT NOT NULL,
+        voz_id INTEGER REFERENCES vozes(id) ON DELETE SET NULL,
         usuario_id INTEGER REFERENCES usuarios(id),
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -78,30 +93,20 @@ function normalizarStatus(status) {
 }
 
 app.get('/api/health', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'DATABASE_URL não configurada no ambiente.');
-  }
-
+  if (!pool) return bancoIndisponivel(res, 'DATABASE_URL não configurada.');
   try {
     await pool.query('SELECT 1');
     res.json({ ok: true, message: 'Banco conectado' });
   } catch (error) {
-    console.error('Health check falhou:', error);
     res.status(500).json({ ok: false, message: 'Falha de conexão com o banco' });
   }
 });
 
+// --- ROTAS DE USUÁRIOS E LOGIN ---
 app.post('/api/login', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'Banco de dados não configurado.');
-  }
-
+  if (!pool) return bancoIndisponivel(res);
   const { email, usuario, senha } = req.body || {};
   const emailLogin = String(email || usuario || '').trim();
-
-  if (!emailLogin || !senha) {
-    return res.status(400).json({ sucesso: false, mensagem: 'E-mail e senha são obrigatórios.' });
-  }
 
   try {
     const resultado = await pool.query(
@@ -114,160 +119,142 @@ app.post('/api/login', async (req, res) => {
     }
 
     const usuarioLogado = resultado.rows[0];
-
     if (usuarioLogado.status !== 'aprovado' && usuarioLogado.tipo !== 'master') {
-      return res.status(403).json({
-        sucesso: false,
-        mensagem: 'Sua conta ainda está pendente de aprovação do usuário master.',
-      });
+      return res.status(403).json({ sucesso: false, mensagem: 'Sua conta está pendente de aprovação.' });
     }
 
     return res.json({ sucesso: true, usuario: usuarioLogado });
   } catch (error) {
-    console.error('Erro no login:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor.' });
   }
 });
 
 app.get('/api/usuarios', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'Banco de dados não configurado.');
-  }
-
+  if (!pool) return bancoIndisponivel(res);
   try {
-    const lista = await pool.query(
-      'SELECT id, nome, email, tipo, status, created_at FROM usuarios ORDER BY id DESC'
-    );
+    const lista = await pool.query('SELECT id, nome, email, tipo, status, created_at FROM usuarios ORDER BY id DESC');
     return res.json({ sucesso: true, usuarios: lista.rows });
   } catch (error) {
-    console.error('Erro ao listar usuários:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar usuários.' });
   }
 });
 
 app.post('/api/usuarios', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'Banco de dados não configurado.');
-  }
-
-  const { nome, email, usuario, senha, tipo } = req.body || {};
-  const emailFinal = String(email || usuario || '').trim();
-
-  if (!nome || !emailFinal || !senha) {
-    return res.status(400).json({ sucesso: false, mensagem: 'Nome, e-mail e senha são obrigatórios.' });
-  }
-
+  if (!pool) return bancoIndisponivel(res);
+  const { nome, email, senha, tipo } = req.body || {};
   try {
-    const existe = await pool.query(
-      'SELECT 1 FROM usuarios WHERE LOWER(email) = LOWER($1)',
-      [emailFinal]
-    );
-
-    if (existe.rows.length > 0) {
-      return res.status(409).json({ sucesso: false, mensagem: 'Este usuário já existe.' });
-    }
-
     const novo = await pool.query(
-      `INSERT INTO usuarios (nome, email, senha, tipo, status)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, nome, email, tipo, status, created_at`,
-      [String(nome).trim(), emailFinal, String(senha).trim(), String(tipo || 'comum').trim(), 'pendente']
+      `INSERT INTO usuarios (nome, email, senha, tipo, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, email, tipo, status`,
+      [String(nome).trim(), String(email).trim(), String(senha).trim(), String(tipo || 'comum').trim(), 'pendente']
     );
-
     return res.status(201).json({ sucesso: true, usuario: novo.rows[0] });
   } catch (error) {
-    console.error('Erro ao cadastrar usuário:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar usuário.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar usuário (E-mail já existe?).' });
   }
 });
 
 app.patch('/api/usuarios/:id/status', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'Banco de dados não configurado.');
-  }
-
+  if (!pool) return bancoIndisponivel(res);
   const { id } = req.params;
   const { status } = req.body || {};
-  const statusNormalizado = normalizarStatus(status);
-
   try {
     const atualizacao = await pool.query(
       'UPDATE usuarios SET status = $1 WHERE id = $2 RETURNING id, nome, email, tipo, status',
-      [statusNormalizado, id]
+      [normalizarStatus(status), id]
     );
-
-    if (atualizacao.rows.length === 0) {
-      return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado.' });
-    }
-
     return res.json({ sucesso: true, usuario: atualizacao.rows[0] });
   } catch (error) {
-    console.error('Erro ao atualizar status do usuário:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar status do usuário.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar status.' });
   }
 });
 
 app.delete('/api/usuarios/:id', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'Banco de dados não configurado.');
-  }
-
+  if (!pool) return bancoIndisponivel(res);
   const { id } = req.params;
-
   try {
-    const cliente = await pool.connect();
-    try {
-      await cliente.query('BEGIN');
-      await cliente.query('DELETE FROM anuncios WHERE usuario_id = $1', [id]);
-      const removido = await cliente.query(
-        'DELETE FROM usuarios WHERE id = $1 RETURNING id, nome, email, tipo, status',
-        [id]
-      );
-      await cliente.query('COMMIT');
-
-      if (removido.rows.length === 0) {
-        return res.status(404).json({ sucesso: false, mensagem: 'Usuário não encontrado.' });
-      }
-
-      return res.json({ sucesso: true, usuario: removido.rows[0] });
-    } catch (error) {
-      await cliente.query('ROLLBACK');
-      throw error;
-    } finally {
-      cliente.release();
-    }
+    await pool.query('DELETE FROM anuncios WHERE usuario_id = $1', [id]);
+    await pool.query('DELETE FROM vozes WHERE usuario_id = $1', [id]);
+    const removido = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id', [id]);
+    return res.json({ sucesso: true, id: removido.rows[0]?.id });
   } catch (error) {
-    console.error('Erro ao remover usuário:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover usuário.' });
   }
 });
 
-app.get('/api/anuncios', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'Banco de dados não configurado.');
+// --- ROTAS DE VOZES ---
+app.get('/api/vozes', async (req, res) => {
+  if (!pool) return bancoIndisponivel(res);
+  try {
+    const lista = await pool.query('SELECT id, nome, descricao, tipo_locucao, created_at FROM vozes ORDER BY id DESC');
+    return res.json({ sucesso: true, vozes: lista.rows });
+  } catch (error) {
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar vozes.' });
+  }
+});
+
+// Rota para buscar o áudio bruto de uma voz específica para reprodução
+app.get('/api/vozes/:id/audio', async (req, res) => {
+  if (!pool) return bancoIndisponivel(res);
+  try {
+    const resultado = await pool.query('SELECT audio_data, nome FROM vozes WHERE id = $1', [req.params.id]);
+    if (resultado.rows.length === 0) return res.status(404).json({ sucesso: false, mensagem: 'Voz não encontrada.' });
+    return res.json({ sucesso: true, audio_data: resultado.rows[0].audio_data, nome: resultado.rows[0].nome });
+  } catch (error) {
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar áudio da voz.' });
+  }
+});
+
+app.post('/api/vozes', async (req, res) => {
+  if (!pool) return bancoIndisponivel(res);
+  const { nome, descricao, tipo_locucao, audio_data, usuario_id } = req.body || {};
+
+  if (!nome || !audio_data) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Nome da voz e o arquivo de áudio são obrigatórios.' });
   }
 
   try {
+    const novaVoz = await pool.query(
+      `INSERT INTO vozes (nome, descricao, tipo_locucao, audio_data, usuario_id)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, descricao, tipo_locucao, created_at`,
+      [String(nome).trim(), descricao || '', tipo_locucao || 'Padrao', audio_data, usuario_id ? Number(usuario_id) : null]
+    );
+    return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
+  } catch (error) {
+    console.error('Erro ao salvar voz:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar voz no banco.' });
+  }
+});
+
+app.delete('/api/vozes/:id', async (req, res) => {
+  if (!pool) return bancoIndisponivel(res);
+  try {
+    await pool.query('DELETE FROM vozes WHERE id = $1', [req.params.id]);
+    return res.json({ sucesso: true });
+  } catch (error) {
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao excluir voz.' });
+  }
+});
+
+// --- ROTAS DE ANÚNCIOS ---
+app.get('/api/anuncios', async (req, res) => {
+  if (!pool) return bancoIndisponivel(res);
+  try {
     const lista = await pool.query(`
-      SELECT a.*, u.nome AS usuario_nome
+      SELECT a.*, u.nome AS usuario_nome, v.nome AS voz_nome, v.tipo_locucao
       FROM anuncios a
       LEFT JOIN usuarios u ON u.id = a.usuario_id
+      LEFT JOIN vozes v ON v.id = a.voz_id
       ORDER BY a.id DESC
     `);
-
     return res.json({ sucesso: true, anuncios: lista.rows });
   } catch (error) {
-    console.error('Erro ao listar anúncios:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar anúncios.' });
   }
 });
 
 app.post('/api/anuncios', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'Banco de dados não configurado.');
-  }
-
-  const { produto, texto, usuario_id } = req.body || {};
+  if (!pool) return bancoIndisponivel(res);
+  const { produto, texto, voz_id, usuario_id } = req.body || {};
 
   if (!produto || !texto) {
     return res.status(400).json({ sucesso: false, mensagem: 'Produto e texto são obrigatórios.' });
@@ -275,50 +262,27 @@ app.post('/api/anuncios', async (req, res) => {
 
   try {
     const item = await pool.query(
-      `INSERT INTO anuncios (produto, texto, usuario_id)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [String(produto).trim(), String(texto).trim(), usuario_id ? Number(usuario_id) : null]
+      `INSERT INTO anuncios (produto, texto, voz_id, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [String(produto).trim(), String(texto).trim(), voz_id ? Number(voz_id) : null, usuario_id ? Number(usuario_id) : null]
     );
-
     return res.status(201).json({ sucesso: true, anuncio: item.rows[0] });
   } catch (error) {
-    console.error('Erro ao salvar anúncio:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar anúncio.' });
   }
 });
 
 app.delete('/api/anuncios/:id', async (req, res) => {
-  if (!pool) {
-    return bancoIndisponivel(res, 'Banco de dados não configurado.');
-  }
-
-  const { id } = req.params;
-
+  if (!pool) return bancoIndisponivel(res);
   try {
-    const removido = await pool.query(
-      'DELETE FROM anuncios WHERE id = $1 RETURNING *',
-      [id]
-    );
-
-    if (removido.rows.length === 0) {
-      return res.status(404).json({ sucesso: false, mensagem: 'Anúncio não encontrado.' });
-    }
-
-    return res.json({ sucesso: true, anuncio: removido.rows[0] });
+    await pool.query('DELETE FROM anuncios WHERE id = $1', [id]);
+    return res.json({ sucesso: true });
   } catch (error) {
-    console.error('Erro ao remover anúncio:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover anúncio.' });
   }
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.use((req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
