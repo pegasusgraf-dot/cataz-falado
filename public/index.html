@@ -102,7 +102,7 @@
         </div>
         <div>
           <div id="bloco-master" class="hidden" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 12px;">
-            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Nova Voz / Perfil</button>
+            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Subir Áudio / Nova Voz</button>
             <button id="btn-gerenciar-vozes" class="button button-ghost" style="font-size: 0.85rem;">📂 Gerenciar Vozes Salvas</button>
             <button id="btn-adicionar-usuario" class="button button-ghost" style="font-size: 0.85rem;">+ Incluir usuário</button>
           </div>
@@ -155,14 +155,15 @@
       </section>
     </main>
 
-    <!-- MODAL: CADASTRAR VOZ -->
+    <!-- MODAL: SUBIR ÁUDIO E CADASTRAR VOZ -->
     <div id="modal-criar-voz" class="modal-backdrop hidden">
       <div class="modal">
-        <h3>Cadastrar Nova Voz / Perfil</h3>
-        <p style="font-size:0.85rem; color:var(--muted); margin-top:-10px;">Adicione o nome do locutor para organizar seus anúncios.</p>
+        <h3>Subir Áudio para o Perfil de Voz</h3>
+        <p style="font-size:0.85rem; color:var(--muted); margin-top:-10px;">Envie uma amostra de áudio (MP3/WAV) do locutor para catalogar no sistema.</p>
         <form id="form-criar-voz" class="form-stack">
           <label class="field">Nome do Locutor / Voz<input id="voz-nome" required placeholder="Ex.: Locutor João Varejo"></label>
           <label class="field">Tipo / Estilo<input id="voz-tipo" placeholder="Ex.: Animado / Varejo"></label>
+          <label class="field">Arquivo de Áudio de Amostra<input id="voz-arquivo" type="file" accept="audio/*"></label>
           <div class="row">
             <button type="button" id="cancelar-voz" class="button button-ghost">Cancelar</button>
             <button type="submit" class="button button-primary" id="btn-enviar-voz">Salvar Voz</button>
@@ -300,7 +301,7 @@
         const btnSalvar = document.getElementById('btn-enviar-voz');
 
         btnSalvar.disabled = true;
-        setMessage(vozModalMessage, 'Salvando voz...', 'var(--primary)');
+        setMessage(vozModalMessage, 'Salvando voz e arquivo...', 'var(--primary)');
 
         try {
           const res = await fetch('/api/clonar-voz', {
@@ -448,7 +449,7 @@
             <div class="history-item">
               <div>
                 <b>${a.produto}</b><br>
-                <small style="color:var(--muted);">${a.voz_nome ? '🎙️ ' + a.voz_nome : 'Voz Padrão'}</small>
+                <small style="color:var(--muted);">${a.voz_nome ? '🎙️ ' + a.voz_nome : 'Locutor Padrão'}</small>
               </div>
               <button class="button button-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="excluirAnuncio(${a.id})">x</button>
             </div>
