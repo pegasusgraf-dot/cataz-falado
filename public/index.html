@@ -57,7 +57,7 @@
       .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
       .ad-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
       .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
-      .modal { width: min(500px, 100%); background: white; border-radius: 18px; padding: 24px; box-shadow: 0 30px 70px rgba(15, 23, 42, 0.25); max-height: 90vh; overflow-y: auto; }
+      .modal { width: min(550px, 100%); background: white; border-radius: 18px; padding: 24px; box-shadow: 0 30px 70px rgba(15, 23, 42, 0.25); max-height: 90vh; overflow-y: auto; }
       .row { display: flex; gap: 10px; } .row > * { flex: 1; }
       @media (max-width: 768px) { .auth-layout, .app-layout { grid-template-columns: 1fr; } .auth-intro { display: none; } .field-row { grid-template-columns: 1fr; } }
     </style>
@@ -102,8 +102,9 @@
         </div>
         <div>
           <div id="bloco-master" class="hidden" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 12px;">
-            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Nova Voz / Perfil</button>
+            <button id="btn-adicionar-voz" class="button button-primary" style="font-size: 0.85rem;">🎙️ Subir Áudio / Nova Voz</button>
             <button id="btn-gerenciar-vozes" class="button button-ghost" style="font-size: 0.85rem;">📂 Gerenciar Vozes Salvas</button>
+            <button id="btn-gerenciar-usuarios" class="button button-ghost" style="font-size: 0.85rem;">👥 Validar Usuários</button>
             <button id="btn-adicionar-usuario" class="button button-ghost" style="font-size: 0.85rem;">+ Incluir usuário</button>
           </div>
           <button id="btn-sair" class="button button-ghost" style="width: 100%; font-size: 0.85rem;">Sair</button>
@@ -155,13 +156,14 @@
       </section>
     </main>
 
-    <!-- MODAL: CADASTRAR VOZ -->
+    <!-- MODAL: SUBIR ÁUDIO E CADASTRAR VOZ -->
     <div id="modal-criar-voz" class="modal-backdrop hidden">
       <div class="modal">
-        <h3>Cadastrar Nova Voz / Perfil</h3>
+        <h3>Cadastrar Nova Voz com Amostra</h3>
         <form id="form-criar-voz" class="form-stack">
           <label class="field">Nome do Locutor / Voz<input id="voz-nome" required placeholder="Ex.: Locutor João Varejo"></label>
           <label class="field">Tipo / Estilo<input id="voz-tipo" placeholder="Ex.: Animado / Varejo"></label>
+          <label class="field">Arquivo de Áudio (.mp3 ou .wav)<input id="voz-arquivo" type="file" accept="audio/*"></label>
           <div class="row">
             <button type="button" id="cancelar-voz" class="button button-ghost">Cancelar</button>
             <button type="submit" class="button button-primary" id="btn-enviar-voz">Salvar Voz</button>
@@ -182,7 +184,18 @@
       </div>
     </div>
 
-    <!-- MODAL: CRIAR USUÁRIO (RESTAURADO E FUNCIONANDO) -->
+    <!-- MODAL: VALIDAÇÃO / GERENCIAR USUÁRIOS (NOVO) -->
+    <div id="modal-gerenciar-usuarios" class="modal-backdrop hidden">
+      <div class="modal">
+        <h3>Validação de Usuários Pendentes</h3>
+        <div id="lista-usuarios-pendentes" style="display:flex; flex-direction:column; gap:10px; margin-top:15px; max-height:300px; overflow-y:auto;"></div>
+        <div style="margin-top:20px; text-align:right;">
+          <button type="button" id="fechar-gerenciar-usuarios" class="button button-ghost">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CRIAR USUÁRIO -->
     <div id="modal-criar-usuario" class="modal-backdrop hidden">
       <div class="modal">
         <h3>Incluir usuário</h3>
@@ -204,7 +217,7 @@
       let modoRegistro = false;
       let usuarioAtual = null;
       let vozesCarregadas = [];
-      let ultimoAudioBase64 = null; // Armazena temporariamente o último áudio gerado
+      let ultimoAudioBase64 = null;
 
       const authForm = document.getElementById('auth-form');
       const authTitle = document.getElementById('auth-title');
@@ -225,7 +238,11 @@
       const fecharGerenciarVozes = document.getElementById('fechar-gerenciar-vozes');
       const listaVozesCadastradas = document.getElementById('lista-vozes-cadastradas');
 
-      // Elementos do Modal de Usuário
+      const modalGerenciarUsuarios = document.getElementById('modal-gerenciar-usuarios');
+      const btnGerenciarUsuarios = document.getElementById('btn-gerenciar-usuarios');
+      const fecharGerenciarUsuarios = document.getElementById('fechar-gerenciar-usuarios');
+      const listaUsuariosPendentes = document.getElementById('lista-usuarios-pendentes');
+
       const modalCriarUsuario = document.getElementById('modal-criar-usuario');
       const btnAdicionarUsuario = document.getElementById('btn-adicionar-usuario');
       const cancelarUsuario = document.getElementById('cancelar-usuario');
@@ -254,7 +271,7 @@
           const nome = document.getElementById('input-nome').value.trim();
           const res = await fetch('/api/usuarios', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nome, email, senha, tipo: 'comum' }) });
           const data = await res.json();
-          if(data.sucesso) { alert('Cadastrado! Aguarde aprovação do master.'); modoRegistro = false; }
+          if(data.sucesso) { alert('Cadastrado com sucesso!'); modoRegistro = false; }
           else alert(data.mensagem);
           return;
         }
@@ -280,7 +297,7 @@
         carregarHistorico();
       }
 
-      // MODAL DE CRIAR USUÁRIO (CORRIGIDO)
+      // MODAL DE CRIAR USUÁRIO
       btnAdicionarUsuario.addEventListener('click', () => modalCriarUsuario.classList.remove('hidden'));
       cancelarUsuario.addEventListener('click', () => modalCriarUsuario.classList.add('hidden'));
 
@@ -299,7 +316,7 @@
           });
           const data = await res.json();
           if (res.ok && data.sucesso) {
-            setMessage(modalUsuarioMessage, 'Usuário cadastrado com sucesso!', 'var(--success)');
+            setMessage(modalUsuarioMessage, 'Usuário criado com sucesso!', 'var(--success)');
             formCriarUsuario.reset();
             setTimeout(() => modalCriarUsuario.classList.add('hidden'), 1000);
           } else {
@@ -309,6 +326,59 @@
           setMessage(modalUsuarioMessage, 'Erro de conexão.', 'var(--danger)');
         }
       });
+
+      // MODAL DE VALIDAÇÃO DE USUÁRIOS
+      btnGerenciarUsuarios.addEventListener('click', () => {
+        modalGerenciarUsuarios.classList.remove('hidden');
+        carregarUsuariosPendentes();
+      });
+      fecharGerenciarUsuarios.addEventListener('click', () => modalGerenciarUsuarios.classList.add('hidden'));
+
+      async function carregarUsuariosPendentes() {
+        try {
+          const res = await fetch('/api/usuarios');
+          const data = await res.json();
+          if (data.sucesso) {
+            listaUsuariosPendentes.innerHTML = '';
+            if (data.usuarios.length === 0) {
+              listaUsuariosPendentes.innerHTML = '<span style="color:var(--muted); font-size:0.85rem;">Nenhum usuário cadastrado.</span>';
+              return;
+            }
+            data.usuarios.forEach(u => {
+              const item = document.createElement('div');
+              item.style = 'display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; padding:10px; border-radius:8px;';
+              item.innerHTML = `
+                <div>
+                  <strong>${u.nome}</strong> (${u.email})<br>
+                  <small style="color:var(--muted);">Tipo: ${u.tipo} | Status: <b>${u.status}</b></small>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  ${u.status !== 'aprovado' ? `<button class="button button-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="atualizarStatusUsuario(${u.id}, 'aprovado')">Aprovar</button>` : ''}
+                  <button class="button button-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="excluirUsuario(${u.id})">Excluir</button>
+                </div>
+              `;
+              listaUsuariosPendentes.appendChild(item);
+            });
+          }
+        } catch (e) {
+          console.error('Erro ao carregar usuários', e);
+        }
+      }
+
+      window.atualizarStatusUsuario = async function(id, status) {
+        await fetch(`/api/usuarios/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        carregarUsuariosPendentes();
+      };
+
+      window.excluirUsuario = async function(id) {
+        if (!confirm('Deseja excluir este usuário?')) return;
+        await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+        carregarUsuariosPendentes();
+      };
 
       async function carregarVozes() {
         try {
@@ -412,7 +482,6 @@
         document.getElementById('preview-texto').textContent = texto;
       });
 
-      // GERAR ÁUDIO E GUARDAR NA VARIÁVEL GLOBAL PARA SALVAR NO BANCO
       document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
         const texto = document.getElementById('input-texto-anuncio').value.trim();
         const msgEl = document.getElementById('anuncio-message');
@@ -443,7 +512,6 @@
         }
       });
 
-      // SALVAR ANÚNCIO INCLUINDO O ÁUDIO GERADO
       document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
         const produto = document.getElementById('input-produto').value.trim();
         const texto = document.getElementById('input-texto-anuncio').value.trim();
@@ -471,6 +539,7 @@
           const data = await res.json();
           if (res.ok && data.sucesso) {
             setMessage(msgEl, 'Anúncio e áudio salvos com sucesso no banco!', 'var(--success)');
+            ultimoAudioBase64 = null; // reseta
             carregarHistorico();
           } else {
             setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
@@ -503,7 +572,7 @@
       window.reproduzirAudioHistorico = function(base64) {
         if (!base64) return;
         const audio = new Audio(base64);
-        audio.play();
+        audio.play().catch(e => console.error('Erro ao reproduzir áudio:', e));
       };
 
       window.excluirAnuncio = async function(id) {
