@@ -48,6 +48,7 @@ async function inicializarBanco() {
         descricao VARCHAR(255),
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
         arquivo_base64 TEXT,
+        audio_data TEXT,
         usuario_id INTEGER,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -65,9 +66,12 @@ async function inicializarBanco() {
       );
     `);
 
+    // Remove travas NOT NULL de colunas antigas para evitar o erro de violação de constraint
+    await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
+    await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
+    await pool.query(`ALTER TABLE vozes ALTER COLUMN audio_data DROP NOT NULL;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS voz_id INTEGER;`);
-    await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
 
     const checkMaster = await pool.query("SELECT 1 FROM usuarios WHERE LOWER(email) = LOWER('master') LIMIT 1");
     if (checkMaster.rows.length === 0) {
@@ -176,11 +180,17 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- VOZES ---
+// --- VOZES (Salva tanto em arquivo_base64 quanto em audio_data para não violar constraint) ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
-    const lista = await pool.query('SELECT id, nome, descricao, tipo_locucao, arquivo_base64, created_at FROM vozes ORDER BY id DESC');
+    const lista = await pool.query(`
+      SELECT id, nome, descricao, tipo_locucao, 
+             COALESCE(arquivo_base64, audio_data) AS arquivo_base64, 
+             created_at 
+      FROM vozes 
+      ORDER BY id DESC
+    `);
     return res.json({ sucesso: true, vozes: lista.rows });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar vozes.' });
@@ -202,13 +212,16 @@ app.post('/api/clonar-voz', async (req, res) => {
       if (checaUser.rows.length > 0) idUsuarioValido = checaUser.rows[0].id;
     }
 
+    const audioConteudo = arquivo_base64 || '';
+
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, usuario_id) 
-       VALUES ($1, $2, $3, $4) RETURNING id, nome, tipo_locucao, created_at`,
+      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, audio_data, usuario_id) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, tipo_locucao, created_at`,
       [
         String(nome).trim(),
         String(tipo_locucao || 'Padrão').trim(),
-        arquivo_base64 || null,
+        audioConteudo,
+        audioConteudo,
         idUsuarioValido
       ]
     );
@@ -230,7 +243,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTEIRO COM GEMINI (FETCH DIRETO - NÃO DEPENDE DE INSTALAR PACOTE) ---
+// --- ROTEIRO COM GEMINI (ATUALIZADO PARA gemini-3.8-flash) ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
@@ -245,140 +258,13 @@ app.post('/api/gerar-roteiro-ia', async (req, res) => {
 
   try {
     const promptText = `Você é um locutor profissional de rádio de supermercado e varejo.
-Crie um texto de chamada promocional curto, impactante e vendedora (máximo 40 palavras).
+Crie um texto de chamada promocional curto, impactante e vendedor (máximo 40 palavras).
 Dados da oferta:
 - Produto: ${produto}
 - De: R$ ${valorOriginal || 'Preço normal'}
 - Por: R$ ${valorPromocional || 'Super promoção'}
 - Oferta/Destaque: ${oferta || 'Imperdível'}
 
-Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem explicações.`;
+Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem comentários.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }]
-      })
-    });
-
-    const data = await geminiRes.json();
-    const roteiro = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!roteiro) {
-      throw new Error(data.error?.message || 'Falha na resposta do Gemini.');
-    }
-
-    return res.json({ sucesso: true, roteiro: roteiro.trim() });
-  } catch (err) {
-    console.error('Erro no Gemini:', err);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro na API Gemini: ' + err.message });
-  }
-});
-
-// --- LOCUÇÃO / REPRODUÇÃO ---
-app.post('/api/gerar-locucao', async (req, res) => {
-  const { texto, voz_id } = req.body || {};
-  if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
-
-  try {
-    if (voz_id && pool) {
-      const vozEncontrada = await pool.query('SELECT arquivo_base64 FROM vozes WHERE id = $1', [Number(voz_id)]);
-      if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].arquivo_base64) {
-        return res.json({ sucesso: true, audio_data: vozEncontrada.rows[0].arquivo_base64 });
-      }
-    }
-
-    const encodedText = encodeURIComponent(texto.substring(0, 200));
-    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
-
-    const response = await fetch(googleTtsUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-
-    if (!response.ok) {
-      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar locução padrão.' });
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const audioBase64 = `data:audio/mpeg;base64,${buffer.toString('base64')}`;
-
-    return res.json({ sucesso: true, audio_data: audioBase64 });
-  } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao processar locução.' });
-  }
-});
-
-// --- ANÚNCIOS ---
-app.get('/api/anuncios', async (req, res) => {
-  if (!pool) return bancoIndisponivel(res);
-  try {
-    const lista = await pool.query(`
-      SELECT a.*, v.nome AS voz_nome, u.nome AS usuario_nome
-      FROM anuncios a
-      LEFT JOIN vozes v ON v.id = a.voz_id
-      LEFT JOIN usuarios u ON u.id = a.usuario_id
-      ORDER BY a.id DESC
-    `);
-    return res.json({ sucesso: true, anuncios: lista.rows });
-  } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar anúncios.' });
-  }
-});
-
-app.post('/api/anuncios', async (req, res) => {
-  if (!pool) return bancoIndisponivel(res);
-  const { produto, texto, voz_id, usuario_id, audio_data } = req.body || {};
-
-  if (!produto || !texto) {
-    return res.status(400).json({ sucesso: false, mensagem: 'Produto e texto são obrigatórios.' });
-  }
-
-  try {
-    let idUsuarioValido = null;
-    if (usuario_id && !isNaN(Number(usuario_id))) {
-      const checaUser = await pool.query('SELECT id FROM usuarios WHERE id = $1', [Number(usuario_id)]);
-      if (checaUser.rows.length > 0) idUsuarioValido = checaUser.rows[0].id;
-    }
-
-    let idVozValida = null;
-    if (voz_id && !isNaN(Number(voz_id))) {
-      const checaVoz = await pool.query('SELECT id FROM vozes WHERE id = $1', [Number(voz_id)]);
-      if (checaVoz.rows.length > 0) idVozValida = checaVoz.rows[0].id;
-    }
-
-    const item = await pool.query(
-      `INSERT INTO anuncios (produto, texto, voz_id, usuario_id, audio_data) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [
-        String(produto).trim(),
-        String(texto).trim(),
-        idVozValida,
-        idUsuarioValido,
-        audio_data || null
-      ]
-    );
-    return res.status(201).json({ sucesso: true, anuncio: item.rows[0] });
-  } catch (error) {
-    console.error('Erro ao salvar anúncio:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar anúncio no banco.' });
-  }
-});
-
-app.delete('/api/anuncios/:id', async (req, res) => {
-  if (!pool) return bancoIndisponivel(res);
-  try {
-    await pool.query('DELETE FROM anuncios WHERE id = $1', [req.params.id]);
-    return res.json({ sucesso: true });
-  } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover anúncio.' });
-  }
-});
-
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.use((req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+    const url = `
