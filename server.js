@@ -5,10 +5,13 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Configurações de Payload
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Chave Gemini configurada
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBf4ITUYd-Dn95wzoFqYBt4LkMwcr3Ynls';
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
@@ -66,7 +69,7 @@ async function inicializarBanco() {
       );
     `);
 
-    // Remove travas NOT NULL de colunas antigas para evitar o erro de violação de constraint
+    // Remove travas NOT NULL de tabelas anteriores para não barrar upload
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE vozes ALTER COLUMN audio_data DROP NOT NULL;`);
@@ -180,7 +183,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- VOZES (Salva tanto em arquivo_base64 quanto em audio_data para não violar constraint) ---
+// --- VOZES ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
@@ -243,17 +246,12 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTEIRO COM GEMINI (ATUALIZADO PARA gemini-3.8-flash) ---
+// --- ROTEIRO COM GEMINI 3.8 FLASH ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
   if (!produto) {
     return res.status(400).json({ sucesso: false, mensagem: 'Informe o nome do produto.' });
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ sucesso: false, mensagem: 'GEMINI_API_KEY não configurada na Vercel.' });
   }
 
   try {
@@ -265,9 +263,9 @@ Dados da oferta:
 - Por: R$ ${valorPromocional || 'Super promoção'}
 - Oferta/Destaque: ${oferta || 'Imperdível'}
 
-Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem comentários.`;
+Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem explicações.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
     const geminiRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -290,40 +288,78 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
   }
 });
 
-// --- LOCUÇÃO / REPRODUÇÃO ---
+// --- LOCUÇÃO COM GEMINI (AUDIO NATIVO OU SEQUÊNCIA DE VOZ) ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
 
   try {
+    let audioLocutor = null;
+
+    // Busca o arquivo MP3 que você subiu e salvou no Neon
     if (voz_id && pool) {
       const vozEncontrada = await pool.query(
-        'SELECT COALESCE(arquivo_base64, audio_data) AS audio FROM vozes WHERE id = $1', 
+        'SELECT COALESCE(arquivo_base64, audio_data) AS audio FROM vozes WHERE id = $1',
         [Number(voz_id)]
       );
       if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].audio) {
-        return res.json({ sucesso: true, audio_data: vozEncontrada.rows[0].audio });
+        audioLocutor = vozEncontrada.rows[0].audio;
       }
     }
 
-    const encodedText = encodeURIComponent(texto.substring(0, 200));
-    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
+    // Tenta sintetizar áudio via Gemini Multimodal Audio
+    let audioNarradoBase64 = null;
+    try {
+      const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
+      const payloadAudio = {
+        contents: [{
+          parts: [{ text: `Leia com voz enérgica de locutor de rádio comercial de loja o seguinte texto: "${texto}"` }]
+        }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: "Puck" }
+            }
+          }
+        }
+      };
 
-    const response = await fetch(googleTtsUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
+      const resAudio = await fetch(urlAudio, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadAudio)
+      });
+      const dataAudio = await resAudio.json();
+      const inlineAudio = dataAudio?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
 
-    if (!response.ok) {
-      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar locução padrão.' });
+      if (inlineAudio) {
+        audioNarradoBase64 = `data:audio/wav;base64,${inlineAudio}`;
+      }
+    } catch (e) {
+      console.warn('Fallback para Google TTS padrão:', e.message);
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const audioBase64 = `data:audio/mpeg;base64,${buffer.toString('base64')}`;
+    // Fallback: caso o modelo de áudio esteja indisponível, usa síntese leve
+    if (!audioNarradoBase64) {
+      const encodedText = encodeURIComponent(texto.substring(0, 200));
+      const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
+      const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        audioNarradoBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+      }
+    }
 
-    return res.json({ sucesso: true, audio_data: audioBase64 });
+    // Retorna o áudio da narração e a vinheta/amostra do locutor cadastrado
+    return res.json({
+      sucesso: true,
+      audio_data: audioNarradoBase64 || audioLocutor,
+      audio_locutor: audioLocutor,
+      audio_narracao: audioNarradoBase64
+    });
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao processar locução.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao processar locução: ' + error.message });
   }
 });
 
