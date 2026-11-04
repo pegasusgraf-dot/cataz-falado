@@ -41,19 +41,18 @@ async function inicializarBanco() {
       );
     `);
 
-    // Tabela ajustada para aceitar o cadastro de vozes locais com arquivo
     await pool.query(`
       CREATE TABLE IF NOT EXISTS vozes (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(100) NOT NULL,
         descricao VARCHAR(255),
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
-        arquivo_url TEXT,
         usuario_id INTEGER REFERENCES usuarios(id),
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
+    // Atualizado para salvar o base64 do áudio gerado no histórico
     await pool.query(`
       CREATE TABLE IF NOT EXISTS anuncios (
         id SERIAL PRIMARY KEY,
@@ -61,6 +60,7 @@ async function inicializarBanco() {
         texto TEXT NOT NULL,
         voz_id INTEGER REFERENCES vozes(id) ON DELETE SET NULL,
         usuario_id INTEGER REFERENCES usuarios(id),
+        audio_data TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -155,14 +155,13 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- GERENCIAMENTO DE VOZES (NEON) ---
+// --- GERENCIAMENTO DE VOZES ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
     const r = await pool.query('SELECT id, nome, descricao, tipo_locucao, created_at FROM vozes ORDER BY id DESC');
     return res.json({ sucesso: true, vozes: r.rows });
   } catch (error) {
-    console.error('Erro ao buscar vozes:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar vozes.' });
   }
 });
@@ -177,32 +176,28 @@ app.post('/api/clonar-voz', async (req, res) => {
 
   try {
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, tipo_locucao, usuario_id)
-       VALUES ($1, $2, $3) RETURNING *`,
+      `INSERT INTO vozes (nome, tipo_locucao, usuario_id) VALUES ($1, $2, $3) RETURNING *`,
       [nome, tipo_locucao || 'Padrão', usuario_id ? Number(usuario_id) : null]
     );
 
     return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
   } catch (err) {
-    console.error('Erro ao cadastrar voz:', err);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao processar voz.' });
   }
 });
 
 app.delete('/api/vozes/:id', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  const { id } = req.params;
-
   try {
-    await pool.query('DELETE FROM anuncios WHERE voz_id = $1', [id]);
-    await pool.query('DELETE FROM vozes WHERE id = $1', [id]);
+    await pool.query('DELETE FROM anuncios WHERE voz_id = $1', [req.params.id]);
+    await pool.query('DELETE FROM vozes WHERE id = $1', [req.params.id]);
     return res.json({ sucesso: true });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover voz.' });
   }
 });
 
-// --- NARRAR TEXTO COM SINTETIZADOR GRATUITO (GOOGLE TRANSLATE TTS) ---
+// --- NARRAR TEXTO (GOOGLE TRANSLATE TTS) COM ROTA ROBUSTA ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto } = req.body || {};
 
@@ -211,7 +206,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
   }
 
   try {
-    const encodedText = encodeURIComponent(texto);
+    const encodedText = encodeURIComponent(texto.substring(0, 200)); // Limite seguro para a query do Google TTS
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
 
     const response = await fetch(googleTtsUrl, {
@@ -221,7 +216,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
     });
 
     if (!response.ok) {
-      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar áudio gratuito.' });
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar áudio gratuito no Google TTS.' });
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -230,8 +225,8 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     return res.json({ sucesso: true, audio_data: audioBase64 });
   } catch (error) {
-    console.error('Erro na locução gratuita:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha de conexão com o sintetizador gratuito.' });
+    console.error('Erro na locução:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha de conexão com o sintetizador de áudio.' });
   }
 });
 
@@ -253,7 +248,7 @@ app.get('/api/anuncios', async (req, res) => {
 
 app.post('/api/anuncios', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  const { produto, texto, voz_id, usuario_id } = req.body || {};
+  const { produto, texto, voz_id, usuario_id, audio_data } = req.body || {};
 
   if (!produto || !texto) {
     return res.status(400).json({ sucesso: false, mensagem: 'Produto e texto são obrigatórios.' });
@@ -261,8 +256,8 @@ app.post('/api/anuncios', async (req, res) => {
 
   try {
     const item = await pool.query(
-      `INSERT INTO anuncios (produto, texto, voz_id, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *`,
-      [String(produto).trim(), String(texto).trim(), voz_id ? Number(voz_id) : null, usuario_id ? Number(usuario_id) : null]
+      `INSERT INTO anuncios (produto, texto, voz_id, usuario_id, audio_data) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [String(produto).trim(), String(texto).trim(), voz_id ? Number(voz_id) : null, usuario_id ? Number(usuario_id) : null, audio_data || null]
     );
     return res.status(201).json({ sucesso: true, anuncio: item.rows[0] });
   } catch (error) {
