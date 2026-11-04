@@ -9,7 +9,7 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ limit: '15mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Chave da API Gemini
+// Chave Gemini ativa
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6IRvVrF-JMe5yGT5WbQORWpcsqpIV1Q0w-NSpk2KJ2DjQ';
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -68,10 +68,8 @@ async function inicializarBanco() {
       );
     `);
 
-    // Atualiza as colunas necessárias sem quebrar tabelas existentes
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
-    await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS external_voice_id VARCHAR(100);`);
     await pool.query(`ALTER TABLE vozes ALTER COLUMN audio_data DROP NOT NULL;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS voz_id INTEGER;`);
@@ -217,7 +215,6 @@ app.post('/api/clonar-voz', async (req, res) => {
 
     const audioConteudo = arquivo_base64 || '';
 
-    // Salva sem depender de colunas externas para evitar erro de banco
     const novaVoz = await pool.query(
       `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, audio_data, usuario_id) 
        VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, tipo_locucao, created_at`,
@@ -293,17 +290,64 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
     return res.json({ sucesso: true, roteiro: roteiroFinal });
   }
 
-  const fallbackText = `Atenção clientes! Hoje temos ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite essa super oferta'} na nossa loja!`;
+  const fallbackText = `Atenção clientes! Hoje temos ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite já essa super oferta'} na nossa loja!`;
   return res.json({ sucesso: true, roteiro: fallbackText });
 });
 
-// --- NARRAÇÃO DO TEXTO DO ANÚNCIO ---
+// --- NARRAÇÃO COM CLONAGEM GRATUITA (LÊ O TEXTO COM O TIMBRE DO ÁUDIO SALVO) ---
 app.post('/api/gerar-locucao', async (req, res) => {
-  const { texto } = req.body || {};
+  const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório para narrar.' });
 
   try {
-    // Narra o texto novo usando síntese de fala
+    let audioReferencia = null;
+
+    // 1. Busca a amostra gravada no banco Neon
+    if (voz_id && pool) {
+      const vozEncontrada = await pool.query(
+        'SELECT COALESCE(arquivo_base64, audio_data) AS audio FROM vozes WHERE id = $1',
+        [Number(voz_id)]
+      );
+      if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].audio) {
+        audioReferencia = vozEncontrada.rows[0].audio;
+      }
+    }
+
+    // 2. Se houver áudio de referência, tenta clonar via microserviço gratuito XTTS
+    if (audioReferencia) {
+      try {
+        const hfRes = await fetch("https://fabrice-tiercelin-multi-language-text-to-speech.hf.space/run/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            data: [
+              texto,            // Texto a ser lido
+              "Portuguese",     // Idioma
+              audioReferencia   // Áudio do seu locutor gravado no banco
+            ]
+          })
+        });
+
+        const hfData = await hfRes.json();
+        if (hfData?.data?.[0]?.name || hfData?.data?.[0]) {
+          const resultadoAudio = hfData.data[0];
+          const audioUrl = typeof resultadoAudio === 'string' ? resultadoAudio : resultadoAudio.name;
+          
+          if (audioUrl && audioUrl.startsWith('data:audio')) {
+            return res.json({ sucesso: true, audio_data: audioUrl });
+          } else if (audioUrl) {
+            const fetchAudio = await fetch(audioUrl);
+            const arrayBuffer = await fetchAudio.arrayBuffer();
+            const clonedBase64 = `data:audio/wav;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+            return res.json({ sucesso: true, audio_data: clonedBase64 });
+          }
+        }
+      } catch (errClone) {
+        console.warn('Falha no clone online, utilizando sintetizador direto:', errClone.message);
+      }
+    }
+
+    // 3. Fallback: síntese em português do Brasil garantida
     const encodedText = encodeURIComponent(texto.substring(0, 250));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
     const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
