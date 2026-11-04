@@ -46,7 +46,6 @@ async function inicializarBanco() {
       );
     `);
 
-    // Tabela para armazenar as vozes customizadas da loja
     await pool.query(`
       CREATE TABLE IF NOT EXISTS vozes (
         id SERIAL PRIMARY KEY,
@@ -143,6 +142,11 @@ app.get('/api/usuarios', async (req, res) => {
 app.post('/api/usuarios', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   const { nome, email, senha, tipo } = req.body || {};
+  
+  if (!nome || !email || !senha) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Nome, e-mail e senha são obrigatórios.' });
+  }
+
   try {
     const novo = await pool.query(
       `INSERT INTO usuarios (nome, email, senha, tipo, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, email, tipo, status`,
@@ -150,6 +154,7 @@ app.post('/api/usuarios', async (req, res) => {
     );
     return res.status(201).json({ sucesso: true, usuario: novo.rows[0] });
   } catch (error) {
+    console.error('Erro ao cadastrar usuário:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar usuário (E-mail já existe?).' });
   }
 });
@@ -232,6 +237,48 @@ app.delete('/api/vozes/:id', async (req, res) => {
     return res.json({ sucesso: true });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao excluir voz.' });
+  }
+});
+
+// --- ROTA DE SÍNTESE COM ELEVENLABS ---
+app.post('/api/gerar-locucao', async (req, res) => {
+  const { texto, voice_id } = req.body || {};
+  // Chave ElevenLabs fornecida
+  const apiKey = process.env.ELEVENLABS_API_KEY || 'AQ.Ab8RN6KU3HdZFjjAotsW0BlafLbYe4cEbToWow9FetNe6Csi0w';
+
+  if (!texto || !voice_id) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Texto e ID da voz são obrigatórios.' });
+  }
+
+  try {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey
+      },
+      body: JSON.stringify({
+        text: texto,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Erro ElevenLabs:', errText);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro na API da ElevenLabs. Verifique o Voice ID.' });
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const audioBase64 = `data:audio/mpeg;base64,${buffer.toString('base64')}`;
+
+    return res.json({ sucesso: true, audio_data: audioBase64 });
+  } catch (error) {
+    console.error('Erro ao conectar com ElevenLabs:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar locução inteligente.' });
   }
 });
 
