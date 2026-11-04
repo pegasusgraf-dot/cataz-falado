@@ -12,7 +12,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error('DATABASE_URL não configurada. Defina a variável de ambiente no Vercel antes do redeploy.');
+  console.error('DATABASE_URL não configurada.');
 }
 
 const pool = DATABASE_URL
@@ -27,11 +27,7 @@ function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
 }
 
 async function inicializarBanco() {
-  if (!pool) {
-    console.error('Banco não inicializado porque DATABASE_URL não foi configurada.');
-    return;
-  }
-
+  if (!pool) return;
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
@@ -45,19 +41,18 @@ async function inicializarBanco() {
       );
     `);
 
-    // Tabela de vozes corrigida e segura
     await pool.query(`
       CREATE TABLE IF NOT EXISTS vozes (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(100) NOT NULL,
         descricao VARCHAR(255),
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
+        arquivo_base64 TEXT,
         usuario_id INTEGER REFERENCES usuarios(id),
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    // Tabela de anúncios com suporte a voz_id e audio_data
     await pool.query(`
       CREATE TABLE IF NOT EXISTS anuncios (
         id SERIAL PRIMARY KEY,
@@ -73,16 +68,14 @@ async function inicializarBanco() {
     // Garante as colunas caso as tabelas já existam
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS voz_id INTEGER;`);
+    await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
 
     const checkMaster = await pool.query("SELECT 1 FROM usuarios WHERE LOWER(email) = LOWER('master') LIMIT 1");
     if (checkMaster.rows.length === 0) {
       await pool.query(
         "INSERT INTO usuarios (nome, email, senha, tipo, status) VALUES ('Master', 'master', '1234', 'master', 'aprovado')"
       );
-      console.log('Usuário master criado com sucesso! (master / 1234)');
     }
-
-    console.log('Banco inicializado com sucesso.');
   } catch (err) {
     console.error('Erro ao inicializar tabelas:', err);
   }
@@ -197,7 +190,7 @@ app.get('/api/vozes', async (req, res) => {
 
 app.post('/api/clonar-voz', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  const { nome, tipo_locucao, usuario_id } = req.body || {};
+  const { nome, tipo_locucao, arquivo_base64, usuario_id } = req.body || {};
 
   if (!nome) {
     return res.status(400).json({ sucesso: false, mensagem: 'Nome da voz é obrigatório.' });
@@ -205,11 +198,12 @@ app.post('/api/clonar-voz', async (req, res) => {
 
   try {
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, tipo_locucao, usuario_id) VALUES ($1, $2, $3) RETURNING *`,
-      [String(nome).trim(), String(tipo_locucao || 'Padrão').trim(), usuario_id ? Number(usuario_id) : null]
+      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [String(nome).trim(), String(tipo_locucao || 'Padrão').trim(), arquivo_base64 || null, usuario_id ? Number(usuario_id) : null]
     );
     return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
   } catch (error) {
+    console.error('Erro ao salvar voz:', error);
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar voz.' });
   }
 });
@@ -225,7 +219,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTA DE SÍNTESE DE VOZ (GOOGLE TTS) ---
+// --- SÍNTESE DE VOZ (GOOGLE TTS) ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
