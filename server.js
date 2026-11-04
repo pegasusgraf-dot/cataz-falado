@@ -269,7 +269,7 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- ROTEIRO COM GEMINI 3.8 FLASH ---
+// --- ROTEIRO COM GEMINI (COM SUPORTE A FALLBACK CONTRA ALTA DEMANDA) ---
 app.post('/api/gerar-roteiro-ia', async (req, res) => {
   const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
 
@@ -277,8 +277,7 @@ app.post('/api/gerar-roteiro-ia', async (req, res) => {
     return res.status(400).json({ sucesso: false, mensagem: 'Informe o nome do produto.' });
   }
 
-  try {
-    const promptText = `Você é um locutor profissional de rádio de supermercado e varejo.
+  const promptText = `Você é um locutor profissional de rádio de supermercado e varejo.
 Crie um texto de chamada promocional curto, impactante e vendedor (máximo 40 palavras).
 Dados da oferta:
 - Produto: ${produto}
@@ -288,30 +287,44 @@ Dados da oferta:
 
 Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspas nem explicações.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }]
-      })
-    });
+  // Modelos ordenados por prioridade caso algum esteja com alta demanda
+  const modelos = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  let roteiroFinal = null;
+  let ultimoErro = null;
 
-    const data = await geminiRes.json();
-    const roteiro = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  for (const modelo of modelos) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${GEMINI_API_KEY}`;
+      const geminiRes = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }]
+        })
+      });
 
-    if (!roteiro) {
-      throw new Error(data.error?.message || 'Falha na resposta do Gemini.');
+      const data = await geminiRes.json();
+      if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        roteiroFinal = data.candidates[0].content.parts[0].text.trim();
+        break; // Sucesso, sai do loop
+      } else if (data.error) {
+        ultimoErro = data.error.message;
+      }
+    } catch (err) {
+      ultimoErro = err.message;
     }
-
-    return res.json({ sucesso: true, roteiro: roteiro.trim() });
-  } catch (err) {
-    console.error('Erro no Gemini:', err);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro na API Gemini: ' + err.message });
   }
+
+  if (roteiroFinal) {
+    return res.json({ sucesso: true, roteiro: roteiroFinal });
+  }
+
+  // Fallback local se todos os servidores do Google estiverem sobrecarregados
+  const fallbackText = `Atenção clientes! Oferta imperdível hoje: ${produto} por apenas R$ ${valorPromocional || valorOriginal}! ${oferta || 'Aproveite já'}!`;
+  return res.json({ sucesso: true, roteiro: fallbackText, aviso: 'Gerado via modelo reserva: ' + ultimoErro });
 });
 
-// --- NARRAÇÃO COM A VOZ SELECIONADA NO GEMINI 3.8 FLASH ---
+// --- NARRAÇÃO COM A VOZ SELECIONADA ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id, tipo_voz } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
@@ -362,40 +375,42 @@ app.post('/api/gerar-locucao', async (req, res) => {
     }
 
     let audioGerado = null;
+    const modelosAudio = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
-    try {
-      const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`;
-      const payloadAudio = {
-        contents: [{
-          parts: [{ text: `Leia em voz alta em português do Brasil ${estiloPrompt} o seguinte anúncio: "${texto}"` }]
-        }],
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: geminiVoiceName }
+    for (const mod of modelosAudio) {
+      try {
+        const urlAudio = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${GEMINI_API_KEY}`;
+        const payloadAudio = {
+          contents: [{
+            parts: [{ text: `Leia em voz alta em português do Brasil ${estiloPrompt} o seguinte anúncio: "${texto}"` }]
+          }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: geminiVoiceName }
+              }
             }
           }
+        };
+
+        const resAudio = await fetch(urlAudio, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloadAudio)
+        });
+
+        const dataAudio = await resAudio.json();
+        const rawAudioBase64 = dataAudio?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+        if (rawAudioBase64) {
+          const pcmBuffer = Buffer.from(rawAudioBase64, 'base64');
+          audioGerado = pcmToWavBase64(pcmBuffer, 24000, 1, 16);
+          break; // Sucesso, sai do loop
         }
-      };
-
-      const resAudio = await fetch(urlAudio, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payloadAudio)
-      });
-
-      const dataAudio = await resAudio.json();
-      const rawAudioBase64 = dataAudio?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-      if (rawAudioBase64) {
-        const pcmBuffer = Buffer.from(rawAudioBase64, 'base64');
-        audioGerado = pcmToWavBase64(pcmBuffer, 24000, 1, 16);
-      } else if (dataAudio.error) {
-        console.error('Erro retornado pela API Gemini Audio:', dataAudio.error.message);
+      } catch (errAudio) {
+        console.warn(`Erro no modelo ${mod}:`, errAudio.message);
       }
-    } catch (errAudio) {
-      console.warn('Erro ao chamar Gemini Audio:', errAudio.message);
     }
 
     if (audioGerado) {
@@ -406,7 +421,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
       });
     }
 
-    // Fallback leve: caso o endpoint de áudio atinja rate-limit temporário
+    // Fallback leve se o motor de áudio estiver indisponível
     const encodedText = encodeURIComponent(texto.substring(0, 200));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
     const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
