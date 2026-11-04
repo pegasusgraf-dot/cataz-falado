@@ -5,15 +5,15 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Aumentando o limite para permitir upload de arquivos de áudio maiores em Base64
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const DATABASE_URL = process.env.DATABASE_URL;
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'AQ.Ab8RN6KU3HdZFjjAotsW0BlafLbYe4cEbToWow9FetNe6Csi0w';
 
 if (!DATABASE_URL) {
-  console.error('DATABASE_URL não configurada. Defina a variável de ambiente no Vercel antes do redeploy.');
+  console.error('DATABASE_URL não configurada.');
 }
 
 const pool = DATABASE_URL
@@ -28,11 +28,7 @@ function bancoIndisponivel(res, mensagem = 'Banco de dados indisponível.') {
 }
 
 async function inicializarBanco() {
-  if (!pool) {
-    console.error('Banco não inicializado porque DATABASE_URL não foi configurada.');
-    return;
-  }
-
+  if (!pool) return;
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
@@ -52,7 +48,7 @@ async function inicializarBanco() {
         nome VARCHAR(100) NOT NULL,
         descricao VARCHAR(255),
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
-        audio_data TEXT NOT NULL,
+        voice_id_eleven VARCHAR(150) NOT NULL,
         usuario_id INTEGER REFERENCES usuarios(id),
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -74,12 +70,9 @@ async function inicializarBanco() {
       await pool.query(
         "INSERT INTO usuarios (nome, email, senha, tipo, status) VALUES ('Master', 'master', '1234', 'master', 'aprovado')"
       );
-      console.log('Usuário master criado com sucesso! (master / 1234)');
     }
-
-    console.log('Banco inicializado com sucesso.');
   } catch (err) {
-    console.error('Erro ao inicializar tabelas:', err);
+    console.error('Erro na inicialização:', err);
   }
 }
 
@@ -88,42 +81,29 @@ inicializarBanco();
 function normalizarStatus(status) {
   if (!status) return 'pendente';
   const v = String(status).trim().toLowerCase();
-  if (['aprovado', 'rejeitado', 'pendente'].includes(v)) return v;
-  return 'pendente';
+  return ['aprovado', 'rejeitado', 'pendente'].includes(v) ? v : 'pendente';
 }
 
-app.get('/api/health', async (req, res) => {
-  if (!pool) return bancoIndisponivel(res, 'DATABASE_URL não configurada.');
-  try {
-    await pool.query('SELECT 1');
-    res.json({ ok: true, message: 'Banco conectado' });
-  } catch (error) {
-    res.status(500).json({ ok: false, message: 'Falha de conexão com o banco' });
-  }
-});
-
-// --- ROTAS DE USUÁRIOS E LOGIN ---
+// --- ROTAS DE USUÁRIOS E AUTH ---
 app.post('/api/login', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   const { email, usuario, senha } = req.body || {};
   const emailLogin = String(email || usuario || '').trim();
 
   try {
-    const resultado = await pool.query(
-      'SELECT id, nome, email, senha, tipo, status, created_at FROM usuarios WHERE LOWER(email) = LOWER($1) AND senha = $2',
+    const r = await pool.query(
+      'SELECT id, nome, email, senha, tipo, status FROM usuarios WHERE LOWER(email) = LOWER($1) AND senha = $2',
       [emailLogin, String(senha).trim()]
     );
 
-    if (resultado.rows.length === 0) {
-      return res.status(401).json({ sucesso: false, mensagem: 'Usuário ou senha incorretos.' });
+    if (r.rows.length === 0) return res.status(401).json({ sucesso: false, mensagem: 'Usuário ou senha incorretos.' });
+
+    const u = r.rows[0];
+    if (u.status !== 'aprovado' && u.tipo !== 'master') {
+      return res.status(403).json({ sucesso: false, mensagem: 'Conta pendente de aprovação.' });
     }
 
-    const usuarioLogado = resultado.rows[0];
-    if (usuarioLogado.status !== 'aprovado' && usuarioLogado.tipo !== 'master') {
-      return res.status(403).json({ sucesso: false, mensagem: 'Sua conta está pendente de aprovação.' });
-    }
-
-    return res.json({ sucesso: true, usuario: usuarioLogado });
+    return res.json({ sucesso: true, usuario: u });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro interno no servidor.' });
   }
@@ -142,11 +122,6 @@ app.get('/api/usuarios', async (req, res) => {
 app.post('/api/usuarios', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   const { nome, email, senha, tipo } = req.body || {};
-  
-  if (!nome || !email || !senha) {
-    return res.status(400).json({ sucesso: false, mensagem: 'Nome, e-mail e senha são obrigatórios.' });
-  }
-
   try {
     const novo = await pool.query(
       `INSERT INTO usuarios (nome, email, senha, tipo, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, email, tipo, status`,
@@ -154,21 +129,15 @@ app.post('/api/usuarios', async (req, res) => {
     );
     return res.status(201).json({ sucesso: true, usuario: novo.rows[0] });
   } catch (error) {
-    console.error('Erro ao cadastrar usuário:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar usuário (E-mail já existe?).' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar usuário.' });
   }
 });
 
 app.patch('/api/usuarios/:id/status', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  const { id } = req.params;
-  const { status } = req.body || {};
   try {
-    const atualizacao = await pool.query(
-      'UPDATE usuarios SET status = $1 WHERE id = $2 RETURNING id, nome, email, tipo, status',
-      [normalizarStatus(status), id]
-    );
-    return res.json({ sucesso: true, usuario: atualizacao.rows[0] });
+    const att = await pool.query('UPDATE usuarios SET status = $1 WHERE id = $2 RETURNING *', [normalizarStatus(req.body.status), req.params.id]);
+    return res.json({ sucesso: true, usuario: att.rows[0] });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao atualizar status.' });
   }
@@ -176,78 +145,110 @@ app.patch('/api/usuarios/:id/status', async (req, res) => {
 
 app.delete('/api/usuarios/:id', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  const { id } = req.params;
   try {
-    await pool.query('DELETE FROM anuncios WHERE usuario_id = $1', [id]);
-    await pool.query('DELETE FROM vozes WHERE usuario_id = $1', [id]);
-    const removido = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id', [id]);
-    return res.json({ sucesso: true, id: removido.rows[0]?.id });
+    await pool.query('DELETE FROM anuncios WHERE usuario_id = $1', [req.params.id]);
+    await pool.query('DELETE FROM vozes WHERE usuario_id = $1', [req.params.id]);
+    await pool.query('DELETE FROM usuarios WHERE id = $1', [req.params.id]);
+    return res.json({ sucesso: true });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover usuário.' });
   }
 });
 
-// --- ROTAS DE VOZES ---
+// --- CLONAGEM DE VOZ NA ELEVENLABS + NEON ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
-    const lista = await pool.query('SELECT id, nome, descricao, tipo_locucao, created_at FROM vozes ORDER BY id DESC');
-    return res.json({ sucesso: true, vozes: lista.rows });
+    const r = await pool.query('SELECT id, nome, descricao, tipo_locucao, voice_id_eleven, created_at FROM vozes ORDER BY id DESC');
+    return res.json({ sucesso: true, vozes: r.rows });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar vozes.' });
   }
 });
 
-app.get('/api/vozes/:id/audio', async (req, res) => {
+app.post('/api/clonar-voz', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  try {
-    const resultado = await pool.query('SELECT audio_data, nome FROM vozes WHERE id = $1', [req.params.id]);
-    if (resultado.rows.length === 0) return res.status(404).json({ sucesso: false, mensagem: 'Voz não encontrada.' });
-    return res.json({ sucesso: true, audio_data: resultado.rows[0].audio_data, nome: resultado.rows[0].nome });
-  } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar áudio da voz.' });
-  }
-});
+  const { nome, tipo_locucao, audio_base64, usuario_id } = req.body || {};
 
-app.post('/api/vozes', async (req, res) => {
-  if (!pool) return bancoIndisponivel(res);
-  const { nome, descricao, tipo_locucao, audio_data, usuario_id } = req.body || {};
-
-  if (!nome || !audio_data) {
+  if (!nome || !audio_base64) {
     return res.status(400).json({ sucesso: false, mensagem: 'Nome da voz e o arquivo de áudio são obrigatórios.' });
   }
 
   try {
+    // 1. Converter Base64 para Buffer
+    const base64Data = audio_base64.replace(/^data:audio\/\w+;base64,/, '');
+    const audioBuffer = Buffer.from(base64Data, 'base64');
+
+    // 2. Montar FormData nativo para a API ElevenLabs (Instant Voice Cloning)
+    const formData = new FormData();
+    formData.append('name', nome);
+    formData.append('description', tipo_locucao || 'Locução de Loja');
+    const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+    formData.append('files', audioBlob, 'sample.mp3');
+
+    const elevenRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY
+      },
+      body: formData
+    });
+
+    if (!elevenRes.ok) {
+      const errDetail = await elevenRes.text();
+      console.error('Erro ElevenLabs Voice Clone:', errDetail);
+      return res.status(500).json({ sucesso: false, mensagem: 'A ElevenLabs rejeitou o áudio. Envie um arquivo de voz nítido (mp3/wav).' });
+    }
+
+    const elevenData = await elevenRes.json();
+    const voice_id_eleven = elevenData.voice_id;
+
+    // 3. Salvar referência no Neon
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, descricao, tipo_locucao, audio_data, usuario_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, descricao, tipo_locucao, created_at`,
-      [String(nome).trim(), descricao || '', tipo_locucao || 'Padrao', audio_data, usuario_id ? Number(usuario_id) : null]
+      `INSERT INTO vozes (nome, tipo_locucao, voice_id_eleven, usuario_id)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [nome, tipo_locucao || 'Padrão', voice_id_eleven, usuario_id ? Number(usuario_id) : null]
     );
+
     return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
-  } catch (error) {
-    console.error('Erro ao salvar voz:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar voz no banco.' });
+  } catch (err) {
+    console.error('Erro ao clonar voz:', err);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro interno ao processar clonagem de voz.' });
   }
 });
 
 app.delete('/api/vozes/:id', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
+  const { id } = req.params;
+
   try {
-    await pool.query('DELETE FROM vozes WHERE id = $1', [req.params.id]);
+    // Busca o voice_id_eleven para excluir também na ElevenLabs
+    const v = await pool.query('SELECT voice_id_eleven FROM vozes WHERE id = $1', [id]);
+    if (v.rows.length > 0 && v.rows[0].voice_id_eleven) {
+      try {
+        await fetch(`https://api.elevenlabs.io/v1/voices/${v.rows[0].voice_id_eleven}`, {
+          method: 'DELETE',
+          headers: { 'xi-api-key': ELEVENLABS_API_KEY }
+        });
+      } catch (e) {
+        console.warn('Erro ao deletar voz na ElevenLabs:', e.message);
+      }
+    }
+
+    await pool.query('DELETE FROM anuncios WHERE voz_id = $1', [id]);
+    await pool.query('DELETE FROM vozes WHERE id = $1', [id]);
     return res.json({ sucesso: true });
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao excluir voz.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover voz.' });
   }
 });
 
-// --- ROTA DE SÍNTESE COM ELEVENLABS ---
+// --- NARRAR TEXTO COM ELEVENLABS ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voice_id } = req.body || {};
-  // Chave ElevenLabs fornecida
-  const apiKey = process.env.ELEVENLABS_API_KEY || 'AQ.Ab8RN6KU3HdZFjjAotsW0BlafLbYe4cEbToWow9FetNe6Csi0w';
 
   if (!texto || !voice_id) {
-    return res.status(400).json({ sucesso: false, mensagem: 'Texto e ID da voz são obrigatórios.' });
+    return res.status(400).json({ sucesso: false, mensagem: 'Texto e voz são obrigatórios.' });
   }
 
   try {
@@ -256,7 +257,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
       headers: {
         'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
-        'xi-api-key': apiKey
+        'xi-api-key': ELEVENLABS_API_KEY
       },
       body: JSON.stringify({
         text: texto,
@@ -267,8 +268,8 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('Erro ElevenLabs:', errText);
-      return res.status(500).json({ sucesso: false, mensagem: 'Erro na API da ElevenLabs. Verifique o Voice ID.' });
+      console.error('Erro na locução:', errText);
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar voz na ElevenLabs.' });
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -277,8 +278,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     return res.json({ sucesso: true, audio_data: audioBase64 });
   } catch (error) {
-    console.error('Erro ao conectar com ElevenLabs:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar locução inteligente.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha de conexão com sintetizador.' });
   }
 });
 
@@ -287,9 +287,8 @@ app.get('/api/anuncios', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
     const lista = await pool.query(`
-      SELECT a.*, u.nome AS usuario_nome, v.nome AS voz_nome, v.tipo_locucao
+      SELECT a.*, v.nome AS voz_nome
       FROM anuncios a
-      LEFT JOIN usuarios u ON u.id = a.usuario_id
       LEFT JOIN vozes v ON v.id = a.voz_id
       ORDER BY a.id DESC
     `);
@@ -314,15 +313,15 @@ app.post('/api/anuncios', async (req, res) => {
     );
     return res.status(201).json({ sucesso: true, anuncio: item.rows[0] });
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar anúncio.' });
+    console.error('Erro ao salvar anúncio:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao salvar anúncio no banco.' });
   }
 });
 
 app.delete('/api/anuncios/:id', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
-  const { id } = req.params;
   try {
-    await pool.query('DELETE FROM anuncios WHERE id = $1', [id]);
+    await pool.query('DELETE FROM anuncios WHERE id = $1', [req.params.id]);
     return res.json({ sucesso: true });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao remover anúncio.' });
