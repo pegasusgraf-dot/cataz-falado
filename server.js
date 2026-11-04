@@ -9,7 +9,7 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ limit: '15mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Chave da API Gemini configurada no seu painel
+// Chaves de API
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6IRvVrF-JMe5yGT5WbQORWpcsqpIV1Q0w-NSpk2KJ2DjQ';
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'sk_fb17e1aa0d6206e42b130cc5c6aa1699deac919a7ecfa007';
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -52,6 +52,7 @@ async function inicializarBanco() {
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
         arquivo_base64 TEXT,
         audio_data TEXT,
+        external_voice_id VARCHAR(100),
         usuario_id INTEGER,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -71,6 +72,7 @@ async function inicializarBanco() {
 
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
+    await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS external_voice_id VARCHAR(100);`);
     await pool.query(`ALTER TABLE vozes ALTER COLUMN audio_data DROP NOT NULL;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS voz_id INTEGER;`);
@@ -189,6 +191,7 @@ app.get('/api/vozes', async (req, res) => {
     const lista = await pool.query(`
       SELECT id, nome, descricao, tipo_locucao, 
              COALESCE(arquivo_base64, audio_data) AS arquivo_base64, 
+             external_voice_id,
              created_at 
       FROM vozes 
       ORDER BY id DESC
@@ -199,6 +202,7 @@ app.get('/api/vozes', async (req, res) => {
   }
 });
 
+// CLONA A VOZ USANDO ELEVENLABS E SALVA NO NEON
 app.post('/api/clonar-voz', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   const { nome, tipo_locucao, arquivo_base64, usuario_id } = req.body || {};
@@ -214,16 +218,45 @@ app.post('/api/clonar-voz', async (req, res) => {
       if (checaUser.rows.length > 0) idUsuarioValido = checaUser.rows[0].id;
     }
 
+    let clonedVoiceId = null;
+
+    // Se veio arquivo de áudio, cria a voz clonada na ElevenLabs
+    if (arquivo_base64 && ELEVENLABS_API_KEY) {
+      try {
+        const audioBuffer = Buffer.from(arquivo_base64.split(',')[1] || arquivo_base64, 'base64');
+        const formData = new FormData();
+        formData.append('name', nome);
+        formData.append('files', new Blob([audioBuffer], { type: 'audio/mpeg' }), `${nome}.mp3`);
+        formData.append('description', `Locutor ${tipo_locucao || 'varejo'}`);
+
+        const elRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
+          method: 'POST',
+          headers: { 'xi-api-key': ELEVENLABS_API_KEY },
+          body: formData
+        });
+
+        const elData = await elRes.json();
+        if (elData.voice_id) {
+          clonedVoiceId = elData.voice_id;
+        } else if (elData.detail) {
+          console.warn('Aviso ElevenLabs ao clonar:', elData.detail);
+        }
+      } catch (errEl) {
+        console.warn('Erro ao clonar na ElevenLabs:', errEl.message);
+      }
+    }
+
     const audioConteudo = arquivo_base64 || '';
 
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, audio_data, usuario_id) 
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, tipo_locucao, created_at`,
+      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, audio_data, external_voice_id, usuario_id) 
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, nome, tipo_locucao, external_voice_id, created_at`,
       [
         String(nome).trim(),
         String(tipo_locucao || 'varejo').trim(),
         audioConteudo,
         audioConteudo,
+        clonedVoiceId,
         idUsuarioValido
       ]
     );
@@ -283,7 +316,7 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
         break;
       }
     } catch (err) {
-      // Tenta o próximo modelo
+      // Tenta próximo modelo
     }
   }
 
@@ -295,13 +328,57 @@ Regra: Retorne exclusivamente o texto da locução, pronto para narrar. Sem aspa
   return res.json({ sucesso: true, roteiro: fallbackText });
 });
 
-// --- NARRAÇÃO DO TEXTO DO ANÚNCIO (LÊ EM VOZ ALTA) ---
+// --- NARRAÇÃO DO TEXTO DO ANÚNCIO (USA A VOZ CLONADA DA ELEVENLABS) ---
 app.post('/api/gerar-locucao', async (req, res) => {
   const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório para narrar.' });
 
   try {
-    // 1. Gera áudio lendo o texto com o motor de síntese de voz em português
+    let externalVoiceId = null;
+
+    // 1. Busca se a voz selecionada tem Voice ID clonado na ElevenLabs
+    if (voz_id && pool) {
+      const vozResult = await pool.query('SELECT external_voice_id FROM vozes WHERE id = $1', [Number(voz_id)]);
+      if (vozResult.rows.length > 0) {
+        externalVoiceId = vozResult.rows[0].external_voice_id;
+      }
+    }
+
+    // 2. Se tem a voz clonada ou se quer usar locutor padrão da ElevenLabs
+    const voiceToUse = externalVoiceId || 'pNInz6obpgDQGcFmaJgB'; // Adam (ou voz clonada)
+
+    if (ELEVENLABS_API_KEY) {
+      try {
+        const elRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceToUse}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xi-api-key': ELEVENLABS_API_KEY
+          },
+          body: JSON.stringify({
+            text: texto,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.8
+            }
+          })
+        });
+
+        if (elRes.ok) {
+          const arrayBuffer = await elRes.arrayBuffer();
+          const audioBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+          return res.json({ sucesso: true, audio_data: audioBase64 });
+        } else {
+          const elErr = await elRes.json();
+          console.warn('Erro retornado pela ElevenLabs TTS:', elErr);
+        }
+      } catch (errElTts) {
+        console.warn('Falha na chamada ElevenLabs TTS:', errElTts.message);
+      }
+    }
+
+    // 3. Fallback de contingência caso a cota da ElevenLabs atinja o limite
     const encodedText = encodeURIComponent(texto.substring(0, 250));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt-BR&client=tw-ob`;
     const response = await fetch(googleTtsUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -309,10 +386,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
     if (response.ok) {
       const arrayBuffer = await response.arrayBuffer();
       const audioBase64 = `data:audio/mpeg;base64,${Buffer.from(arrayBuffer).toString('base64')}`;
-      return res.json({
-        sucesso: true,
-        audio_data: audioBase64
-      });
+      return res.json({ sucesso: true, audio_data: audioBase64 });
     }
 
     throw new Error('Não foi possível narrar o texto.');
