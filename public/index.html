@@ -146,7 +146,7 @@
             
             <div class="ad-actions">
               <button id="btn-gerar-anuncio" type="button" class="button button-ghost">Gerar Roteiro de Texto</button>
-              <button id="btn-salvar-anuncio" type="button" class="button button-ghost">Salvar Anúncio</button>
+              <button id="btn-salvar-anuncio" type="button" class="button button-primary">Salvar Anúncio</button>
             </div>
             <p id="anuncio-message" class="form-message"></p>
           </form>
@@ -208,6 +208,7 @@
       const vozModalMessage = document.getElementById('voz-modal-message');
 
       function setMessage(el, text, color = 'var(--muted)') {
+        if (!el) return;
         el.textContent = text;
         el.style.color = color;
       }
@@ -262,7 +263,7 @@
             selectVoz.innerHTML = '<option value="">Voz padrão do navegador (TTS)</option>';
             data.vozes.forEach(v => {
               const opt = document.createElement('option');
-              opt.value = v.audio_data; // Armazena o Voice ID da ElevenLabs direto no value
+              opt.value = v.audio_data; // Voice ID da ElevenLabs guardado no banco
               opt.textContent = `${v.nome} (${v.tipo_locucao || 'Padrão'})`;
               selectVoz.appendChild(opt);
             });
@@ -277,7 +278,7 @@
         e.preventDefault();
         const nome = document.getElementById('voz-nome').value.trim();
         const tipo_locucao = document.getElementById('voz-tipo').value.trim() || 'Padrão';
-        const audio_data = document.getElementById('voz-audio-id').value.trim(); // Aqui salvamos o Voice ID da ElevenLabs
+        const audio_data = document.getElementById('voz-audio-id').value.trim(); // Voice ID
 
         try {
           const res = await fetch('/api/vozes', {
@@ -310,7 +311,7 @@
         document.getElementById('preview-texto').textContent = texto;
       });
 
-      // Gerar e reproduzir locução inteligente com ElevenLabs ou fallback TTS
+      // Botão de Gerar e Ouvir Áudio (ElevenLabs ou Fallback)
       document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
         const voiceId = selectVoz.value;
         const texto = document.getElementById('input-texto-anuncio').value;
@@ -321,8 +322,8 @@
           return;
         }
 
-        // Se uma voz da ElevenLabs estiver selecionada
-        if (voiceId) {
+        // Se o usuário selecionou uma voz da ElevenLabs (o value contém o Voice ID)
+        if (voiceId && voiceId.trim() !== '') {
           setMessage(msgEl, 'Gerando locução com IA (ElevenLabs)...', 'var(--muted)');
           try {
             const res = await fetch('/api/gerar-locucao', {
@@ -331,20 +332,21 @@
               body: JSON.stringify({ texto, voice_id: voiceId })
             });
             const data = await res.json();
-            if (data.sucesso && data.audio_data) {
+            if (res.ok && data.sucesso && data.audio_data) {
               const audio = new Audio(data.audio_data);
               audio.play();
               setMessage(msgEl, 'Locução gerada e reproduzida com sucesso!', 'var(--success)');
               return;
             } else {
-              throw new Error(data.mensagem);
+              throw new Error(data.mensagem || 'Erro na resposta da API');
             }
           } catch(e) {
-            setMessage(msgEl, 'Erro ao gerar com ElevenLabs. Usando voz padrão.', 'var(--danger)');
+            console.error(e);
+            setMessage(msgEl, 'Erro na ElevenLabs. Usando voz padrão do navegador.', 'var(--danger)');
           }
         }
 
-        // Fallback: Sintetizador padrão do navegador
+        // Fallback: Voz padrão do navegador (TTS) caso nenhuma voz IA tenha sido selecionada
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(texto);
           utterance.lang = 'pt-BR';
@@ -354,27 +356,39 @@
         }
       });
 
+      // Botão de Salvar Anúncio corrigido
       document.getElementById('btn-salvar-anuncio').addEventListener('click', async () => {
-        const produto = document.getElementById('input-produto').value;
-        const texto = document.getElementById('input-texto-anuncio').value;
+        const produto = document.getElementById('input-produto').value.trim();
+        const texto = document.getElementById('input-texto-anuncio').value.trim();
+        const vozIdSelecionada = selectVoz.value ? Number(selectVoz.value) : null;
         const msgEl = document.getElementById('anuncio-message');
 
         if (!produto || !texto) {
-          setMessage(msgEl, 'Preencha o produto e o texto do anúncio.', 'var(--danger)');
+          setMessage(msgEl, 'Preencha o nome do produto e o texto do anúncio.', 'var(--danger)');
           return;
         }
 
-        const res = await fetch('/api/anuncios', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ produto, texto, usuario_id: usuarioAtual.id })
-        });
-        const data = await res.json();
-        if (data.sucesso) {
-          setMessage(msgEl, 'Anúncio salvo com sucesso!', 'var(--success)');
-          carregarHistorico();
-        } else {
-          setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
+        try {
+          const res = await fetch('/api/anuncios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              produto, 
+              texto, 
+              voz_id: vozIdSelecionada, 
+              usuario_id: usuarioAtual.id 
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.sucesso) {
+            setMessage(msgEl, 'Anúncio salvo com sucesso no banco!', 'var(--success)');
+            carregarHistorico();
+          } else {
+            setMessage(msgEl, data.mensagem || 'Erro ao salvar anúncio.', 'var(--danger)');
+          }
+        } catch (err) {
+          console.error(err);
+          setMessage(msgEl, 'Erro de conexão ao salvar anúncio.', 'var(--danger)');
         }
       });
 
