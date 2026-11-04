@@ -192,6 +192,7 @@
     <script>
       let modoRegistro = false;
       let usuarioAtual = null;
+      let vozesDisponiveis = [];
 
       const authForm = document.getElementById('auth-form');
       const authTitle = document.getElementById('auth-title');
@@ -260,10 +261,12 @@
           const res = await fetch('/api/vozes');
           const data = await res.json();
           if (data.sucesso) {
+            vozesDisponiveis = data.vozes;
             selectVoz.innerHTML = '<option value="">Voz padrão do navegador (TTS)</option>';
             data.vozes.forEach(v => {
               const opt = document.createElement('option');
-              opt.value = v.audio_data; // Voice ID da ElevenLabs guardado no banco
+              opt.value = v.id; // Salvamos o ID numérico da tabela do banco para o relacionamento correto
+              opt.dataset.voiceid = v.audio_data; // Guardamos o Voice ID da ElevenLabs no dataset
               opt.textContent = `${v.nome} (${v.tipo_locucao || 'Padrão'})`;
               selectVoz.appendChild(opt);
             });
@@ -313,7 +316,8 @@
 
       // Botão de Gerar e Ouvir Áudio (ElevenLabs ou Fallback)
       document.getElementById('btn-gerar-audio').addEventListener('click', async () => {
-        const voiceId = selectVoz.value;
+        const selectedOption = selectVoz.options[selectVoz.selectedIndex];
+        const voiceId = selectedOption ? selectedOption.dataset.voiceid : null;
         const texto = document.getElementById('input-texto-anuncio').value;
         const msgEl = document.getElementById('anuncio-message');
 
@@ -322,7 +326,7 @@
           return;
         }
 
-        // Se o usuário selecionou uma voz da ElevenLabs (o value contém o Voice ID)
+        // Se uma voz da ElevenLabs foi selecionada
         if (voiceId && voiceId.trim() !== '') {
           setMessage(msgEl, 'Gerando locução com IA (ElevenLabs)...', 'var(--muted)');
           try {
@@ -346,7 +350,7 @@
           }
         }
 
-        // Fallback: Voz padrão do navegador (TTS) caso nenhuma voz IA tenha sido selecionada
+        // Fallback: Voz padrão do navegador (TTS)
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(texto);
           utterance.lang = 'pt-BR';
