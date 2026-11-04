@@ -1,12 +1,16 @@
 const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
+const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Configuração do cliente Gemini SDK
+const ai = new GoogleGenAI({});
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -48,7 +52,7 @@ async function inicializarBanco() {
         descricao VARCHAR(255),
         tipo_locucao VARCHAR(50) DEFAULT 'Padrao',
         arquivo_base64 TEXT,
-        usuario_id INTEGER REFERENCES usuarios(id),
+        usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -60,12 +64,11 @@ async function inicializarBanco() {
         texto TEXT NOT NULL,
         voz_id INTEGER REFERENCES vozes(id) ON DELETE SET NULL,
         audio_data TEXT,
-        usuario_id INTEGER REFERENCES usuarios(id),
+        usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    // Garante as colunas necessárias caso as tabelas já existam
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS audio_data TEXT;`);
     await pool.query(`ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS voz_id INTEGER;`);
     await pool.query(`ALTER TABLE vozes ADD COLUMN IF NOT EXISTS arquivo_base64 TEXT;`);
@@ -177,11 +180,11 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- GERENCIAMENTO DE VOZES ---
+// --- GERENCIAMENTO DE VOZES NO NEON ---
 app.get('/api/vozes', async (req, res) => {
   if (!pool) return bancoIndisponivel(res);
   try {
-    const lista = await pool.query('SELECT id, nome, descricao, tipo_locucao, created_at FROM vozes ORDER BY id DESC');
+    const lista = await pool.query('SELECT id, nome, descricao, tipo_locucao, arquivo_base64, created_at FROM vozes ORDER BY id DESC');
     return res.json({ sucesso: true, vozes: lista.rows });
   } catch (error) {
     return res.status(500).json({ sucesso: false, mensagem: 'Erro ao buscar vozes.' });
@@ -197,14 +200,28 @@ app.post('/api/clonar-voz', async (req, res) => {
   }
 
   try {
+    let idUsuarioValido = null;
+    if (usuario_id && !isNaN(Number(usuario_id))) {
+      const checaUser = await pool.query('SELECT id FROM usuarios WHERE id = $1', [Number(usuario_id)]);
+      if (checaUser.rows.length > 0) {
+        idUsuarioValido = checaUser.rows[0].id;
+      }
+    }
+
     const novaVoz = await pool.query(
-      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, usuario_id) VALUES ($1, $2, $3, $4) RETURNING *`,
-      [String(nome).trim(), String(tipo_locucao || 'Padrão').trim(), arquivo_base64 || null, usuario_id ? Number(usuario_id) : null]
+      `INSERT INTO vozes (nome, tipo_locucao, arquivo_base64, usuario_id) 
+       VALUES ($1, $2, $3, $4) RETURNING id, nome, tipo_locucao, created_at`,
+      [
+        String(nome).trim(),
+        String(tipo_locucao || 'Padrão').trim(),
+        arquivo_base64 || null,
+        idUsuarioValido
+      ]
     );
     return res.status(201).json({ sucesso: true, voz: novaVoz.rows[0] });
   } catch (error) {
-    console.error('Erro ao salvar voz:', error);
-    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar voz no banco.' });
+    console.error('Erro ao salvar voz no Neon:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar voz: ' + error.message });
   }
 });
 
@@ -219,12 +236,53 @@ app.delete('/api/vozes/:id', async (req, res) => {
   }
 });
 
-// --- SÍNTESE DE VOZ (GOOGLE TTS) ---
+// --- GERAR ROTEIRO COM GEMINI AI ---
+app.post('/api/gerar-roteiro-ia', async (req, res) => {
+  const { produto, valorOriginal, valorPromocional, oferta } = req.body || {};
+
+  if (!produto) {
+    return res.status(400).json({ sucesso: false, mensagem: 'Informe ao menos o nome do produto.' });
+  }
+
+  try {
+    const prompt = `Você é um locutor profissional de rádio de varejo e supermercados.
+Crie um texto de chamada promocional curto, impactante, direto e vendedora (máximo 45 palavras).
+Dados da oferta:
+- Produto: ${produto}
+- De: R$ ${valorOriginal || 'Preço normal'}
+- Por: R$ ${valorPromocional || 'Super promoção'}
+- Oferta/Destaque: ${oferta || 'Imperdível'}
+
+Regra: Devolva apenas o texto da locução, pronto para ser falado no som da loja. Não coloque títulos, comentários nem aspas.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+    });
+
+    const roteiroGerado = response.text ? response.text.trim() : '';
+    return res.json({ sucesso: true, roteiro: roteiroGerado });
+  } catch (err) {
+    console.error('Erro na chamada Gemini:', err);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro na API Gemini: ' + err.message });
+  }
+});
+
+// --- SÍNTESE DE VOZ OU REPRODUÇÃO ---
 app.post('/api/gerar-locucao', async (req, res) => {
-  const { texto } = req.body || {};
+  const { texto, voz_id } = req.body || {};
   if (!texto) return res.status(400).json({ sucesso: false, mensagem: 'Texto é obrigatório.' });
 
   try {
+    // Se o usuário selecionou uma voz salva com áudio MP3 no banco Neon
+    if (voz_id && pool) {
+      const vozEncontrada = await pool.query('SELECT arquivo_base64 FROM vozes WHERE id = $1', [Number(voz_id)]);
+      if (vozEncontrada.rows.length > 0 && vozEncontrada.rows[0].arquivo_base64) {
+        return res.json({ sucesso: true, audio_data: vozEncontrada.rows[0].arquivo_base64 });
+      }
+    }
+
+    // Fallback: Sintetizador padrão gratuito (Google TTS)
     const encodedText = encodeURIComponent(texto.substring(0, 200));
     const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=pt&client=tw-ob`;
 
@@ -233,7 +291,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
     });
 
     if (!response.ok) {
-      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar áudio.' });
+      return res.status(500).json({ sucesso: false, mensagem: 'Erro ao gerar locução padrão.' });
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -242,7 +300,7 @@ app.post('/api/gerar-locucao', async (req, res) => {
 
     return res.json({ sucesso: true, audio_data: audioBase64 });
   } catch (error) {
-    return res.status(500).json({ sucesso: false, mensagem: 'Falha de conexão com o sintetizador.' });
+    return res.status(500).json({ sucesso: false, mensagem: 'Falha ao processar locução: ' + error.message });
   }
 });
 
@@ -272,13 +330,25 @@ app.post('/api/anuncios', async (req, res) => {
   }
 
   try {
+    let idUsuarioValido = null;
+    if (usuario_id && !isNaN(Number(usuario_id))) {
+      const checaUser = await pool.query('SELECT id FROM usuarios WHERE id = $1', [Number(usuario_id)]);
+      if (checaUser.rows.length > 0) idUsuarioValido = checaUser.rows[0].id;
+    }
+
+    let idVozValida = null;
+    if (voz_id && !isNaN(Number(voz_id))) {
+      const checaVoz = await pool.query('SELECT id FROM vozes WHERE id = $1', [Number(voz_id)]);
+      if (checaVoz.rows.length > 0) idVozValida = checaVoz.rows[0].id;
+    }
+
     const item = await pool.query(
       `INSERT INTO anuncios (produto, texto, voz_id, usuario_id, audio_data) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [
         String(produto).trim(),
         String(texto).trim(),
-        voz_id && !isNaN(Number(voz_id)) ? Number(voz_id) : null,
-        usuario_id ? Number(usuario_id) : null,
+        idVozValida,
+        idUsuarioValido,
         audio_data || null
       ]
     );
