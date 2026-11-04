@@ -11,6 +11,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Chave da API Gemini configurada no seu painel
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6IRvVrF-JMe5yGT5WbQORWpcsqpIV1Q0w-NSpk2KJ2DjQ';
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || 'sk_fb17e1aa0d6206e42b130cc5c6aa1699deac919a7ecfa007';
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
