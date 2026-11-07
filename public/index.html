@@ -399,7 +399,7 @@
         </div>
 
         <div class="intro-foot">
-          <span class="status-dot"></span> Sintetizador de voz pronto para uso
+          <span class="status-dot"></span> Sintetizador de voz inteligente ativo
         </div>
       </section>
 
@@ -514,7 +514,7 @@
           </div>
 
           <div class="metric-card">
-            <h3>Locações do dia</h3>
+            <h3>Locuções do dia</h3>
             <strong id="metric-locucao-dia">0</strong>
           </div>
 
@@ -527,7 +527,7 @@
         <div class="preview-box">
           <h3 style="margin:0 0 10px; font-family:'Manrope';">Preview do anúncio</h3>
           <p id="preview-texto" style="margin: 0; color: var(--muted); line-height:1.6;">
-            Exemplo de script: “Olá, cliente! Hoje temos promoção especial em eletrônicos com desconto de até 40%.”
+            Exemplo de script: “Atenção, cliente!... Hoje temos promoção especial...”
           </p>
         </div>
 
@@ -541,7 +541,7 @@
             <div class="field-row">
               <label class="field">
                 Nome do produto
-                <input id="input-produto" placeholder="Ex.: Smart TV 55\"">
+                <input id="input-produto" placeholder="Ex.: Smart TV 55&quot;">
               </label>
 
               <label class="field">
@@ -564,7 +564,7 @@
 
             <label class="field">
               Texto do anúncio
-              <textarea id="input-texto-anuncio" placeholder="O texto será gerado automaticamente ou você pode editar aqui."></textarea>
+              <textarea id="input-texto-anuncio" placeholder="O texto com pausas naturais será gerado automaticamente."></textarea>
             </label>
 
             <div class="ad-actions">
@@ -679,6 +679,23 @@
       let usuarioAtual = null;
       let ultimoTextoGerado = '';
       let anunciosCarregados = [];
+      let vozSelecionada = null;
+
+      // Configuração e seleção inteligente de vozes nativas humanizadas/neurais
+      function carregarVozes() {
+        if (!('speechSynthesis' in window)) return;
+        const vozes = speechSynthesis.getVoices();
+        
+        // Prioriza vozes em português de alta qualidade (Google, Microsoft Neural, Online, etc.)
+        vozSelecionada = vozes.find(v => v.lang === 'pt-BR' && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Online')))
+          || vozes.find(v => v.lang === 'pt-BR')
+          || vozes[0];
+      }
+
+      if ('speechSynthesis' in window) {
+        speechSynthesis.onvoiceschanged = carregarVozes;
+        carregarVozes();
+      }
 
       function setMessage(el, text, color = 'var(--muted)') {
         el.textContent = text;
@@ -725,13 +742,15 @@
         }).format(numero);
       }
 
+      // Texto estruturado com pausas rítmicas e entonação natural de locutor de loja
       function gerarTextoAnuncio() {
         const produto = (inputProduto.value || 'Produto').trim() || 'Produto';
         const valorOriginal = inputValorOriginal.value.trim() || 'R$ 0,00';
         const valorPromocional = inputValorPromocional.value.trim() || 'R$ 0,00';
         const oferta = inputOferta.value.trim() || 'Oferta especial';
 
-         const texto = `Olá, cliente! Hoje temos ${produto} de ${formatarMoeda(valorOriginal)} Por apenas ${formatarMoeda(valorPromocional)}. ${oferta} pra voce cliente clube de vantagens aproveite! uma oportunidade imperdível.`;
+        const texto = `Atenção, cliente!... Hoje tem oferta imperdível na nossa seção. O produto ${produto}, que custava ${formatarMoeda(valorOriginal)}, sai por apenas... ${formatarMoeda(valorPromocional)}. Aproveite: ${oferta}! Corra para o setor e garanta o seu!`;
+        
         inputTextoAnuncio.value = texto;
         ultimoTextoGerado = texto;
         previewTexto.textContent = texto;
@@ -1064,6 +1083,7 @@
         }
       }
 
+      // Reprodução com ritmo ajustado e voz natural selecionada
       function reproduzirAudio() {
         const mensagem = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
         if (!mensagem) {
@@ -1078,6 +1098,14 @@
 
         const utterance = new SpeechSynthesisUtterance(mensagem);
         utterance.lang = 'pt-BR';
+        
+        if (vozSelecionada) {
+          utterance.voice = vozSelecionada;
+        }
+
+        utterance.rate = 1.05; // Velocidade dinâmica estilo rádio comercial
+        utterance.pitch = 1.0; // Tom natural
+
         speechSynthesis.cancel();
         speechSynthesis.speak(utterance);
         setMessage(anuncioMessage, 'Reproduzindo áudio...', 'var(--success)');
