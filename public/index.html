@@ -535,12 +535,11 @@
           <div class="ad-header">
             <h3 style="margin:0; font-family:'Manrope';">Gerar anúncio comercial</h3>
             
-            <!-- Seletor de Tipo de Voz (Masculina / Feminina) -->
             <div style="display: flex; align-items: center; gap: 8px;">
               <label for="select-tipo-voz" style="font-size: 0.82rem; font-weight: 600; color: var(--muted);">Locutor:</label>
               <select id="select-tipo-voz" style="padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #fff;">
                 <option value="feminina">Feminina 👩</option>
-                <option value="masculina">Masculina 👨</option>
+                <option value="masculina" selected>Masculina Grave 🎙️👨</option>
               </select>
               <button id="btn-gerar-audio" type="button" class="button button-ghost" style="padding: 10px 14px;">🔊 Reproduzir</button>
             </div>
@@ -691,7 +690,6 @@
       let anunciosCarregados = [];
       let listaVozesPt = [];
 
-      // Carrega e armazena todas as vozes em português disponíveis no dispositivo
       function carregarVozes() {
         if (!('speechSynthesis' in window)) return;
         const vozes = speechSynthesis.getVoices();
@@ -703,12 +701,10 @@
         carregarVozes();
       }
 
-      // Seleciona dinamicamente a voz com base na preferência (masculina ou feminina)
       function obterVozPorTipo(tipoDesejado) {
         carregarVozes();
         if (listaVozesPt.length === 0) return null;
 
-        // Palavras-chave comuns em nomes de vozes masculinas e femininas nos sistemas/navegadores
         const termosFemininos = ['maria', 'luciana', 'vitoria', 'francisca', 'helena', 'zira', 'female', 'mulher', 'camila'];
         const termosMasculinos = ['antonio', 'daniel', 'ricardo', 'felipe', 'carlos', 'male', 'homem', 'fabio', 'diego'];
 
@@ -716,11 +712,10 @@
 
         if (tipoDesejado === 'masculina') {
           vozEncontrada = listaVozesPt.find(v => termosMasculinos.some(termo => v.name.toLowerCase().includes(termo)));
-          // Ajusta ligeiramente o pitch para soar mais grave no modo masculino caso a voz seja neutra
-          return { voz: vozEncontrada || listaVozesPt[0], pitch: 0.85 };
+          // pitch reduzido para 0.75 (deixa a voz bem mais grave e encorpada)
+          return { voz: vozEncontrada || listaVozesPt[0], pitch: 0.75 };
         } else {
           vozEncontrada = listaVozesPt.find(v => termosFemininos.some(termo => v.name.toLowerCase().includes(termo)));
-          // Mantém o tom padrão mais dinâmico para voz feminina
           return { voz: vozEncontrada || listaVozesPt[0], pitch: 1.05 };
         }
       }
@@ -1110,7 +1105,6 @@
         }
       }
 
-      // Reprodução com suporte a escolha de voz masculina ou feminina
       function reproduzirAudio() {
         const mensagem = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
         if (!mensagem) {
@@ -1123,7 +1117,7 @@
           return;
         }
 
-        const tipoVozDesejada = selectTipoVoz.value; // 'masculina' ou 'feminina'
+        const tipoVozDesejada = selectTipoVoz.value;
         const selecao = obterVozPorTipo(tipoVozDesejada);
 
         const utterance = new SpeechSynthesisUtterance(mensagem);
@@ -1131,10 +1125,10 @@
         
         if (selecao && selecao.voz) {
           utterance.voice = selecao.voz;
-          utterance.pitch = selecao.pitch;
+          utterance.pitch = selecao.pitch; // 0.75 garante a grave profunda
         }
 
-        utterance.rate = 1.05; // Dinâmica ágil comercial
+        utterance.rate = 1.02; // Velocidade comercial calibrada para voz grave
 
         speechSynthesis.cancel();
         speechSynthesis.speak(utterance);
