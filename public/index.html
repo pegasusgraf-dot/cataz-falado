@@ -399,7 +399,7 @@
         </div>
 
         <div class="intro-foot">
-          <span class="status-dot"></span> Sintetizador de voz inteligente ativo
+          <span class="status-dot"></span> Locução comercial multi-voz ativa
         </div>
       </section>
 
@@ -534,7 +534,16 @@
         <div class="ad-panel">
           <div class="ad-header">
             <h3 style="margin:0; font-family:'Manrope';">Gerar anúncio comercial</h3>
-            <button id="btn-gerar-audio" type="button" class="button button-ghost">🔊 Reproduzir áudio</button>
+            
+            <!-- Seletor de Tipo de Voz (Masculina / Feminina) -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label for="select-tipo-voz" style="font-size: 0.82rem; font-weight: 600; color: var(--muted);">Locutor:</label>
+              <select id="select-tipo-voz" style="padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #fff;">
+                <option value="feminina">Feminina 👩</option>
+                <option value="masculina">Masculina 👨</option>
+              </select>
+              <button id="btn-gerar-audio" type="button" class="button button-ghost" style="padding: 10px 14px;">🔊 Reproduzir</button>
+            </div>
           </div>
 
           <form id="form-anuncio" class="ad-form">
@@ -659,6 +668,7 @@
       const metricLocucaoDia = document.getElementById('metric-locucao-dia');
       const metricFiltro = document.getElementById('metric-filtro');
       const btnGerarAudio = document.getElementById('btn-gerar-audio');
+      const selectTipoVoz = document.getElementById('select-tipo-voz');
       const btnGerarAnuncio = document.getElementById('btn-gerar-anuncio');
       const btnSalvarAnuncio = document.getElementById('btn-salvar-anuncio');
       const btnLimparFiltro = document.getElementById('btn-limpar-filtro');
@@ -679,22 +689,40 @@
       let usuarioAtual = null;
       let ultimoTextoGerado = '';
       let anunciosCarregados = [];
-      let vozSelecionada = null;
+      let listaVozesPt = [];
 
-      // Configuração e seleção inteligente de vozes nativas humanizadas/neurais
+      // Carrega e armazena todas as vozes em português disponíveis no dispositivo
       function carregarVozes() {
         if (!('speechSynthesis' in window)) return;
         const vozes = speechSynthesis.getVoices();
-        
-        // Prioriza vozes em português de alta qualidade (Google, Microsoft Neural, Online, etc.)
-        vozSelecionada = vozes.find(v => v.lang === 'pt-BR' && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Online')))
-          || vozes.find(v => v.lang === 'pt-BR')
-          || vozes[0];
+        listaVozesPt = vozes.filter(v => v.lang.startsWith('pt'));
       }
 
       if ('speechSynthesis' in window) {
         speechSynthesis.onvoiceschanged = carregarVozes;
         carregarVozes();
+      }
+
+      // Seleciona dinamicamente a voz com base na preferência (masculina ou feminina)
+      function obterVozPorTipo(tipoDesejado) {
+        carregarVozes();
+        if (listaVozesPt.length === 0) return null;
+
+        // Palavras-chave comuns em nomes de vozes masculinas e femininas nos sistemas/navegadores
+        const termosFemininos = ['maria', 'luciana', 'vitoria', 'francisca', 'helena', 'zira', 'female', 'mulher', 'camila'];
+        const termosMasculinos = ['antonio', 'daniel', 'ricardo', 'felipe', 'carlos', 'male', 'homem', 'fabio', 'diego'];
+
+        let vozEncontrada = null;
+
+        if (tipoDesejado === 'masculina') {
+          vozEncontrada = listaVozesPt.find(v => termosMasculinos.some(termo => v.name.toLowerCase().includes(termo)));
+          // Ajusta ligeiramente o pitch para soar mais grave no modo masculino caso a voz seja neutra
+          return { voz: vozEncontrada || listaVozesPt[0], pitch: 0.85 };
+        } else {
+          vozEncontrada = listaVozesPt.find(v => termosFemininos.some(termo => v.name.toLowerCase().includes(termo)));
+          // Mantém o tom padrão mais dinâmico para voz feminina
+          return { voz: vozEncontrada || listaVozesPt[0], pitch: 1.05 };
+        }
       }
 
       function setMessage(el, text, color = 'var(--muted)') {
@@ -742,7 +770,6 @@
         }).format(numero);
       }
 
-      // Texto estruturado com pausas rítmicas e entonação natural de locutor de loja
       function gerarTextoAnuncio() {
         const produto = (inputProduto.value || 'Produto').trim() || 'Produto';
         const valorOriginal = inputValorOriginal.value.trim() || 'R$ 0,00';
@@ -1083,7 +1110,7 @@
         }
       }
 
-      // Reprodução com ritmo ajustado e voz natural selecionada
+      // Reprodução com suporte a escolha de voz masculina ou feminina
       function reproduzirAudio() {
         const mensagem = inputTextoAnuncio.value.trim() || ultimoTextoGerado;
         if (!mensagem) {
@@ -1096,19 +1123,22 @@
           return;
         }
 
+        const tipoVozDesejada = selectTipoVoz.value; // 'masculina' ou 'feminina'
+        const selecao = obterVozPorTipo(tipoVozDesejada);
+
         const utterance = new SpeechSynthesisUtterance(mensagem);
         utterance.lang = 'pt-BR';
         
-        if (vozSelecionada) {
-          utterance.voice = vozSelecionada;
+        if (selecao && selecao.voz) {
+          utterance.voice = selecao.voz;
+          utterance.pitch = selecao.pitch;
         }
 
-        utterance.rate = 1.05; // Velocidade dinâmica estilo rádio comercial
-        utterance.pitch = 1.0; // Tom natural
+        utterance.rate = 1.05; // Dinâmica ágil comercial
 
         speechSynthesis.cancel();
         speechSynthesis.speak(utterance);
-        setMessage(anuncioMessage, 'Reproduzindo áudio...', 'var(--success)');
+        setMessage(anuncioMessage, `Reproduzindo com voz ${tipoVozDesejada}...`, 'var(--success)');
       }
 
       async function realizarLogin(event) {
