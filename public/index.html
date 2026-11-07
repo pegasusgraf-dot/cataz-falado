@@ -539,7 +539,7 @@
               <label for="select-tipo-voz" style="font-size: 0.82rem; font-weight: 600; color: var(--muted);">Locutor:</label>
               <select id="select-tipo-voz" style="padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #fff;">
                 <option value="feminina">Feminina 👩</option>
-                <option value="masculina" selected>Masculina Grave 🎙️👨</option>
+                <option value="masculina" selected>Masculina Super Grossa 🎙️👨</option>
               </select>
               <button id="btn-gerar-audio" type="button" class="button button-ghost" style="padding: 10px 14px;">🔊 Reproduzir</button>
             </div>
@@ -712,8 +712,8 @@
 
         if (tipoDesejado === 'masculina') {
           vozEncontrada = listaVozesPt.find(v => termosMasculinos.some(termo => v.name.toLowerCase().includes(termo)));
-          // pitch reduzido para 0.75 (deixa a voz bem mais grave e encorpada)
-          return { voz: vozEncontrada || listaVozesPt[0], pitch: 0.75 };
+          // pitch reduzido para 0.60 para garantir um tom bem grosso e imponente
+          return { voz: vozEncontrada || listaVozesPt[0], pitch: 0.60 };
         } else {
           vozEncontrada = listaVozesPt.find(v => termosFemininos.some(termo => v.name.toLowerCase().includes(termo)));
           return { voz: vozEncontrada || listaVozesPt[0], pitch: 1.05 };
@@ -1125,10 +1125,10 @@
         
         if (selecao && selecao.voz) {
           utterance.voice = selecao.voz;
-          utterance.pitch = selecao.pitch; // 0.75 garante a grave profunda
+          utterance.pitch = selecao.pitch; // 0.60 para voz bem grossa e imponente
         }
 
-        utterance.rate = 1.02; // Velocidade comercial calibrada para voz grave
+        utterance.rate = 1.0; // Velocidade calibrada para dar peso e clareza na voz grossa
 
         speechSynthesis.cancel();
         speechSynthesis.speak(utterance);
