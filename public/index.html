@@ -719,7 +719,7 @@
 
         if (tipoDesejado === 'masculina') {
           vozEncontrada = listaVozesPt.find(v => termosMasculinos.some(termo => v.name.toLowerCase().includes(termo)));
-          // pitch reduzido para 0.60 para garantir um tom bem grosso e imponente
+          // pitch reduzido para 0.70 para garantir um tom bem grosso e imponente
           return { voz: vozEncontrada || listaVozesPt[0], pitch: 0.60 };
         } else {
           vozEncontrada = listaVozesPt.find(v => termosFemininos.some(termo => v.name.toLowerCase().includes(termo)));
@@ -778,7 +778,7 @@
         const valorPromocional = inputValorPromocional.value.trim() || 'R$ 0,00';
         const oferta = inputOferta.value.trim() || 'Oferta especial';
 
-        const texto = `Atenção, cliente!... Hoje tem oferta imperdível na nossa Loja. ${produto}, Dê ${formatarMoeda(valorOriginal)},por apenas... ${formatarMoeda(valorPromocional)}. Aproveite: ${oferta}! Corra para  e garanta o seu!`;
+        const texto = `Atenção, cliente!... Hoje tem oferta imperdível na nossa Loja. ${produto}, Dê ${formatarMoeda(valorOriginal)},por apenas... ${formatarMoeda(valorPromocional)}. Aproveite: ${oferta}! Corra e garanta o seu!`;
         
         inputTextoAnuncio.value = texto;
         ultimoTextoGerado = texto;
