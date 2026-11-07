@@ -565,7 +565,7 @@
               </label>
 
               <label class="field">
-                Oferta
+                Oferta / Desconto (Ex: 35% OFF)
                 <input id="input-oferta" placeholder="Ex.: 35% OFF">
               </label>
             </div>
@@ -712,8 +712,7 @@
 
         if (tipoDesejado === 'masculina') {
           vozEncontrada = listaVozesPt.find(v => termosMasculinos.some(termo => v.name.toLowerCase().includes(termo)));
-          // pitch reduzido para 0.60 para garantir um tom bem grosso e imponente
-          return { voz: vozEncontrada || listaVozesPt[0], pitch: 0.60 };
+          return { voz: vozEncontrada || listaVozesPt[0], pitch: 0.60 }; // Voz masculina bem grossa e imponente
         } else {
           vozEncontrada = listaVozesPt.find(v => termosFemininos.some(termo => v.name.toLowerCase().includes(termo)));
           return { voz: vozEncontrada || listaVozesPt[0], pitch: 1.05 };
@@ -765,18 +764,19 @@
         }).format(numero);
       }
 
+      // Função atualizada para incluir expressamente o produto e a porcentagem de desconto/oferta no texto narrado
       function gerarTextoAnuncio() {
         const produto = (inputProduto.value || 'Produto').trim() || 'Produto';
         const valorOriginal = inputValorOriginal.value.trim() || 'R$ 0,00';
         const valorPromocional = inputValorPromocional.value.trim() || 'R$ 0,00';
-        const oferta = inputOferta.value.trim() || 'Oferta especial';
+        const oferta = inputOferta.value.trim() || 'oferta especial';
 
-        const texto = `Atenção, cliente!... Hoje tem oferta imperdível na nossa seção. O produto ${produto}, que custava ${formatarMoeda(valorOriginal)}, sai por apenas... ${formatarMoeda(valorPromocional)}. Aproveite: ${oferta}! Corra para o setor e garanta o seu!`;
+        const texto = `Atenção, cliente!... Oferta imperdível! Leve ${produto} com ${oferta} de desconto! De ${formatarMoeda(valorOriginal)}, por apenas... ${formatarMoeda(valorPromocional)}. Não perca essa oportunidade e garanta o seu agora mesmo!`;
         
         inputTextoAnuncio.value = texto;
         ultimoTextoGerado = texto;
         previewTexto.textContent = texto;
-        setMessage(anuncioMessage, 'Anúncio gerado com sucesso!', 'var(--success)');
+        setMessage(anuncioMessage, 'Anúncio gerado com o produto e desconto!', 'var(--success)');
         return texto;
       }
 
@@ -1125,10 +1125,10 @@
         
         if (selecao && selecao.voz) {
           utterance.voice = selecao.voz;
-          utterance.pitch = selecao.pitch; // 0.60 para voz bem grossa e imponente
+          utterance.pitch = selecao.pitch;
         }
 
-        utterance.rate = 1.0; // Velocidade calibrada para dar peso e clareza na voz grossa
+        utterance.rate = 1.0;
 
         speechSynthesis.cancel();
         speechSynthesis.speak(utterance);
